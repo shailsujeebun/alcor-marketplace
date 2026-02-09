@@ -1,0 +1,212 @@
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { NotificationType } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { PaginatedResponseDto } from '../common';
+import { NotificationsService } from '../notifications/notifications.service';
+
+const conversationIncludes = {
+  listing: {
+    include: {
+      media: { orderBy: { sortOrder: 'asc' as const }, take: 1 },
+    },
+  },
+  buyer: { select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true } },
+  seller: { select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true } },
+};
+
+@Injectable()
+export class MessagesService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
+
+  async startConversation(buyerId: string, listingId: string, sellerId: string, body: string) {
+    // Check if conversation already exists
+    let conversation = await this.prisma.conversation.findUnique({
+      where: { listingId_buyerId_sellerId: { listingId, buyerId, sellerId } },
+    });
+
+    if (!conversation) {
+      conversation = await this.prisma.conversation.create({
+        data: { listingId, buyerId, sellerId, lastMessageAt: new Date() },
+      });
+    }
+
+    // Send the first message
+    const message = await this.prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        senderId: buyerId,
+        body,
+      },
+    });
+
+    await this.prisma.conversation.update({
+      where: { id: conversation.id },
+      data: { lastMessageAt: new Date() },
+    });
+
+    return this.prisma.conversation.findUnique({
+      where: { id: conversation.id },
+      include: { ...conversationIncludes, messages: { orderBy: { createdAt: 'asc' }, take: 50 } },
+    });
+  }
+
+  async getUserConversations(userId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const where = {
+      OR: [{ buyerId: userId }, { sellerId: userId }],
+    };
+    const [data, total] = await Promise.all([
+      this.prisma.conversation.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { lastMessageAt: 'desc' },
+        include: {
+          ...conversationIncludes,
+          messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+        },
+      }),
+      this.prisma.conversation.count({ where }),
+    ]);
+    return new PaginatedResponseDto(data, total, page, limit);
+  }
+
+  async getConversation(conversationId: string, userId: string) {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        ...conversationIncludes,
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            sender: { select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true } },
+          },
+        },
+      },
+    });
+    if (!conversation) throw new NotFoundException('Conversation not found');
+    if (conversation.buyerId !== userId && conversation.sellerId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    // Mark unread messages as read
+    await this.prisma.message.updateMany({
+      where: {
+        conversationId,
+        senderId: { not: userId },
+        readAt: null,
+      },
+      data: { readAt: new Date() },
+    });
+
+    return conversation;
+  }
+
+  async sendMessage(conversationId: string, senderId: string, body: string) {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+    });
+    if (!conversation) throw new NotFoundException('Conversation not found');
+    if (conversation.buyerId !== senderId && conversation.sellerId !== senderId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    const message = await this.prisma.message.create({
+      data: { conversationId, senderId, body },
+      include: {
+        sender: { select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true } },
+      },
+    });
+
+    await this.prisma.conversation.update({
+      where: { id: conversationId },
+      data: { lastMessageAt: new Date() },
+    });
+
+    // Notify the recipient
+    const recipientId = conversation.buyerId === senderId ? conversation.sellerId : conversation.buyerId;
+    this.notificationsService.create(
+      recipientId,
+      NotificationType.NEW_MESSAGE,
+      'Нове повідомлення',
+      body.length > 100 ? body.slice(0, 100) + '...' : body,
+      `/cabinet/messages/${conversationId}`,
+    );
+
+    return message;
+  }
+
+  async getUnreadCount(userId: string): Promise<number> {
+    return this.prisma.message.count({
+      where: {
+        readAt: null,
+        senderId: { not: userId },
+        conversation: {
+          OR: [{ buyerId: userId }, { sellerId: userId }],
+        },
+      },
+    });
+  }
+
+  // ─── Admin Methods ─────────────────────────────────
+
+  async findAllConversations(page = 1, limit = 20, search?: string) {
+    const skip = (page - 1) * limit;
+    const where: Record<string, unknown> = {};
+
+    if (search) {
+      where.OR = [
+        { buyer: { email: { contains: search, mode: 'insensitive' } } },
+        { seller: { email: { contains: search, mode: 'insensitive' } } },
+        { listing: { title: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.conversation.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { lastMessageAt: 'desc' },
+        include: {
+          ...conversationIncludes,
+          messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+          _count: { select: { messages: true } },
+        },
+      }),
+      this.prisma.conversation.count({ where }),
+    ]);
+
+    return new PaginatedResponseDto(data, total, page, limit);
+  }
+
+  async getConversationAdmin(conversationId: string) {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        ...conversationIncludes,
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            sender: { select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true } },
+          },
+        },
+      },
+    });
+    if (!conversation) throw new NotFoundException('Conversation not found');
+    return conversation;
+  }
+
+  async deleteConversation(conversationId: string) {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+    });
+    if (!conversation) throw new NotFoundException('Conversation not found');
+
+    await this.prisma.conversation.delete({ where: { id: conversationId } });
+    return { deleted: true };
+  }
+}

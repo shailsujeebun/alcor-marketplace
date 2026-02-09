@@ -1,0 +1,660 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Auth Enums ────────────────────────────────────────
+
+enum UserRole {
+  USER
+  PRO_SELLER
+  MANAGER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  RESTRICTED
+  BLOCKED
+}
+
+enum CompanyUserRole {
+  OWNER
+  ADMIN
+  EDITOR
+}
+
+// ─── Auth Models ───────────────────────────────────────
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  passwordHash  String?
+  firstName     String?
+  lastName      String?
+  phone         String?
+  role          UserRole   @default(USER)
+  status        UserStatus @default(ACTIVE)
+  locale        String     @default("uk")
+  emailVerified Boolean    @default(false)
+  avatarUrl     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  oauthAccounts      OAuthAccount[]
+  sessions           Session[]
+  passwordResets     PasswordResetToken[]
+  companyUsers       CompanyUser[]
+  listings           Listing[]
+  assignedDealerLeads DealerLead[] @relation("AssignedDealerLeads")
+
+  favorites           Favorite[]
+  viewHistory         ViewHistory[]
+  buyerConversations  Conversation[] @relation("BuyerConversations")
+  sellerConversations Conversation[] @relation("SellerConversations")
+  sentMessages        Message[]      @relation("SentMessages")
+  supportTickets      SupportTicket[]
+  assignedTickets     SupportTicket[] @relation("AssignedTickets")
+  ticketMessages      TicketMessage[] @relation("TicketSentMessages")
+  subscriptions       Subscription[]
+  emailVerificationCodes EmailVerificationCode[]
+  notifications       Notification[]
+  savedSearches       SavedSearch[]
+}
+
+model OAuthAccount {
+  id         String @id @default(uuid())
+  userId     String
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider   String
+  providerId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([provider, providerId])
+  @@index([userId])
+}
+
+model Session {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String    @unique
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  userAgent        String?
+  ipAddress        String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model EmailVerificationCode {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model CompanyUser {
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role      CompanyUserRole @default(EDITOR)
+
+  createdAt DateTime @default(now())
+
+  @@id([userId, companyId])
+}
+
+// ─── Enums ───────────────────────────────────────────
+
+enum ListingCondition {
+  NEW
+  USED
+  DEMO
+}
+
+enum ListingType {
+  SALE
+  RENT
+  FROM_MANUFACTURER
+}
+
+enum PriceType {
+  FIXED
+  NEGOTIABLE
+  ON_REQUEST
+}
+
+enum MediaKind {
+  LOGO
+  COVER
+  GALLERY
+}
+
+enum ListingStatus {
+  DRAFT
+  SUBMITTED
+  PENDING_MODERATION
+  ACTIVE
+  PAUSED
+  EXPIRED
+  REJECTED
+  REMOVED
+}
+
+enum DealerLeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PACKAGE_SELECTED
+  CONVERTED
+  REJECTED
+}
+
+// ─── Reference Data ──────────────────────────────────
+
+model Country {
+  id   String @id @default(uuid())
+  iso2 String @unique @db.VarChar(2)
+  name String
+
+  cities      City[]
+  companies   Company[]
+  listings    Listing[]
+  dealerLeads DealerLead[]
+}
+
+model City {
+  id        String  @id @default(uuid())
+  name      String
+  countryId String
+  country   Country @relation(fields: [countryId], references: [id])
+
+  companies   Company[]
+  listings    Listing[]
+  dealerLeads DealerLead[]
+
+  @@index([countryId])
+}
+
+model ActivityType {
+  id   String @id @default(uuid())
+  code String @unique
+  name String
+
+  companies CompanyActivityType[]
+}
+
+model Brand {
+  id   String @id @default(uuid())
+  name String @unique
+
+  companyBrands CompanyBrand[]
+  listings      Listing[]
+}
+
+model Category {
+  id       String     @id @default(uuid())
+  parentId String?
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+
+  slug String @unique
+  name String
+
+  listings Listing[]
+
+  @@index([parentId])
+}
+
+// ─── Company ─────────────────────────────────────────
+
+model Company {
+  id          String  @id @default(uuid())
+  slug        String  @unique
+  name        String
+  description String?
+
+  countryId    String?
+  country      Country? @relation(fields: [countryId], references: [id])
+  cityId       String?
+  city         City?    @relation(fields: [cityId], references: [id])
+  region       String?
+  addressLine  String?
+  timezone     String?
+  utcOffsetMin Int?
+
+  website        String?
+  contactPerson  String?
+  workingHours   String?
+  languages      String?
+  yearsOnPlatform Int?
+  yearsOnMarket   Int?
+
+  isVerified       Boolean @default(false)
+  isOfficialDealer Boolean @default(false)
+  isManufacturer   Boolean @default(false)
+
+  ratingAvg     Float   @default(0)
+  reviewsCount  Int     @default(0)
+  listingsCount Int     @default(0)
+  ratingSource  String?
+  photosCount   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  phones     CompanyPhone[]
+  media      CompanyMedia[]
+  activities CompanyActivityType[]
+  brands     CompanyBrand[]
+  reviews    CompanyReview[]
+  listings   Listing[]
+  users      CompanyUser[]
+
+  @@index([countryId])
+  @@index([cityId])
+}
+
+model CompanyPhone {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  label     String?
+  phoneE164 String
+  isPrimary Boolean @default(false)
+
+  @@index([companyId])
+}
+
+model CompanyMedia {
+  id        String    @id @default(uuid())
+  companyId String
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  kind      MediaKind
+  url       String
+  sortOrder Int       @default(0)
+
+  @@index([companyId])
+}
+
+model CompanyActivityType {
+  companyId      String
+  company        Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  activityTypeId String
+  activityType   ActivityType @relation(fields: [activityTypeId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, activityTypeId])
+}
+
+model CompanyBrand {
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  brandId   String
+  brand     Brand   @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, brandId])
+}
+
+model CompanyReview {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  authorName String
+  rating     Int
+  title      String?
+  body       String?
+  createdAt  DateTime @default(now())
+
+  @@index([companyId])
+}
+
+// ─── Listing ─────────────────────────────────────────
+
+model Listing {
+  id           String  @id @default(uuid())
+  companyId    String
+  company      Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ownerUserId  String?
+  ownerUser    User?   @relation(fields: [ownerUserId], references: [id])
+
+  title       String
+  description String?
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  brandId     String?
+  brand       Brand?    @relation(fields: [brandId], references: [id])
+
+  condition     ListingCondition?
+  year          Int?
+  priceAmount   Float?
+  priceCurrency String?   @db.VarChar(3)
+  priceType     PriceType?
+
+  countryId String?
+  country   Country? @relation(fields: [countryId], references: [id])
+  cityId    String?
+  city      City?    @relation(fields: [cityId], references: [id])
+
+  sellerName   String?
+  sellerEmail  String?
+  sellerPhones String[]
+
+  externalUrl String?
+  hoursValue  Int?
+  hoursUnit   String?       @default("м/г")
+  listingType ListingType?
+  euroClass   String?
+
+  status           ListingStatus @default(ACTIVE)
+  moderationReason String?
+  submittedAt      DateTime?
+  moderatedAt      DateTime?
+  expiresAt        DateTime?
+
+  isVideo     Boolean   @default(false)
+  publishedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  media         ListingMedia[]
+  attributes    ListingAttribute[]
+  favorites     Favorite[]
+  viewHistory   ViewHistory[]
+  conversations Conversation[]
+
+  @@index([companyId])
+  @@index([ownerUserId])
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([countryId])
+  @@index([cityId])
+  @@index([status])
+}
+
+model ListingMedia {
+  id        String  @id @default(uuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url       String
+  sortOrder Int     @default(0)
+
+  @@index([listingId])
+}
+
+model ListingAttribute {
+  id        String  @id @default(uuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  key       String
+  value     String
+
+  @@index([listingId])
+  @@unique([listingId, key])
+}
+
+// ─── Ticket / Message Enums ─────────────────────────
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// ─── Favorites & View History ───────────────────────
+
+model Favorite {
+  id        String  @id @default(uuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
+}
+
+model ViewHistory {
+  id        String  @id @default(uuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  viewedAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
+}
+
+// ─── Conversations & Messages ───────────────────────
+
+model Conversation {
+  id         String @id @default(uuid())
+  listingId  String
+  listing    Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerId    String
+  buyer      User   @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
+  sellerId   String
+  seller     User   @relation("SellerConversations", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  lastMessageAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages Message[]
+
+  @@unique([listingId, buyerId, sellerId])
+  @@index([buyerId])
+  @@index([sellerId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  body           String
+  readAt         DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+// ─── Support Tickets ────────────────────────────────
+
+model SupportTicket {
+  id          String         @id @default(uuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject     String
+  status      TicketStatus   @default(OPEN)
+  priority    TicketPriority @default(MEDIUM)
+  assignedToId String?
+  assignedTo  User?          @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  closedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages TicketMessage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([assignedToId])
+}
+
+model TicketMessage {
+  id       String        @id @default(uuid())
+  ticketId String
+  ticket   SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId String
+  sender   User          @relation("TicketSentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  body     String
+  isStaff  Boolean       @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+// ─── Dealer Leads ───────────────────────────────────
+
+model DealerLead {
+  id               String           @id @default(uuid())
+  companyName      String
+  contactPerson    String
+  email            String
+  phone            String
+  website          String?
+  countryId        String?
+  country          Country?         @relation(fields: [countryId], references: [id])
+  cityId           String?
+  city             City?            @relation(fields: [cityId], references: [id])
+  activityTypes    String[]
+  brands           String[]
+  equipmentCount   Int?
+  message          String?
+  status           DealerLeadStatus @default(NEW)
+  assignedToUserId String?
+  assignedToUser   User?            @relation("AssignedDealerLeads", fields: [assignedToUserId], references: [id])
+  notes            String?
+  convertedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([assignedToUserId])
+}
+
+// ─── Plans & Billing ─────────────────────────────────
+
+enum PlanInterval {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+model Plan {
+  id            String       @id @default(uuid())
+  slug          String       @unique
+  name          String
+  description   String?
+  priceAmount   Decimal      @db.Decimal(10, 2)
+  priceCurrency String       @default("UAH") @db.VarChar(3)
+  interval      PlanInterval @default(MONTHLY)
+  features      Json
+  limits        Json
+  isActive      Boolean      @default(true)
+  sortOrder     Int          @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id        String             @id @default(uuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId    String
+  plan      Plan               @relation(fields: [planId], references: [id])
+  status    SubscriptionStatus @default(ACTIVE)
+  startDate DateTime
+  endDate   DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([planId])
+}
+
+// ─── Notifications ──────────────────────────────────
+
+enum NotificationType {
+  LISTING_APPROVED
+  LISTING_REJECTED
+  NEW_MESSAGE
+  TICKET_REPLY
+  REVIEW_RECEIVED
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String?
+  linkUrl   String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+}
+
+// ─── Saved Searches ─────────────────────────────────
+
+model SavedSearch {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  filters   Json
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

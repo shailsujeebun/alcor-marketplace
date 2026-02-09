@@ -1,0 +1,371 @@
+import type {
+  ActivityType,
+  Brand,
+  Category,
+  ChatMessage,
+  City,
+  Company,
+  CompanyReview,
+  Conversation,
+  Country,
+  CreateConversationPayload,
+  CreateDealerLeadPayload,
+  CreateListingPayload,
+  CreateReviewPayload,
+  CreateTicketPayload,
+  DealerLead,
+  Favorite,
+  Listing,
+  PaginatedResponse,
+  ReplyTicketPayload,
+  SendMessagePayload,
+  SupportTicket,
+  TicketMessage,
+  UpdateDealerLeadPayload,
+  UpdateListingPayload,
+  UpdateProfilePayload,
+  UpdateTicketPayload,
+  User,
+  ViewHistoryItem,
+} from '@/types/api';
+import { useAuthStore } from '@/stores/auth-store';
+import { refreshTokens } from '@/lib/auth-api';
+import Cookies from 'js-cookie';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+async function tryRefreshToken(): Promise<string | null> {
+  try {
+    const refreshToken = Cookies.get('refreshToken');
+    if (!refreshToken) return null;
+    const result = await refreshTokens(refreshToken);
+    useAuthStore.getState().setAuth(result.user, result.accessToken, result.refreshToken);
+    return result.accessToken;
+  } catch {
+    useAuthStore.getState().logout();
+    return null;
+  }
+}
+
+async function fetchApi<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = useAuthStore.getState().accessToken;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init?.headers as Record<string, string>),
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  let res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+
+  // If 401, try refreshing the token and retry once
+  if (res.status === 401) {
+    const newToken = await tryRefreshToken();
+    if (newToken) {
+      headers['Authorization'] = `Bearer ${newToken}`;
+      res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+    }
+  }
+
+  if (!res.ok) {
+    let detail = '';
+    try {
+      const body = await res.json();
+      detail = body.message || JSON.stringify(body);
+    } catch { /* empty */ }
+    throw new Error(detail || `API error: ${res.status}`);
+  }
+  return res.json();
+}
+
+// Listings
+export const getListings = (params?: URLSearchParams) =>
+  fetchApi<PaginatedResponse<Listing>>(`/listings?${params?.toString() ?? ''}`);
+
+export const getListingById = (id: string) =>
+  fetchApi<Listing>(`/listings/${id}`);
+
+export const getCompanyListings = (companyId: string, params?: URLSearchParams) =>
+  fetchApi<PaginatedResponse<Listing>>(`/companies/${companyId}/listings?${params?.toString() ?? ''}`);
+
+// Companies
+export const getCompanies = (params?: URLSearchParams) =>
+  fetchApi<PaginatedResponse<Company>>(`/companies?${params?.toString() ?? ''}`);
+
+export const getCompanyBySlug = (slug: string) =>
+  fetchApi<Company>(`/companies/${slug}`);
+
+export const getCompanyReviews = (companyId: string, params?: URLSearchParams) =>
+  fetchApi<PaginatedResponse<CompanyReview>>(`/companies/${companyId}/reviews?${params?.toString() ?? ''}`);
+
+export const createCompanyReview = (companyId: string, data: CreateReviewPayload) =>
+  fetchApi<CompanyReview>(`/companies/${companyId}/reviews`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+// Listing status actions
+export const submitListing = (id: string) =>
+  fetchApi<Listing>(`/listings/${id}/submit`, { method: 'POST' });
+
+export const approveListing = (id: string) =>
+  fetchApi<Listing>(`/listings/${id}/approve`, { method: 'POST' });
+
+export const rejectListing = (id: string, moderationReason: string) =>
+  fetchApi<Listing>(`/listings/${id}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ status: 'REJECTED', moderationReason }),
+  });
+
+export const pauseListing = (id: string) =>
+  fetchApi<Listing>(`/listings/${id}/pause`, { method: 'POST' });
+
+export const resumeListing = (id: string) =>
+  fetchApi<Listing>(`/listings/${id}/resume`, { method: 'POST' });
+
+export const resubmitListing = (id: string) =>
+  fetchApi<Listing>(`/listings/${id}/resubmit`, { method: 'POST' });
+
+// Dealer Leads
+export const createDealerLead = (data: CreateDealerLeadPayload) =>
+  fetchApi<DealerLead>('/dealer-leads', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const getDealerLeads = (params?: URLSearchParams) =>
+  fetchApi<PaginatedResponse<DealerLead>>(`/dealer-leads?${params?.toString() ?? ''}`);
+
+export const getDealerLeadById = (id: string) =>
+  fetchApi<DealerLead>(`/dealer-leads/${id}`);
+
+export const updateDealerLead = (id: string, data: UpdateDealerLeadPayload) =>
+  fetchApi<DealerLead>(`/dealer-leads/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+
+// Listing CRUD
+export const createListing = (data: CreateListingPayload) =>
+  fetchApi<Listing>('/listings', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const updateListing = (id: string, data: UpdateListingPayload) =>
+  fetchApi<Listing>(`/listings/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+
+// File Upload
+export async function uploadImages(files: File[]): Promise<{ urls: string[] }> {
+  let token = useAuthStore.getState().accessToken;
+  const formData = new FormData();
+  files.forEach((file) => formData.append('files', file));
+
+  let res = await fetch(`${API_BASE}/upload/images`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+
+  // If 401, try refreshing the token and retry once
+  if (res.status === 401) {
+    const newToken = await tryRefreshToken();
+    if (newToken) {
+      token = newToken;
+      const retryFormData = new FormData();
+      files.forEach((file) => retryFormData.append('files', file));
+      res = await fetch(`${API_BASE}/upload/images`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: retryFormData,
+      });
+    }
+  }
+
+  if (!res.ok) {
+    let detail = '';
+    try {
+      const body = await res.json();
+      detail = body.message || JSON.stringify(body);
+    } catch { /* empty */ }
+    throw new Error(detail || `Upload error: ${res.status}`);
+  }
+  return res.json();
+}
+
+// Profile
+export const updateProfile = (data: UpdateProfilePayload) =>
+  fetchApi<User>('/users/me', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+
+// ─── Favorites ─────────────────────────────────────
+export const addFavorite = (listingId: string) =>
+  fetchApi<Favorite>(`/favorites/${listingId}`, { method: 'POST' });
+
+export const removeFavorite = (listingId: string) =>
+  fetchApi<void>(`/favorites/${listingId}`, { method: 'DELETE' });
+
+export const getFavorites = (params?: URLSearchParams) =>
+  fetchApi<PaginatedResponse<Favorite>>(`/favorites?${params?.toString() ?? ''}`);
+
+export const checkFavorite = (listingId: string) =>
+  fetchApi<{ isFavorite: boolean }>(`/favorites/check/${listingId}`);
+
+// ─── View History ──────────────────────────────────
+export const recordView = (listingId: string) =>
+  fetchApi<ViewHistoryItem>(`/view-history/${listingId}`, { method: 'POST' });
+
+export const getViewHistory = (params?: URLSearchParams) =>
+  fetchApi<PaginatedResponse<ViewHistoryItem>>(`/view-history?${params?.toString() ?? ''}`);
+
+// ─── Messages ──────────────────────────────────────
+export const startConversation = (data: CreateConversationPayload) =>
+  fetchApi<Conversation>('/messages/conversations', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const getConversations = (params?: URLSearchParams) =>
+  fetchApi<PaginatedResponse<Conversation>>(`/messages/conversations?${params?.toString() ?? ''}`);
+
+export const getConversation = (id: string) =>
+  fetchApi<Conversation>(`/messages/conversations/${id}`);
+
+export const sendMessage = (conversationId: string, data: SendMessagePayload) =>
+  fetchApi<ChatMessage>(`/messages/conversations/${conversationId}`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const getUnreadCount = () =>
+  fetchApi<{ count: number }>('/messages/unread-count');
+
+// ─── Support ───────────────────────────────────────
+export const createTicket = (data: CreateTicketPayload) =>
+  fetchApi<SupportTicket>('/support/tickets', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const getMyTickets = (params?: URLSearchParams) =>
+  fetchApi<PaginatedResponse<SupportTicket>>(`/support/tickets?${params?.toString() ?? ''}`);
+
+export const getAllTickets = (params?: URLSearchParams) =>
+  fetchApi<PaginatedResponse<SupportTicket>>(`/support/tickets/all?${params?.toString() ?? ''}`);
+
+export const getTicket = (id: string) =>
+  fetchApi<SupportTicket>(`/support/tickets/${id}`);
+
+export const replyToTicket = (id: string, data: ReplyTicketPayload) =>
+  fetchApi<TicketMessage>(`/support/tickets/${id}/reply`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const updateTicket = (id: string, data: UpdateTicketPayload) =>
+  fetchApi<SupportTicket>(`/support/tickets/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+
+// ─── Admin ────────────────────────────────────────
+
+export interface AdminStats {
+  usersCount: number;
+  listingsCount: number;
+  companiesCount: number;
+  activeTicketsCount: number;
+}
+
+export const getAdminStats = () =>
+  fetchApi<AdminStats>('/admin/stats');
+
+export const getUsers = (params?: URLSearchParams) =>
+  fetchApi<PaginatedResponse<User>>(`/users?${params?.toString() ?? ''}`);
+
+export const updateUser = (userId: string, data: { role?: string; status?: string }) =>
+  fetchApi<User>(`/users/${userId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+
+// ─── Admin Company Management ─────────────────────
+
+export const verifyCompany = (id: string) =>
+  fetchApi<Company>(`/companies/${id}/verify`, { method: 'PATCH' });
+
+export const updateCompanyFlags = (id: string, data: { isOfficialDealer?: boolean; isManufacturer?: boolean }) =>
+  fetchApi<Company>(`/companies/${id}/flags`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+
+export const deleteCompany = (id: string) =>
+  fetchApi<void>(`/companies/${id}`, { method: 'DELETE' });
+
+export const deleteReview = (companyId: string, reviewId: string) =>
+  fetchApi<void>(`/companies/${companyId}/reviews/${reviewId}`, { method: 'DELETE' });
+
+export const removeListing = (id: string) =>
+  fetchApi<Listing>(`/listings/${id}/remove`, { method: 'POST' });
+
+export const deleteConversation = (id: string) =>
+  fetchApi<void>(`/messages/conversations/${id}`, { method: 'DELETE' });
+
+// ─── Admin Messages Oversight ─────────────────────
+
+export const getAllConversations = (params?: URLSearchParams) =>
+  fetchApi<PaginatedResponse<Conversation>>(`/messages/conversations/all?${params?.toString() ?? ''}`);
+
+export const getConversationAdmin = (id: string) =>
+  fetchApi<Conversation>(`/messages/conversations/${id}/admin`);
+
+// ─── Notifications ────────────────────────────────
+
+export const getNotifications = (params?: URLSearchParams) =>
+  fetchApi<PaginatedResponse<import('@/types/api').Notification>>(`/notifications?${params?.toString() ?? ''}`);
+
+export const getNotificationUnreadCount = () =>
+  fetchApi<{ count: number }>('/notifications/unread-count');
+
+export const markNotificationRead = (id: string) =>
+  fetchApi<void>(`/notifications/${id}/read`, { method: 'PATCH' });
+
+export const markAllNotificationsRead = () =>
+  fetchApi<void>('/notifications/read-all', { method: 'POST' });
+
+// ─── Saved Searches ───────────────────────────────
+
+export const getSavedSearches = () =>
+  fetchApi<import('@/types/api').SavedSearch[]>('/saved-searches');
+
+export const createSavedSearch = (data: { name: string; filters: Record<string, string> }) =>
+  fetchApi<import('@/types/api').SavedSearch>('/saved-searches', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const deleteSavedSearch = (id: string) =>
+  fetchApi<void>(`/saved-searches/${id}`, { method: 'DELETE' });
+
+// ─── Plans & Subscriptions ─────────────────────────
+
+export const getPlans = () =>
+  fetchApi<import('@/types/api').Plan[]>('/plans');
+
+export const getMySubscription = () =>
+  fetchApi<import('@/types/api').Subscription | null>('/subscriptions/me');
+
+// Reference data
+export const getCategories = () => fetchApi<Category[]>('/categories');
+export const getBrands = () => fetchApi<Brand[]>('/brands');
+export const getCountries = () => fetchApi<Country[]>('/countries');
+export const getCities = (countryId?: string) =>
+  fetchApi<PaginatedResponse<City>>(`/cities${countryId ? `?countryId=${countryId}` : ''}`);
+export const getActivityTypes = () => fetchApi<ActivityType[]>('/activity-types');

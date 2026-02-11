@@ -3,12 +3,15 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Users, ListChecks, MessageSquare, Briefcase, Building2, Mail, PlusCircle } from 'lucide-react';
+import { LayoutDashboard, Users, ListChecks, MessageSquare, Briefcase, Building2, Mail, PlusCircle, Globe, Layers, FileEdit } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { cn } from '@/lib/utils';
 
 const sidebarLinks = [
   { href: '/admin', label: 'Огляд', icon: LayoutDashboard },
+  { href: '/admin/marketplaces', label: 'Маркетплейси', icon: Globe },
+  { href: '/admin/categories', label: 'Категорії', icon: Layers },
+  { href: '/admin/templates/builder', label: 'Конструктор форм', icon: FileEdit },
   { href: '/admin/listings/new', label: 'Додати оголошення', icon: PlusCircle },
   { href: '/admin/users', label: 'Користувачі', icon: Users },
   { href: '/admin/moderation', label: 'Модерація', icon: ListChecks },

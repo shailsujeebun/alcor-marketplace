@@ -479,3 +479,72 @@ export const uploadToS3 = async (presignedUrl: string, file: File): Promise<void
     throw new Error(`S3 upload failed: ${res.status}`);
   }
 };
+
+// ─── Admin Marketplaces & Categories ────────────────
+
+export interface AdminMarketplace {
+  id: number;
+  key: string;
+  name: string;
+  isActive: boolean;
+}
+
+export interface AdminCategory {
+  id: number;
+  marketplaceId: number;
+  name: string;
+  slug: string;
+  parentId?: number;
+  sortOrder?: number;
+  children?: AdminCategory[];
+}
+
+export const getAdminMarketplaces = () =>
+  fetchApi<AdminMarketplace[]>('/admin/marketplaces');
+
+export const createAdminMarketplace = (data: { key: string; name: string }) =>
+  fetchApi<AdminMarketplace>('/admin/marketplaces', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const updateAdminMarketplace = (id: number, data: { name?: string; isActive?: boolean }) =>
+  fetchApi<AdminMarketplace>(`/admin/marketplaces/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+
+export const createAdminCategory = (data: {
+  marketplaceId: number;
+  name: string;
+  slug: string;
+  parentId?: number;
+  sortOrder?: number;
+}) =>
+  fetchApi<AdminCategory>('/admin/categories', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const updateAdminCategory = (id: number, data: {
+  name?: string;
+  slug?: string;
+  parentId?: number;
+  sortOrder?: number;
+}) =>
+  fetchApi<AdminCategory>(`/admin/categories/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+
+export const deleteAdminCategory = (id: number) =>
+  fetchApi<void>(`/admin/categories/${id}`, { method: 'DELETE' });
+
+export const createAdminTemplate = (data: { categoryId: number; name?: string; fields: any[] }) =>
+  fetchApi<FormTemplate>('/admin/templates', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const getAdminTemplate = (id: number) =>
+  fetchApi<FormTemplate>(`/admin/templates/${id}`);

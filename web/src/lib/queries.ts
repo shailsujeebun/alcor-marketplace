@@ -614,3 +614,77 @@ export function useMySubscription() {
     queryFn: api.getMySubscription,
   });
 }
+
+// ─── Search & Filters ──────────────────────────────
+
+export function useSearchListings(params: Record<string, string>) {
+  const searchParams = new URLSearchParams(params);
+  return useQuery({
+    queryKey: ['search', params],
+    queryFn: () => api.searchListings(searchParams),
+  });
+}
+
+export function useSearchFacets(params: Record<string, string> = {}) {
+  const searchParams = new URLSearchParams(params);
+  return useQuery({
+    queryKey: ['search-facets', params],
+    queryFn: () => api.getSearchFacets(searchParams),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+}
+
+// ─── Dynamic Forms ─────────────────────────────────
+
+export function useCategoryTemplate(categoryId: string) {
+  return useQuery({
+    queryKey: ['category-template', categoryId],
+    queryFn: () => api.getCategoryTemplate(categoryId),
+    enabled: !!categoryId,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+export function useValidateListingDraft() {
+  return useMutation({
+    mutationFn: (data: api.ValidateDraftPayload) => api.validateListingDraft(data),
+  });
+}
+
+export function useUpdateListingAttributes() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, attributes }: { id: string; attributes: Array<{ key: string; value: string }> }) =>
+      api.updateListingAttributes(id, attributes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      queryClient.invalidateQueries({ queryKey: ['listing'] });
+    },
+  });
+}
+
+// ─── Contact Management ────────────────────────────
+
+export function useUpdateListingContact() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: api.ContactPayload }) =>
+      api.updateListingContact(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      queryClient.invalidateQueries({ queryKey: ['listing'] });
+    },
+  });
+}
+
+// ─── Presigned Upload ──────────────────────────────
+
+export function usePresignedUpload() {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const { uploadUrl, key } = await api.getPresignedUploadUrl();
+      await api.uploadToS3(uploadUrl, file);
+      return { key, url: uploadUrl.split('?')[0] }; // Return the base URL without query params
+    },
+  });
+}

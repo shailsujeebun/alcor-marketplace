@@ -369,3 +369,113 @@ export const getCountries = () => fetchApi<Country[]>('/countries');
 export const getCities = (countryId?: string) =>
   fetchApi<PaginatedResponse<City>>(`/cities${countryId ? `?countryId=${countryId}` : ''}`);
 export const getActivityTypes = () => fetchApi<ActivityType[]>('/activity-types');
+
+// ─── Search & Filters ──────────────────────────────
+
+export interface SearchResponse {
+  data: Listing[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface FacetsResponse {
+  categories: Array<{ id: string; name: string; count: number }>;
+  brands: Array<{ id: string; name: string; count: number }>;
+  priceRange?: { min: number; max: number };
+  yearRange?: { min: number; max: number };
+}
+
+export const searchListings = (params?: URLSearchParams) =>
+  fetchApi<SearchResponse>(`/search?${params?.toString() ?? ''}`);
+
+export const getSearchFacets = (params?: URLSearchParams) =>
+  fetchApi<FacetsResponse>(`/search/facets?${params?.toString() ?? ''}`);
+
+// ─── Dynamic Forms ─────────────────────────────────
+
+export interface FormTemplate {
+  id: string;
+  categoryId: string;
+  fields: FormField[];
+}
+
+export interface FormField {
+  id: string;
+  key: string;
+  label: string;
+  type: 'TEXT' | 'NUMBER' | 'SELECT' | 'MULTISELECT' | 'BOOLEAN';
+  isRequired: boolean;
+  validationRules?: Record<string, any>;
+  options?: FieldOption[];
+}
+
+export interface FieldOption {
+  id: string;
+  value: string;
+  label: string;
+}
+
+export interface ValidateDraftPayload {
+  categoryId: string;
+  attributes: Array<{ key: string; value: string }>;
+}
+
+export interface ValidationResponse {
+  valid: boolean;
+  errors?: Array<{ field: string; message: string }>;
+}
+
+export const getCategoryTemplate = (categoryId: string) =>
+  fetchApi<FormTemplate>(`/categories/${categoryId}/template`);
+
+export const validateListingDraft = (data: ValidateDraftPayload) =>
+  fetchApi<ValidationResponse>('/listings/draft/validate', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const updateListingAttributes = (id: string, attributes: Array<{ key: string; value: string }>) =>
+  fetchApi<Listing>(`/listings/${id}/attributes`, {
+    method: 'PUT',
+    body: JSON.stringify({ attributes }),
+  });
+
+// ─── Contact Management ────────────────────────────
+
+export interface ContactPayload {
+  name: string;
+  email: string;
+  phoneCountry?: string;
+  phoneNumber?: string;
+}
+
+export const updateListingContact = (id: string, data: ContactPayload) =>
+  fetchApi<Listing>(`/listings/${id}/contact`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+
+// ─── Presigned Upload ──────────────────────────────
+
+export interface PresignedUploadResponse {
+  uploadUrl: string;
+  key: string;
+}
+
+export const getPresignedUploadUrl = () =>
+  fetchApi<PresignedUploadResponse>('/upload/presigned');
+
+export const uploadToS3 = async (presignedUrl: string, file: File): Promise<void> => {
+  const res = await fetch(presignedUrl, {
+    method: 'PUT',
+    body: file,
+    headers: { 'Content-Type': file.type },
+  });
+  if (!res.ok) {
+    throw new Error(`S3 upload failed: ${res.status}`);
+  }
+};

@@ -19,17 +19,18 @@ export class MessagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
-  ) {}
+  ) { }
 
   async startConversation(buyerId: string, listingId: string, sellerId: string, body: string) {
+    const id = BigInt(listingId);
     // Check if conversation already exists
     let conversation = await this.prisma.conversation.findUnique({
-      where: { listingId_buyerId_sellerId: { listingId, buyerId, sellerId } },
+      where: { listingId_buyerId_sellerId: { listingId: id, buyerId, sellerId } },
     });
 
     if (!conversation) {
       conversation = await this.prisma.conversation.create({
-        data: { listingId, buyerId, sellerId, lastMessageAt: new Date() },
+        data: { listingId: id, buyerId, sellerId, lastMessageAt: new Date() },
       });
     }
 

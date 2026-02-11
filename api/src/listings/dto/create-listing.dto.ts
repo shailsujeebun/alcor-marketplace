@@ -11,11 +11,18 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ListingCondition, ListingType, PriceType } from '@prisma/client';
+import { ListingCondition, ListingType, PriceType, MediaKind } from '@prisma/client';
 
 class CreateListingMediaDto {
   @IsString()
   url!: string;
+
+  @IsEnum(MediaKind)
+  type!: MediaKind;
+
+  @IsOptional()
+  @IsString()
+  key?: string;
 
   @IsOptional()
   @IsInt()
@@ -42,7 +49,7 @@ export class CreateListingDto {
   description?: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
   categoryId?: string;
 
   @IsOptional()

@@ -5,6 +5,8 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
+  Get,
+  Query,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -21,10 +23,9 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 @Controller('upload')
 export class UploadController {
-  constructor(private readonly uploadService: UploadService) {}
+  constructor(private readonly uploadService: UploadService) { }
 
   @Post('images')
-  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FilesInterceptor('files', 10, {
       limits: { fileSize: MAX_FILE_SIZE },
@@ -50,5 +51,14 @@ export class UploadController {
     );
 
     return { urls };
+  }
+
+  @Get('presigned')
+  @UseGuards(JwtAuthGuard)
+  getPresignedUrl(
+    @Query('folder') folder?: string,
+    @Query('contentType') contentType?: string,
+  ) {
+    return this.uploadService.getPresignedUrl(folder, contentType);
   }
 }

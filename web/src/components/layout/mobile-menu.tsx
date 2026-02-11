@@ -68,6 +68,14 @@ export function MobileMenu({ open, onClose, links, isAuthenticated, user, onLogo
           ) : (
             <>
               <Link
+                href="/ad-placement"
+                onClick={onClose}
+                className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-3 rounded-full font-semibold transition-colors"
+              >
+                <span className="text-lg">+</span>
+                Розмістити оголошення
+              </Link>
+              <Link
                 href="/login"
                 onClick={onClose}
                 className="flex items-center justify-center gap-2 border border-[var(--border-color)] text-[var(--text-primary)] px-5 py-3 rounded-full font-semibold hover:border-blue-bright/40 transition-colors"

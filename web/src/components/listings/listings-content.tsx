@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { SlidersHorizontal, X } from 'lucide-react';
-import { useListings } from '@/lib/queries';
+import { useSearchListings } from '@/lib/queries';
 import { ListingsFilters } from './listings-filters';
 import { ListingsGrid } from './listings-grid';
 
@@ -59,7 +59,8 @@ export function ListingsContent() {
   const queryParams: Record<string, string> = { page: String(page), limit: '12' };
   Object.entries(filters).forEach(([k, v]) => { if (v) queryParams[k] = v; });
 
-  const { data, isLoading } = useListings(queryParams);
+  // Use the new search API instead of basic listings fetch
+  const { data, isLoading } = useSearchListings(queryParams);
 
   const updateFilter = useCallback((key: keyof FiltersState, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));

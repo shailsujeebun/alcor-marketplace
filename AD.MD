@@ -1,0 +1,96 @@
+# Ad Placement & Listing Wizard Documentation
+
+## Overview
+
+The Ad Placement system has been significantly refactored to support a **Guest Flow** and a **Multi-Step Wizard** UI. This allows unauthenticated users to start creating an ad, upload photos, and then register/login at the final step without losing their data.
+
+## Features
+
+### 1. Guest Ad Placement
+- **Public Access**: The ad creation flow starts at a public URL (`/ad-placement/details`), bypassing the authenticated `/cabinet` routes.
+- **Draft Persistence**: Listing data is saved to `localStorage` (`listing_draft`) as the user types.
+- **Smart Restore**: When a guest registers or logs in after starting an ad, the draft is automatically restored into the form.
+- **Guest Uploads**: The API has been updated to allow unauthenticated image uploads for draft listings.
+
+### 2. Multi-Step Wizard UI
+Refactored from a single monolithic form into a structured 3-step process:
+1.  **Description**: Basic info, category, price, and details.
+2.  **Media**: Dedicated step for uploading photos and videos.
+3.  **Contacts**: Seller information and final submission.
+
+## Tech Stack & Architecture
+
+### Frontend Components (`web/src/components/listings/wizard/`)
+- **`wizard-context.tsx`**: React Context that manages the global state of the wizard (form data, media, current step, errors).
+- **`description-step.tsx`**: Step 1 component. Handles dynamic category attributes using `DynamicForm`.
+- **`media-step.tsx`**: Step 2 component. Wraps the `MediaUploader`.
+- **`contact-step.tsx`**: Step 3 component. Handles guest vs. auth logic and final form submission.
+- **`listing-wizard.tsx`**: The orchestrator component. It providers the `WizardContext` and renders the persistent **Sidebar** navigation.
+
+### State Management
+- **Context API**: `useWizard()` hook provides access to `form`, `setForm`, `media`, `setMedia` anywhere within the wizard steps.
+- **Local Storage**:
+  - Key: `listing_draft`
+  - Content: `{ form: FormData, media: MediaItem[], timestamp: number }`
+  - Behavior: Saved on "Next" or "Submit" (if guest). Cleared on successful submission.
+
+### Backend Changes (`api/`)
+- **Upload Controller** (`api/src/upload/upload.controller.ts`):
+  - Removed `@UseGuards(JwtAuthGuard)` from the `POST /upload/images` endpoint.
+  - This allows guests to upload images to MinIO and get public URLs back, which are then stored in the frontend draft state.
+
+## User Flows
+
+### Guest Flow
+1.  User clicks "Place an ad" -> Selects Category.
+2.  Redirects to `/ad-placement/details`.
+3.  **Step 1**: Fills out description.
+4.  **Step 2**: Uploads photos (images uploaded immediately to server, URLs saved in state).
+5.  **Step 3**:
+    - Sees "Already registered?" prompt.
+    - Clicks "Continue & Register".
+    - Draft saved to `localStorage`.
+    - Redirects to `/register`.
+6.  **After Auth**:
+    - Redirects back to `/ad-placement/details`.
+    - `ListingWizard` detects draft in `localStorage`.
+    - Form is repopulated.
+    - User clicks "Publish".
+
+### Authenticated Flow
+1.  User (logged in) starts at `/ad-placement/details` or `/cabinet/listings/new`.
+2.  Form initiates with user data (Company, Name, Email, Phone).
+3.  User progresses through steps.
+4.  Submits directly via `POST /listings`.
+
+## Directory Structure
+
+```
+web/src/app/ad-placement/
+├── details/
+│   └── page.tsx              # Public wrapper for ListingWizard
+└── select-category/
+    └── page.tsx              # Category selection (redirects to details)
+
+web/src/components/listings/
+├── listing-wizard.tsx        # Main orchestrator & Sidebar
+└── wizard/
+    ├── wizard-context.tsx    # State management
+    ├── description-step.tsx  # Step 1
+    ├── media-step.tsx        # Step 2
+    └── contact-step.tsx      # Step 3
+```
+
+## Key API Endpoints Used
+
+- `GET /categories`: Category tree
+- `GET /categories/:id/template`: Dynamic form fields
+- `POST /upload/images`: Image upload (Public)
+- `POST /listings`: Create listing (Authenticated)
+- `PATCH /listings/:id`: Update listing (Authenticated)
+
+## Future Improvements
+
+- **Validation**: Add stricter Zod validation for each step before proceeding.
+- **Draft Expiry**: Implement cleanup for old drafts in `localStorage`.
+- **Mobile UI**: Further optimize the sidebar for mobile views (currently stacks or hides).

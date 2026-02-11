@@ -6,6 +6,23 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Marketplace & Core ──────────────────────────────
+
+model Marketplace {
+  id       BigInt  @id @default(autoincrement()) @map("marketplace_id")
+  key      String  @unique // 'agriculture', 'commercial', 'industrial', 'cars'
+  name     String
+  isActive Boolean @default(true) @map("is_active")
+
+  categories Category[]
+  listings   Listing[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("marketplace")
+}
+
 // ─── Auth Enums ────────────────────────────────────────
 
 enum UserRole {
@@ -45,25 +62,25 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  oauthAccounts      OAuthAccount[]
-  sessions           Session[]
-  passwordResets     PasswordResetToken[]
-  companyUsers       CompanyUser[]
-  listings           Listing[]
-  assignedDealerLeads DealerLead[] @relation("AssignedDealerLeads")
+  oauthAccounts       OAuthAccount[]
+  sessions            Session[]
+  passwordResets      PasswordResetToken[]
+  companyUsers        CompanyUser[]
+  listings            Listing[]
+  assignedDealerLeads DealerLead[]         @relation("AssignedDealerLeads")
 
-  favorites           Favorite[]
-  viewHistory         ViewHistory[]
-  buyerConversations  Conversation[] @relation("BuyerConversations")
-  sellerConversations Conversation[] @relation("SellerConversations")
-  sentMessages        Message[]      @relation("SentMessages")
-  supportTickets      SupportTicket[]
-  assignedTickets     SupportTicket[] @relation("AssignedTickets")
-  ticketMessages      TicketMessage[] @relation("TicketSentMessages")
-  subscriptions       Subscription[]
+  favorites              Favorite[]
+  viewHistory            ViewHistory[]
+  buyerConversations     Conversation[]          @relation("BuyerConversations")
+  sellerConversations    Conversation[]          @relation("SellerConversations")
+  sentMessages           Message[]               @relation("SentMessages")
+  supportTickets         SupportTicket[]
+  assignedTickets        SupportTicket[]         @relation("AssignedTickets")
+  ticketMessages         TicketMessage[]         @relation("TicketSentMessages")
+  subscriptions          Subscription[]
   emailVerificationCodes EmailVerificationCode[]
-  notifications       Notification[]
-  savedSearches       SavedSearch[]
+  notifications          Notification[]
+  savedSearches          SavedSearch[]
 }
 
 model OAuthAccount {
@@ -155,6 +172,9 @@ enum MediaKind {
   LOGO
   COVER
   GALLERY
+  PHOTO
+  VIDEO
+  PDF
 }
 
 enum ListingStatus {
@@ -220,17 +240,68 @@ model Brand {
 }
 
 model Category {
-  id       String     @id @default(uuid())
-  parentId String?
-  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
-  children Category[] @relation("CategoryTree")
+  id            BigInt      @id @default(autoincrement()) @map("category_id")
+  marketplaceId BigInt      @map("marketplace_id")
+  marketplace   Marketplace @relation(fields: [marketplaceId], references: [id])
+  parentId      BigInt?     @map("parent_id")
+  parent        Category?   @relation("CategoryTree", fields: [parentId], references: [id])
+  children      Category[]  @relation("CategoryTree")
+  name          String
+  slug          String
+  sortOrder     Int?        @map("sort_order")
 
-  slug String @unique
-  name String
+  listings      Listing[]
+  formTemplates FormTemplate[]
 
-  listings Listing[]
+  @@unique([marketplaceId, slug])
+  @@map("category")
+}
 
-  @@index([parentId])
+// ─── Form Templates ──────────────────────────────────
+
+model FormTemplate {
+  id         BigInt   @id @default(autoincrement()) @map("template_id")
+  categoryId BigInt   @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id])
+  version    Int      @default(1)
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  fields FormField[]
+
+  @@unique([categoryId, version])
+  @@map("form_template")
+}
+
+model FormField {
+  id           BigInt       @id @default(autoincrement()) @map("field_id")
+  templateId   BigInt       @map("template_id")
+  template     FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  fieldKey     String       @map("field_key") // stable key like 'year', 'mileage_km', 'fuel'
+  label        String
+  fieldType    String       @map("field_type") // text, number, select, multiselect, bool, date, color, geo
+  required     Boolean      @default(false)
+  sortOrder    Int          @default(0) @map("sort_order")
+  helpText     String?      @map("help_text")
+  validations  Json         @default("{}") // min/max/regex/unit
+  visibilityIf Json         @default("{}") @map("visibility_if") // conditional rules
+
+  options FieldOption[]
+
+  @@unique([templateId, fieldKey])
+  @@map("form_field")
+}
+
+model FieldOption {
+  id        BigInt    @id @default(autoincrement()) @map("option_id")
+  fieldId   BigInt    @map("field_id")
+  field     FormField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  value     String
+  label     String
+  sortOrder Int?      @map("sort_order")
+
+  @@unique([fieldId, value])
+  @@map("field_option")
 }
 
 // ─── Company ─────────────────────────────────────────
@@ -250,10 +321,10 @@ model Company {
   timezone     String?
   utcOffsetMin Int?
 
-  website        String?
-  contactPerson  String?
-  workingHours   String?
-  languages      String?
+  website         String?
+  contactPerson   String?
+  workingHours    String?
+  languages       String?
   yearsOnPlatform Int?
   yearsOnMarket   Int?
 
@@ -338,86 +409,128 @@ model CompanyReview {
 // ─── Listing ─────────────────────────────────────────
 
 model Listing {
-  id           String  @id @default(uuid())
-  companyId    String
-  company      Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  ownerUserId  String?
-  ownerUser    User?   @relation(fields: [ownerUserId], references: [id])
+  id            BigInt        @id @default(autoincrement()) @map("listing_id")
+  marketplaceId BigInt        @map("marketplace_id")
+  marketplace   Marketplace   @relation(fields: [marketplaceId], references: [id])
+  categoryId    BigInt        @map("category_id")
+  category      Category      @relation(fields: [categoryId], references: [id])
+  status        ListingStatus @default(DRAFT)
 
-  title       String
-  description String?
-  categoryId  String?
-  category    Category? @relation(fields: [categoryId], references: [id])
-  brandId     String?
-  brand       Brand?    @relation(fields: [brandId], references: [id])
+  // Legacy/Optional fields for backward compat or auth link
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ownerUserId String?
+  ownerUser   User?    @relation(fields: [ownerUserId], references: [id])
 
-  condition     ListingCondition?
-  year          Int?
-  priceAmount   Float?
-  priceCurrency String?   @db.VarChar(3)
-  priceType     PriceType?
+  title           String?
+  description     String?
+  descriptionLang String? @map("description_lang")
 
-  countryId String?
-  country   Country? @relation(fields: [countryId], references: [id])
-  cityId    String?
-  city      City?    @relation(fields: [cityId], references: [id])
+  // Removing these direct columns in favor of ListingFact or Attributes for new architecture
+  // Keeping them nullable if migration needed later, but plan says strict
+  // For now, I will comment them out to strictly follow the new plan, 
+  // but keep relations that might be needed by old code until full refactor.
+  // Actually, per plan, we have a clean break. I'll stick to the plan's schema for new fields.
 
-  sellerName   String?
-  sellerEmail  String?
-  sellerPhones String[]
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  publishedAt DateTime? @map("published_at")
 
-  externalUrl String?
-  hoursValue  Int?
-  hoursUnit   String?       @default("м/г")
-  listingType ListingType?
-  euroClass   String?
+  // Relations
+  media       ListingMedia[]
+  attribute   ListingAttribute? // One-to-one for JSONB attributes
+  fact        ListingFact? // One-to-one for indexed facts
+  seller      ListingSeller? // One-to-one for contact info
+  wizardState ListingWizardState?
 
-  status           ListingStatus @default(ACTIVE)
-  moderationReason String?
-  submittedAt      DateTime?
-  moderatedAt      DateTime?
-  expiresAt        DateTime?
-
-  isVideo     Boolean   @default(false)
-  publishedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  media         ListingMedia[]
-  attributes    ListingAttribute[]
+  // Legacy relations to keep Prisma happy if other models reference Listing
   favorites     Favorite[]
   viewHistory   ViewHistory[]
   conversations Conversation[]
+  country       Country?       @relation(fields: [countryId], references: [id])
+  countryId     String?
+  city          City?          @relation(fields: [cityId], references: [id])
+  cityId        String?
+  brand         Brand?         @relation(fields: [brandId], references: [id])
+  brandId       String?
 
-  @@index([companyId])
-  @@index([ownerUserId])
-  @@index([categoryId])
-  @@index([brandId])
-  @@index([countryId])
-  @@index([cityId])
-  @@index([status])
-}
-
-model ListingMedia {
-  id        String  @id @default(uuid())
-  listingId String
-  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  url       String
-  sortOrder Int     @default(0)
-
-  @@index([listingId])
+  @@map("listing")
 }
 
 model ListingAttribute {
-  id        String  @id @default(uuid())
-  listingId String
+  listingId BigInt  @id @map("listing_id")
   listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  key       String
-  value     String
+  data      Json    @default("{}")
 
-  @@index([listingId])
-  @@unique([listingId, key])
+  @@map("listing_attribute")
+}
+
+model ListingFact {
+  listingId BigInt  @id @map("listing_id")
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  priceAmount   Decimal? @map("price_amount") @db.Decimal(14, 2)
+  priceCurrency String?  @map("price_currency")
+  vatType       String?  @map("vat_type")
+
+  year      Int?
+  mileageKm Int?    @map("mileage_km")
+  condition String?
+
+  country String?
+  city    String?
+  lat     Decimal? @db.Decimal(9, 6)
+  lng     Decimal? @db.Decimal(9, 6)
+
+  @@map("listing_fact")
+}
+
+model ListingMedia {
+  id        BigInt    @id @default(autoincrement()) @map("media_id")
+  listingId BigInt    @map("listing_id")
+  listing   Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  type      MediaKind
+  url       String
+  sortOrder Int?      @map("sort_order")
+  meta      Json      @default("{}")
+
+  @@unique([listingId, url])
+  @@map("listing_media")
+}
+
+model SellerContact {
+  id             BigInt   @id @default(autoincrement()) @map("seller_contact_id")
+  email          String
+  name           String
+  phoneCountry   String   @map("phone_country") @db.Char(2)
+  phoneNumber    String   @map("phone_number")
+  partnerCode    String?  @map("partner_code")
+  privacyConsent Boolean  @map("privacy_consent")
+  termsConsent   Boolean  @map("terms_consent")
+  consentedAt    DateTime @default(now()) @map("consented_at")
+
+  listingSeller ListingSeller[]
+
+  @@map("seller_contact")
+}
+
+model ListingSeller {
+  listingId       BigInt        @id @map("listing_id")
+  listing         Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  sellerContactId BigInt        @map("seller_contact_id")
+  sellerContact   SellerContact @relation(fields: [sellerContactId], references: [id])
+
+  @@map("listing_seller")
+}
+
+model ListingWizardState {
+  listingId      BigInt   @id @map("listing_id")
+  listing        Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  step           Int      @default(1)
+  completedSteps Int[]    @default([]) @map("completed_steps")
+  lastSeenAt     DateTime @default(now()) @map("last_seen_at")
+
+  @@map("listing_wizard_state")
 }
 
 // ─── Ticket / Message Enums ─────────────────────────
@@ -441,7 +554,7 @@ model Favorite {
   id        String  @id @default(uuid())
   userId    String
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  listingId String
+  listingId BigInt
   listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
@@ -455,7 +568,7 @@ model ViewHistory {
   id        String  @id @default(uuid())
   userId    String
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  listingId String
+  listingId BigInt
   listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   viewedAt DateTime @default(now())
@@ -468,13 +581,13 @@ model ViewHistory {
 // ─── Conversations & Messages ───────────────────────
 
 model Conversation {
-  id         String @id @default(uuid())
-  listingId  String
-  listing    Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  buyerId    String
-  buyer      User   @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
-  sellerId   String
-  seller     User   @relation("SellerConversations", fields: [sellerId], references: [id], onDelete: Cascade)
+  id        String  @id @default(uuid())
+  listingId BigInt
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerId   String
+  buyer     User    @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
+  sellerId  String
+  seller    User    @relation("SellerConversations", fields: [sellerId], references: [id], onDelete: Cascade)
 
   lastMessageAt DateTime?
 
@@ -506,15 +619,15 @@ model Message {
 // ─── Support Tickets ────────────────────────────────
 
 model SupportTicket {
-  id          String         @id @default(uuid())
-  userId      String
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subject     String
-  status      TicketStatus   @default(OPEN)
-  priority    TicketPriority @default(MEDIUM)
+  id           String         @id @default(uuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject      String
+  status       TicketStatus   @default(OPEN)
+  priority     TicketPriority @default(MEDIUM)
   assignedToId String?
-  assignedTo  User?          @relation("AssignedTickets", fields: [assignedToId], references: [id])
-  closedAt    DateTime?
+  assignedTo   User?          @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  closedAt     DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

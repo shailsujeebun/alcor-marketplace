@@ -7,6 +7,7 @@ import {
   CreateBucketCommand,
   HeadBucketCommand,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -75,5 +76,24 @@ export class UploadService implements OnModuleInit {
         Key: key,
       }),
     );
+  }
+
+  async getPresignedUrl(folder: string = 'images', contentType: string = 'image/jpeg') {
+    const ext = contentType.split('/')[1] ?? 'jpg';
+    const key = `${folder}/${randomUUID()}.${ext}`;
+
+    const command = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const url = await getSignedUrl(this.s3, command, { expiresIn: 3600 });
+
+    return {
+      uploadUrl: url,
+      key,
+      publicUrl: `${this.publicUrl}/${key}`,
+    };
   }
 }

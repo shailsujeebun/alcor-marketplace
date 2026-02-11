@@ -26,6 +26,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { MailModule } from './mail/mail.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SavedSearchesModule } from './saved-searches/saved-searches.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -53,8 +54,9 @@ import { SavedSearchesModule } from './saved-searches/saved-searches.module';
     SubscriptionsModule,
     NotificationsModule,
     SavedSearchesModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

@@ -4,25 +4,27 @@ import { PaginatedResponseDto } from '../common';
 
 @Injectable()
 export class FavoritesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async addFavorite(userId: string, listingId: string) {
+    const id = BigInt(listingId);
     // Check listing exists
-    const listing = await this.prisma.listing.findUnique({ where: { id: listingId } });
+    const listing = await this.prisma.listing.findUnique({ where: { id } });
     if (!listing) throw new NotFoundException('Listing not found');
 
     // Upsert to avoid duplicate errors
     return this.prisma.favorite.upsert({
-      where: { userId_listingId: { userId, listingId } },
+      where: { userId_listingId: { userId, listingId: id } },
       update: {},
-      create: { userId, listingId },
+      create: { userId, listingId: id },
       include: { listing: { include: { media: { orderBy: { sortOrder: 'asc' }, take: 1 }, category: true, brand: true, country: true, city: true } } },
     });
   }
 
   async removeFavorite(userId: string, listingId: string) {
+    const id = BigInt(listingId);
     const fav = await this.prisma.favorite.findUnique({
-      where: { userId_listingId: { userId, listingId } },
+      where: { userId_listingId: { userId, listingId: id } },
     });
     if (!fav) throw new NotFoundException('Favorite not found');
     await this.prisma.favorite.delete({ where: { id: fav.id } });
@@ -55,8 +57,9 @@ export class FavoritesService {
   }
 
   async isFavorite(userId: string, listingId: string): Promise<boolean> {
+    const id = BigInt(listingId);
     const fav = await this.prisma.favorite.findUnique({
-      where: { userId_listingId: { userId, listingId } },
+      where: { userId_listingId: { userId, listingId: id } },
     });
     return !!fav;
   }
@@ -64,10 +67,11 @@ export class FavoritesService {
   // --- View History ---
 
   async recordView(userId: string, listingId: string) {
+    const id = BigInt(listingId);
     return this.prisma.viewHistory.upsert({
-      where: { userId_listingId: { userId, listingId } },
+      where: { userId_listingId: { userId, listingId: id } },
       update: { viewedAt: new Date() },
-      create: { userId, listingId },
+      create: { userId, listingId: id },
     });
   }
 

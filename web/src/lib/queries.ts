@@ -688,3 +688,9 @@ export function usePresignedUpload() {
     },
   });
 }
+
+export function useUploadImages() {
+  return useMutation({
+    mutationFn: (files: File[]) => api.uploadImages(files),
+  });
+}

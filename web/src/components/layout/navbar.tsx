@@ -88,7 +88,7 @@ export function Navbar() {
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3 ml-auto">
             {isLoading ? (
               <div className="w-8 h-8 rounded-full bg-[var(--border-color)] animate-pulse" />
             ) : isAuthenticated && user ? (
@@ -141,17 +141,11 @@ export function Navbar() {
               <div className="flex items-center gap-3">
                 <Link
                   href="/login"
-                  className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors font-medium"
-                >
-                  <LogIn size={16} />
-                  Вхід
-                </Link>
-                <Link
-                  href="/register"
+                  // Combined Sign In / Registration button
                   className="gradient-cta text-white px-5 py-2 rounded-full text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5"
                 >
-                  <UserPlus size={16} />
-                  Реєстрація
+                  <LogIn size={16} />
+                  Вхід / Реєстрація
                 </Link>
                 <Link
                   href="/ad-placement"

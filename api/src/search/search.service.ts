@@ -22,13 +22,21 @@ export class SearchService {
     async search(query: SearchQuery) {
         const {
             q,
-            category,
-            minPrice,
-            maxPrice,
+            category, // Legacy slug support
+            categoryId, // ID support
+            priceMin,
+            priceMax,
+            priceCurrency,
             yearMin,
             yearMax,
+            brandId,
+            countryId,
+            cityId,
+            condition,
+            listingType,
             page = 1,
             limit = 20,
+            sort,
             ...attributes
         } = query;
 
@@ -44,69 +52,86 @@ export class SearchService {
             where.title = { contains: q, mode: 'insensitive' };
         }
 
-        // Category Filter
-        if (category) {
+        // Category Filter (ID or Slug)
+        if (categoryId) {
+            try {
+                where.categoryId = BigInt(categoryId);
+            } catch (e) {
+                // Invalid BigInt
+            }
+        } else if (category) {
             where.category = { slug: category };
         }
 
-        // Fact Filtering (Price, Year)
-        // We can filter on ListingFact or Listing directly if fields exist.
-        // Listing has: priceAmount, priceCurrency, year.
-        // ListingFact has: the same + country/city/mileage.
-        // Since we are joining, let's try to filter on Listing fields first for simplicity, 
-        // or use ListingFact if we want to support attributes like mileage.
-        // For now, let's use the core Listing fields for price/year as they are reliable.
+        // Direct Relations
+        if (brandId) {
+            where.brandId = brandId;
+        }
 
-        if (minPrice !== undefined || maxPrice !== undefined) {
-            where.fact = where.fact || {};
-            where.fact.priceAmount = {};
-            if (minPrice !== undefined) where.fact.priceAmount.gte = minPrice;
-            if (maxPrice !== undefined) where.fact.priceAmount.lte = maxPrice;
+        if (countryId) {
+            where.countryId = countryId;
+        }
+
+        if (cityId) {
+            where.cityId = cityId;
+        }
+
+        // Fact Filtering (Price, Year, Condition, etc.)
+        const factFilter: any = {};
+
+        if (priceMin !== undefined || priceMax !== undefined || priceCurrency) {
+            factFilter.priceAmount = {};
+            if (priceMin !== undefined) factFilter.priceAmount.gte = priceMin;
+            if (priceMax !== undefined) factFilter.priceAmount.lte = priceMax;
+
+            if (priceCurrency) {
+                factFilter.priceCurrency = priceCurrency;
+            }
         }
 
         if (yearMin !== undefined || yearMax !== undefined) {
-            where.fact = where.fact || {};
-            where.fact.year = {};
-            if (yearMin !== undefined) where.fact.year.gte = yearMin;
-            if (yearMax !== undefined) where.fact.year.lte = yearMax;
+            factFilter.year = {};
+            if (yearMin !== undefined) factFilter.year.gte = yearMin;
+            if (yearMax !== undefined) factFilter.year.lte = yearMax;
+        }
+
+        if (condition) {
+            factFilter.condition = condition;
+        }
+
+        // Only attach fact filter if it has keys or if we check empty object?
+        // Prisma handles empty objects gracefully usually, but let's be safe.
+        if (Object.keys(factFilter).length > 0) {
+            where.fact = factFilter;
         }
 
         // Dynamic Attribute Filtering
-        // This is tricky with JSONB. We can filter matches in ListingAttribute or ListingFact.
-        // ListingFact columns: mileageKm, condition, country, city.
-        // If attributes contains specific keys, we can check ListingFact.
-        // For arbitrary JSON keys, we'd need to query ListingAttribute.data using JSON path operators.
-        // Prisma support for JSON filtering:
-        // where: { attribute: { path: ['drive_type'], equals: '4WD' } }
+        const attrFilters = Object.entries(attributes).filter(([k]) => k !== 'order');
 
-        // Let's implement basic filtering for known keys if provided in attributes
-        // AND generic JSON filtering.
+        // If listingType is provided, treat it as an attribute for now since it's not on Listing/ListingFact
+        if (listingType) {
+            attrFilters.push(['type', listingType]);
+        }
 
-        const attrFilters = Object.entries(attributes).filter(([k]) => k !== 'sort' && k !== 'order');
         if (attrFilters.length > 0) {
-            // We need to use AND for multiple attributes
-            where.attribute = {
-                is: {
-                    data: {
-                        path: [], // Root match?
-                        // Prisma Json filter is limited. usage:
-                        // data: { path: ['key'], equals: value }
-                    }
-                }
-            };
-
-            // Constructing the JSON filter dynamically
-            // Prisma's `equals` matches the whole JSON or a specific path.
-            // For multiple fields, multiple AND conditions on `attribute`.
             where.AND = attrFilters.map(([key, value]) => ({
                 attribute: {
                     data: {
                         path: [key],
-                        equals: isNaN(Number(value)) ? value : Number(value), // Try request numbers if possible
+                        equals: isNaN(Number(value)) ? value : Number(value),
                     },
                 },
             }));
         }
+
+        // Sort Mapping
+        let orderBy: any = { createdAt: 'desc' };
+        if (sort === 'priceAsc') orderBy = { fact: { priceAmount: 'asc' } };
+        else if (sort === 'priceDesc') orderBy = { fact: { priceAmount: 'desc' } };
+        else if (sort === 'yearAsc') orderBy = { fact: { year: 'asc' } };
+        else if (sort === 'yearDesc') orderBy = { fact: { year: 'desc' } };
+        else if (sort === 'publishedAt') orderBy = { publishedAt: 'desc' };
+
 
         // Execute Query
         const [items, total] = await Promise.all([
@@ -114,11 +139,11 @@ export class SearchService {
                 where,
                 skip,
                 take: limit,
-                orderBy: { createdAt: 'desc' }, // TODO: Dynamic sort
+                orderBy,
                 include: {
                     category: true,
                     media: { take: 1, orderBy: { sortOrder: 'asc' } },
-                    fact: true, // Include facts in result
+                    fact: true,
                 },
             }),
             this.prisma.listing.count({ where }),
@@ -139,19 +164,17 @@ export class SearchService {
     }
 
     async getFacets(query: SearchQuery) {
-        // 1. Categories (all or filtered?)
-        // For now, return all top-level categories or relevant subcategories
+        // Simple Facets for now
+        // TODO: Context-aware facets based on current query
         const categories = await this.prisma.category.findMany({
-            where: { parentId: null }, // Top level
+            where: { parentId: null },
             select: { id: true, slug: true, name: true }
         });
 
-        // 2. Brands
         const brands = await this.prisma.brand.findMany({
             select: { id: true, name: true }
         });
 
-        // 3. Price Range (from ListingFact)
         const priceStats = await this.prisma.listingFact.aggregate({
             _min: { priceAmount: true },
             _max: { priceAmount: true },
@@ -159,7 +182,9 @@ export class SearchService {
         });
 
         return {
-            categories,
+            categories: JSON.parse(JSON.stringify(categories, (key, value) =>
+                typeof value === 'bigint' ? value.toString() : value // Handle BigInt
+            )),
             brands,
             priceMin: priceStats._min.priceAmount,
             priceMax: priceStats._max.priceAmount,

@@ -16,6 +16,7 @@ import type {
   DealerLead,
   Favorite,
   Listing,
+  Marketplace,
   PaginatedResponse,
   ReplyTicketPayload,
   SendMessagePayload,
@@ -363,7 +364,9 @@ export const getMySubscription = () =>
   fetchApi<import('@/types/api').Subscription | null>('/subscriptions/me');
 
 // Reference data
-export const getCategories = () => fetchApi<Category[]>('/categories');
+export const getMarketplaces = () => fetchApi<Marketplace[]>('/marketplaces');
+export const getCategories = (marketplaceId?: string) =>
+  fetchApi<Category[]>(`/categories${marketplaceId ? `?marketplaceId=${marketplaceId}` : ''}`);
 export const getBrands = () => fetchApi<Brand[]>('/brands');
 export const getCountries = () => fetchApi<Country[]>('/countries');
 export const getCities = (countryId?: string) =>

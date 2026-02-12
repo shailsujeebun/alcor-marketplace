@@ -66,10 +66,18 @@ export function useCompanyListings(companyId: string, params: Record<string, str
   });
 }
 
-export function useCategories() {
+export function useMarketplaces() {
   return useQuery({
-    queryKey: ['categories'],
-    queryFn: api.getCategories,
+    queryKey: ['marketplaces'],
+    queryFn: api.getMarketplaces,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCategories(marketplaceId?: string) {
+  return useQuery({
+    queryKey: ['categories', marketplaceId ?? 'all'],
+    queryFn: () => api.getCategories(marketplaceId),
     staleTime: 5 * 60 * 1000,
   });
 }

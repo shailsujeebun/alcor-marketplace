@@ -7,6 +7,7 @@ export interface CategoryTreeNode {
   slug: string;
   name: string;
   parentId: string | null;
+  marketplaceId: string;
   children: CategoryTreeNode[];
 }
 
@@ -26,8 +27,27 @@ export class CategoriesService {
     });
   }
 
-  async findTree(): Promise<CategoryTreeNode[]> {
+  async findMarketplaces() {
+    const marketplaces = await this.prisma.marketplace.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+    });
+    return marketplaces.map((m) => ({
+      id: m.id.toString(),
+      key: m.key,
+      name: m.name,
+      isActive: m.isActive,
+    }));
+  }
+
+  async findTree(marketplaceId?: string): Promise<CategoryTreeNode[]> {
+    const where: any = {};
+    if (marketplaceId) {
+      where.marketplaceId = BigInt(marketplaceId);
+    }
+
     const all = await this.prisma.category.findMany({
+      where,
       orderBy: { name: 'asc' },
     });
 
@@ -45,6 +65,7 @@ export class CategoriesService {
         slug: cat.slug,
         name: cat.name,
         parentId: cat.parentId ? cat.parentId.toString() : null,
+        marketplaceId: cat.marketplaceId.toString(),
         children: buildTree(cat.id.toString()),
       }));
     };

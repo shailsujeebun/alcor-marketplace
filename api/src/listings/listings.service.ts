@@ -133,8 +133,9 @@ export class ListingsService {
 
   async findAll(query: ListingQueryDto) {
     const where: Record<string, unknown> = {};
+    if (query.marketplaceId) where.marketplaceId = BigInt(query.marketplaceId);
     if (query.companyId) where.companyId = query.companyId;
-    if (query.categoryId) where.categoryId = query.categoryId;
+    if (query.categoryId) where.categoryId = BigInt(query.categoryId);
     if (query.brandId) where.brandId = query.brandId;
     if (query.countryId) where.countryId = query.countryId;
     if (query.cityId) where.cityId = query.cityId;
@@ -199,7 +200,7 @@ export class ListingsService {
 
   async findByCompany(companyId: string, query: ListingQueryDto) {
     const where: Record<string, unknown> = { companyId };
-    if (query.categoryId) where.categoryId = query.categoryId;
+    if (query.categoryId) where.categoryId = BigInt(query.categoryId);
     if (query.brandId) where.brandId = query.brandId;
     if (query.status) where.status = query.status;
 

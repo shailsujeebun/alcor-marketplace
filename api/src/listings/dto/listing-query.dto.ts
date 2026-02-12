@@ -4,7 +4,11 @@ import { ListingCondition, ListingType, ListingStatus } from '@prisma/client';
 
 export class ListingQueryDto extends PaginationQueryDto {
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  marketplaceId?: string;
+
+  @IsOptional()
+  @IsString()
   categoryId?: string;
 
   @IsOptional()

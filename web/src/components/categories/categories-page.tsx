@@ -1,15 +1,28 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Layers, ChevronRight } from 'lucide-react';
-import { useCategories } from '@/lib/queries';
+import { useCategories, useMarketplaces } from '@/lib/queries';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function CategoriesPageContent() {
-  const { data: categories, isLoading } = useCategories();
+  const { data: marketplaces, isLoading: loadingMarketplaces } = useMarketplaces();
+  const [activeMarketplaceId, setActiveMarketplaceId] = useState<string | undefined>(undefined);
+
+  const { data: categories, isLoading: loadingCategories } = useCategories(activeMarketplaceId);
   const topLevel = categories?.filter((c) => !c.parentId) ?? [];
 
-  if (isLoading) {
+  // Set first marketplace as active when data loads
+  useEffect(() => {
+    if (marketplaces && marketplaces.length > 0 && activeMarketplaceId === undefined) {
+      setActiveMarketplaceId(marketplaces[0].id);
+    }
+  }, [marketplaces, activeMarketplaceId]);
+
+  const isLoading = loadingMarketplaces || loadingCategories;
+
+  if (isLoading && !categories) {
     return (
       <div className="container-main py-10">
         <Skeleton className="h-10 w-64 mb-8" />
@@ -31,6 +44,27 @@ export function CategoriesPageContent() {
         <p className="mt-2 text-[var(--text-secondary)]">Знайдіть обладнання, організоване за категоріями.</p>
       </div>
 
+      {/* Marketplace Tabs */}
+      {marketplaces && marketplaces.length > 1 && (
+        <div className="flex gap-2 mb-8 border-b border-[var(--border-color)] overflow-x-auto">
+          {marketplaces.map((mp) => (
+            <button
+              key={mp.id}
+              onClick={() => setActiveMarketplaceId(mp.id)}
+              className={`px-6 py-3 font-medium transition-colors relative whitespace-nowrap ${activeMarketplaceId === mp.id
+                ? 'text-blue-bright'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+            >
+              {mp.name}
+              {activeMarketplaceId === mp.id && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-bright rounded-full" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
       {topLevel.length === 0 ? (
         <div className="text-center py-20">
           <Layers size={48} className="mx-auto text-blue-bright/20 mb-4" />
@@ -46,7 +80,7 @@ export function CategoriesPageContent() {
                   <Layers size={24} className="text-blue-bright" />
                 </div>
                 <Link
-                  href={`/listings?categoryId=${cat.id}`}
+                  href={`/listings?marketplaceId=${activeMarketplaceId ?? ''}&categoryId=${cat.id}`}
                   className="font-heading font-bold text-lg text-[var(--text-primary)] hover:text-blue-bright transition-colors"
                 >
                   {cat.name}
@@ -58,7 +92,7 @@ export function CategoriesPageContent() {
                   {cat.children.map((child) => (
                     <Link
                       key={child.id}
-                      href={`/listings?categoryId=${child.id}`}
+                      href={`/listings?marketplaceId=${activeMarketplaceId ?? ''}&categoryId=${child.id}`}
                       className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-blue-bright transition-colors py-1"
                     >
                       <ChevronRight size={14} />
@@ -70,7 +104,7 @@ export function CategoriesPageContent() {
 
               {(!cat.children || cat.children.length === 0) && (
                 <Link
-                  href={`/listings?categoryId=${cat.id}`}
+                  href={`/listings?marketplaceId=${activeMarketplaceId ?? ''}&categoryId=${cat.id}`}
                   className="inline-flex items-center gap-1 text-sm text-blue-bright hover:text-blue-light transition-colors ml-16"
                 >
                   Переглянути оголошення

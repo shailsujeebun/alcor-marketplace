@@ -1,8 +1,27 @@
-'use use client';
+'use client';
 
 import { useWizard } from './wizard-context';
 import { useCategories, useBrands, useCountries, useCities, useCategoryTemplate } from '@/lib/queries';
 import { DynamicForm } from '../dynamic-form';
+import type { Category } from '@/types/api';
+
+function buildLeafCategories(categories: Category[]): Array<{ id: string; label: string }> {
+    const results: Array<{ id: string; label: string }> = [];
+
+    const walk = (nodes: Category[], path: string[]) => {
+        for (const node of nodes) {
+            const nextPath = [...path, node.name];
+            if (!node.children || node.children.length === 0) {
+                results.push({ id: node.id, label: nextPath.join(' / ') });
+            } else {
+                walk(node.children, nextPath);
+            }
+        }
+    };
+
+    walk(categories, []);
+    return results;
+}
 
 export function DescriptionStep() {
     const { form, setForm, setCurrentStep } = useWizard();
@@ -37,6 +56,8 @@ export function DescriptionStep() {
     const sectionClass = 'glass-card p-6 sm:p-8 space-y-5 mb-6';
     const sectionTitleClass = 'text-lg font-heading font-bold text-[var(--text-primary)] mb-4';
 
+    const leafCategories = buildLeafCategories(categories ?? []);
+
     return (
         <div className="space-y-6">
             {/* 1. Basic characteristics */}
@@ -48,8 +69,8 @@ export function DescriptionStep() {
                         <label className={labelClass}>Категорія *</label>
                         <select name="categoryId" value={form.categoryId} onChange={handleChange} className={selectClass}>
                             <option value="">Оберіть категорію</option>
-                            {categories?.map((c) => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
+                            {leafCategories.map((c) => (
+                                <option key={c.id} value={c.id}>{c.label}</option>
                             ))}
                         </select>
                     </div>

@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { Bookmark } from 'lucide-react';
 import { SearchInput } from '@/components/ui/search-input';
 import { Select } from '@/components/ui/select';
-import { useCategories, useBrands, useCountries, useCities, useCreateSavedSearch } from '@/lib/queries';
+import { useMarketplaces, useCategories, useBrands, useCountries, useCities, useCreateSavedSearch } from '@/lib/queries';
 import { useAuthStore } from '@/stores/auth-store';
 
 interface FiltersState {
+  marketplaceId: string;
   search: string;
   categoryId: string;
   brandId: string;
@@ -31,7 +32,8 @@ interface ListingsFiltersProps {
 }
 
 export function ListingsFilters({ filters, onFilterChange, onClear }: ListingsFiltersProps) {
-  const { data: categories } = useCategories();
+  const { data: marketplaces } = useMarketplaces();
+  const { data: categories } = useCategories(filters.marketplaceId || undefined);
   const { data: brands } = useBrands();
   const { data: countries } = useCountries();
   const { data: citiesData } = useCities(filters.countryId || undefined);
@@ -57,6 +59,19 @@ export function ListingsFilters({ filters, onFilterChange, onClear }: ListingsFi
           </button>
         )}
       </div>
+
+      {/* Marketplace Selector */}
+      {marketplaces && marketplaces.length > 1 && (
+        <div>
+          <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Майданчик</label>
+          <Select
+            value={filters.marketplaceId}
+            onChange={(v) => onFilterChange('marketplaceId', v)}
+            placeholder="Усі майданчики"
+            options={marketplaces.map((m) => ({ value: m.id, label: m.name }))}
+          />
+        </div>
+      )}
 
       <SearchInput
         value={filters.search}

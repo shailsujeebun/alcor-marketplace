@@ -5,7 +5,15 @@ import { ListingStatus } from '@prisma/client';
 
 export interface SearchQuery {
     q?: string;
+    search?: string;
     category?: string;
+    marketplaceId?: string;
+    categoryId?: string;
+    brandId?: string;
+    condition?: string;
+    priceCurrency?: string;
+    countryId?: string;
+    cityId?: string;
     minPrice?: number;
     maxPrice?: number;
     yearMin?: number;
@@ -22,7 +30,15 @@ export class SearchService {
     async search(query: SearchQuery) {
         const {
             q,
+            search,
             category,
+            marketplaceId,
+            categoryId,
+            brandId,
+            condition,
+            priceCurrency,
+            countryId,
+            cityId,
             minPrice,
             maxPrice,
             yearMin,
@@ -39,14 +55,37 @@ export class SearchService {
             status: ListingStatus.ACTIVE,
         };
 
+        // Marketplace Filter
+        if (marketplaceId) {
+            where.marketplaceId = BigInt(marketplaceId);
+        }
+
         // Keyword Search (Title)
-        if (q) {
-            where.title = { contains: q, mode: 'insensitive' };
+        const keyword = q ?? search;
+        if (keyword) {
+            where.title = { contains: keyword, mode: 'insensitive' };
         }
 
         // Category Filter
         if (category) {
             where.category = { slug: category };
+        }
+
+        // Category ID Filter (used by frontend filters)
+        if (categoryId) {
+            where.categoryId = BigInt(categoryId);
+        }
+
+        if (brandId) {
+            where.brandId = brandId;
+        }
+
+        if (countryId) {
+            where.countryId = countryId;
+        }
+
+        if (cityId) {
+            where.cityId = cityId;
         }
 
         // Fact Filtering (Price, Year)
@@ -71,6 +110,16 @@ export class SearchService {
             if (yearMax !== undefined) where.fact.year.lte = yearMax;
         }
 
+        if (condition) {
+            where.fact = where.fact || {};
+            where.fact.condition = condition;
+        }
+
+        if (priceCurrency) {
+            where.fact = where.fact || {};
+            where.fact.priceCurrency = priceCurrency;
+        }
+
         // Dynamic Attribute Filtering
         // This is tricky with JSONB. We can filter matches in ListingAttribute or ListingFact.
         // ListingFact columns: mileageKm, condition, country, city.
@@ -82,7 +131,7 @@ export class SearchService {
         // Let's implement basic filtering for known keys if provided in attributes
         // AND generic JSON filtering.
 
-        const attrFilters = Object.entries(attributes).filter(([k]) => k !== 'sort' && k !== 'order');
+        const attrFilters = Object.entries(attributes).filter(([k]) => k !== 'sort' && k !== 'order' && k !== 'categoryId' && k !== 'brandId' && k !== 'condition' && k !== 'listingType' && k !== 'euroClass' && k !== 'priceCurrency' && k !== 'countryId' && k !== 'cityId' && k !== 'search' && k !== 'q');
         if (attrFilters.length > 0) {
             // We need to use AND for multiple attributes
             where.attribute = {

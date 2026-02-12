@@ -37,3 +37,4 @@
 - 2026-02-12: `api` lint failed with existing errors (`npm run lint`)
 - 2026-02-12: `web` lint failed with existing errors (`npm run lint`)
 - 2026-02-12: Fixed `react-hooks/set-state-in-effect` warnings in marketplace default selection (no tests rerun)
+- 2026-02-12: Re-ran `web` lint after fix; warnings gone, lint still failing due to existing errors

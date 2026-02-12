@@ -24,7 +24,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller()
 export class ListingsController {
-  constructor(private readonly listingsService: ListingsService) { }
+  constructor(private readonly listingsService: ListingsService) {}
 
   @Post('listings/draft/validate')
   @UseGuards(JwtAuthGuard)
@@ -78,10 +78,7 @@ export class ListingsController {
 
   @Put('listings/:id/contact')
   @UseGuards(JwtAuthGuard)
-  updateContact(
-    @Param('id') id: string,
-    @Body() dto: UpdateListingContactDto,
-  ) {
+  updateContact(@Param('id') id: string, @Body() dto: UpdateListingContactDto) {
     return this.listingsService.updateContact(id, dto);
   }
 

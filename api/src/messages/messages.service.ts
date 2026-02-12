@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { NotificationType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaginatedResponseDto } from '../common';
@@ -10,8 +14,24 @@ const conversationIncludes = {
       media: { orderBy: { sortOrder: 'asc' as const }, take: 1 },
     },
   },
-  buyer: { select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true } },
-  seller: { select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true } },
+  buyer: {
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      avatarUrl: true,
+    },
+  },
+  seller: {
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      avatarUrl: true,
+    },
+  },
 };
 
 @Injectable()
@@ -19,13 +39,20 @@ export class MessagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
-  ) { }
+  ) {}
 
-  async startConversation(buyerId: string, listingId: string, sellerId: string, body: string) {
+  async startConversation(
+    buyerId: string,
+    listingId: string,
+    sellerId: string,
+    body: string,
+  ) {
     const id = BigInt(listingId);
     // Check if conversation already exists
     let conversation = await this.prisma.conversation.findUnique({
-      where: { listingId_buyerId_sellerId: { listingId: id, buyerId, sellerId } },
+      where: {
+        listingId_buyerId_sellerId: { listingId: id, buyerId, sellerId },
+      },
     });
 
     if (!conversation) {
@@ -50,7 +77,10 @@ export class MessagesService {
 
     return this.prisma.conversation.findUnique({
       where: { id: conversation.id },
-      include: { ...conversationIncludes, messages: { orderBy: { createdAt: 'asc' }, take: 50 } },
+      include: {
+        ...conversationIncludes,
+        messages: { orderBy: { createdAt: 'asc' }, take: 50 },
+      },
     });
   }
 
@@ -83,7 +113,15 @@ export class MessagesService {
         messages: {
           orderBy: { createdAt: 'asc' },
           include: {
-            sender: { select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true } },
+            sender: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                avatarUrl: true,
+              },
+            },
           },
         },
       },
@@ -111,14 +149,25 @@ export class MessagesService {
       where: { id: conversationId },
     });
     if (!conversation) throw new NotFoundException('Conversation not found');
-    if (conversation.buyerId !== senderId && conversation.sellerId !== senderId) {
+    if (
+      conversation.buyerId !== senderId &&
+      conversation.sellerId !== senderId
+    ) {
       throw new ForbiddenException('Access denied');
     }
 
     const message = await this.prisma.message.create({
       data: { conversationId, senderId, body },
       include: {
-        sender: { select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true } },
+        sender: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
 
@@ -128,7 +177,10 @@ export class MessagesService {
     });
 
     // Notify the recipient
-    const recipientId = conversation.buyerId === senderId ? conversation.sellerId : conversation.buyerId;
+    const recipientId =
+      conversation.buyerId === senderId
+        ? conversation.sellerId
+        : conversation.buyerId;
     this.notificationsService.create(
       recipientId,
       NotificationType.NEW_MESSAGE,
@@ -192,7 +244,15 @@ export class MessagesService {
         messages: {
           orderBy: { createdAt: 'asc' },
           include: {
-            sender: { select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true } },
+            sender: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                avatarUrl: true,
+              },
+            },
           },
         },
       },

@@ -4,7 +4,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 
 @Controller()
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) { }
+  constructor(private readonly categoriesService: CategoriesService) {}
 
   // ─── Public Marketplaces ─────────────────────────────
   @Get('marketplaces')

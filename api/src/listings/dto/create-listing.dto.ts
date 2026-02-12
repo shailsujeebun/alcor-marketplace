@@ -11,7 +11,12 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ListingCondition, ListingType, PriceType, MediaKind } from '@prisma/client';
+import {
+  ListingCondition,
+  ListingType,
+  PriceType,
+  MediaKind,
+} from '@prisma/client';
 
 class CreateListingMediaDto {
   @IsString()

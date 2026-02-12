@@ -1,10 +1,14 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaginatedResponseDto } from '../common';
 
 @Injectable()
 export class FavoritesService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async addFavorite(userId: string, listingId: string) {
     const id = BigInt(listingId);
@@ -17,7 +21,17 @@ export class FavoritesService {
       where: { userId_listingId: { userId, listingId: id } },
       update: {},
       create: { userId, listingId: id },
-      include: { listing: { include: { media: { orderBy: { sortOrder: 'asc' }, take: 1 }, category: true, brand: true, country: true, city: true } } },
+      include: {
+        listing: {
+          include: {
+            media: { orderBy: { sortOrder: 'asc' }, take: 1 },
+            category: true,
+            brand: true,
+            country: true,
+            city: true,
+          },
+        },
+      },
     });
   }
 

@@ -21,7 +21,8 @@ export class UploadService implements OnModuleInit {
     const endpoint = this.configService.get<string>('s3.endpoint')!;
     const region = this.configService.get<string>('s3.region')!;
     const accessKeyId = this.configService.get<string>('s3.accessKeyId')!;
-    const secretAccessKey = this.configService.get<string>('s3.secretAccessKey')!;
+    const secretAccessKey =
+      this.configService.get<string>('s3.secretAccessKey')!;
 
     this.bucket = this.configService.get<string>('s3.bucket')!;
     this.publicUrl = this.configService.get<string>('s3.publicUrl')!;
@@ -44,7 +45,9 @@ export class UploadService implements OnModuleInit {
         await this.s3.send(new CreateBucketCommand({ Bucket: this.bucket }));
         this.logger.log(`Bucket "${this.bucket}" created`);
       } catch (err) {
-        this.logger.warn(`Could not create bucket: ${err}. Will retry on first upload.`);
+        this.logger.warn(
+          `Could not create bucket: ${err}. Will retry on first upload.`,
+        );
       }
     }
   }
@@ -78,7 +81,10 @@ export class UploadService implements OnModuleInit {
     );
   }
 
-  async getPresignedUrl(folder: string = 'images', contentType: string = 'image/jpeg') {
+  async getPresignedUrl(
+    folder: string = 'images',
+    contentType: string = 'image/jpeg',
+  ) {
     const ext = contentType.split('/')[1] ?? 'jpg';
     const key = `${folder}/${randomUUID()}.${ext}`;
 

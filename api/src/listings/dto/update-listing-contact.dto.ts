@@ -1,24 +1,23 @@
-
 import { IsString, IsEmail, IsOptional, IsBoolean } from 'class-validator';
 
 export class UpdateListingContactDto {
-    @IsString()
-    name!: string;
+  @IsString()
+  name!: string;
 
-    @IsEmail()
-    email!: string;
+  @IsEmail()
+  email!: string;
 
-    @IsString()
-    phoneCountry!: string;
+  @IsString()
+  phoneCountry!: string;
 
-    @IsString()
-    phoneNumber!: string;
+  @IsString()
+  phoneNumber!: string;
 
-    @IsOptional()
-    @IsBoolean()
-    privacyConsent?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  privacyConsent?: boolean;
 
-    @IsOptional()
-    @IsBoolean()
-    termsConsent?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  termsConsent?: boolean;
 }

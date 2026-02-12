@@ -1,5 +1,9 @@
 // @ts-nocheck
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { ListingStatus, NotificationType, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaginatedResponseDto } from '../common';
@@ -28,7 +32,9 @@ const listingIncludes = {
   city: true,
   media: { orderBy: { sortOrder: 'asc' as const } },
   attribute: true,
-  ownerUser: { select: { id: true, email: true, firstName: true, lastName: true } },
+  ownerUser: {
+    select: { id: true, email: true, firstName: true, lastName: true },
+  },
 };
 
 @Injectable()
@@ -36,31 +42,54 @@ export class ListingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
-  ) { }
+  ) {}
 
-  async create(dto: CreateListingDto, ownerUserId?: string, callerRole?: string) {
+  async create(
+    dto: CreateListingDto,
+    ownerUserId?: string,
+    callerRole?: string,
+  ) {
     console.log('=== CREATE METHOD CALLED ===');
     console.log('DTO:', JSON.stringify(dto, null, 2));
     console.log('ownerUserId:', ownerUserId);
     console.log('callerRole:', callerRole);
 
     const {
-      media, attributes, companyId, categoryId, brandId, countryId, cityId,
+      media,
+      attributes,
+      companyId,
+      categoryId,
+      brandId,
+      countryId,
+      cityId,
       sellerPhones,
-      priceAmount, priceCurrency, priceType, condition, year,
-      hoursValue, hoursUnit, listingType, euroClass,
-      sellerName, sellerEmail, externalUrl, isVideo,
+      priceAmount,
+      priceCurrency,
+      priceType,
+      condition,
+      year,
+      hoursValue,
+      hoursUnit,
+      listingType,
+      euroClass,
+      sellerName,
+      sellerEmail,
+      externalUrl,
+      isVideo,
       ...rest
     } = dto;
 
     // Admin/Manager listings are auto-published; regular users start as DRAFT
-    const isPrivileged = callerRole === UserRole.ADMIN || callerRole === UserRole.MANAGER;
+    const isPrivileged =
+      callerRole === UserRole.ADMIN || callerRole === UserRole.MANAGER;
     const status = isPrivileged ? ListingStatus.ACTIVE : ListingStatus.DRAFT;
 
     // Fetch category to get marketplaceId
     let marketplaceId: bigint | undefined;
     if (categoryId) {
-      const cat = await this.prisma.category.findUnique({ where: { id: BigInt(categoryId) } });
+      const cat = await this.prisma.category.findUnique({
+        where: { id: BigInt(categoryId) },
+      });
       if (!cat) throw new NotFoundException('Category not found');
       marketplaceId = cat.marketplaceId;
     }
@@ -68,12 +97,13 @@ export class ListingsService {
     if (!marketplaceId && categoryId) {
       throw new BadRequestException('Category must belong to a marketplace');
     }
-    // If no categoryId, we might fail validation if marketplaceId is required. 
+    // If no categoryId, we might fail validation if marketplaceId is required.
     // Schema says marketplaceId is required. So categoryId is effectively required for now unless we look it up from elsewhere.
     if (!marketplaceId) {
-      throw new BadRequestException('Category is required to determine marketplace');
+      throw new BadRequestException(
+        'Category is required to determine marketplace',
+      );
     }
-
 
     let listing;
     try {
@@ -92,7 +122,9 @@ export class ListingsService {
           marketplace: { connect: { id: marketplaceId } },
           company: { connect: { id: companyId } },
           ownerUser: ownerUserId ? { connect: { id: ownerUserId } } : undefined,
-          category: categoryId ? { connect: { id: BigInt(categoryId) } } : undefined,
+          category: categoryId
+            ? { connect: { id: BigInt(categoryId) } }
+            : undefined,
           brand: brandId ? { connect: { id: brandId } } : undefined,
           country: countryId ? { connect: { id: countryId } } : undefined,
           city: cityId ? { connect: { id: cityId } } : undefined,
@@ -104,7 +136,7 @@ export class ListingsService {
               priceCurrency,
               year,
               condition,
-            }
+            },
           },
           media: media ? { createMany: { data: media } } : undefined,
           attributes: attributes
@@ -170,11 +202,21 @@ export class ListingsService {
 
     let orderBy: Record<string, string> = { createdAt: 'desc' };
     switch (query.sort) {
-      case 'publishedAt': orderBy = { publishedAt: 'desc' }; break;
-      case 'priceAsc': orderBy = { priceAmount: 'asc' }; break;
-      case 'priceDesc': orderBy = { priceAmount: 'desc' }; break;
-      case 'yearDesc': orderBy = { year: 'desc' }; break;
-      case 'yearAsc': orderBy = { year: 'asc' }; break;
+      case 'publishedAt':
+        orderBy = { publishedAt: 'desc' };
+        break;
+      case 'priceAsc':
+        orderBy = { priceAmount: 'asc' };
+        break;
+      case 'priceDesc':
+        orderBy = { priceAmount: 'desc' };
+        break;
+      case 'yearDesc':
+        orderBy = { year: 'desc' };
+        break;
+      case 'yearAsc':
+        orderBy = { year: 'asc' };
+        break;
     }
 
     const [data, total] = await Promise.all([
@@ -247,7 +289,16 @@ export class ListingsService {
     console.log('ID:', id, 'Type:', typeof id);
     console.log('DTO keys:', Object.keys(dto));
 
-    const { media, attributes, categoryId, brandId, countryId, cityId, sellerPhones, ...rest } = dto;
+    const {
+      media,
+      attributes,
+      categoryId,
+      brandId,
+      countryId,
+      cityId,
+      sellerPhones,
+      ...rest
+    } = dto;
 
     return this.prisma.$transaction(async (tx) => {
       if (media !== undefined) {
@@ -263,7 +314,9 @@ export class ListingsService {
       }
 
       if (attributes !== undefined) {
-        await tx.listingAttribute.deleteMany({ where: { listingId: BigInt(id) } });
+        await tx.listingAttribute.deleteMany({
+          where: { listingId: BigInt(id) },
+        });
         if (attributes.length > 0) {
           await tx.listingAttribute.createMany({
             data: attributes.map((a) => ({ ...a, listingId: BigInt(id) })),
@@ -276,18 +329,30 @@ export class ListingsService {
         data: {
           ...rest,
           sellerPhones: sellerPhones,
-          category: categoryId !== undefined
-            ? categoryId ? { connect: { id: BigInt(categoryId) } } : { disconnect: true }
-            : undefined,
-          brand: brandId !== undefined
-            ? brandId ? { connect: { id: brandId } } : { disconnect: true }
-            : undefined,
-          country: countryId !== undefined
-            ? countryId ? { connect: { id: countryId } } : { disconnect: true }
-            : undefined,
-          city: cityId !== undefined
-            ? cityId ? { connect: { id: cityId } } : { disconnect: true }
-            : undefined,
+          category:
+            categoryId !== undefined
+              ? categoryId
+                ? { connect: { id: BigInt(categoryId) } }
+                : { disconnect: true }
+              : undefined,
+          brand:
+            brandId !== undefined
+              ? brandId
+                ? { connect: { id: brandId } }
+                : { disconnect: true }
+              : undefined,
+          country:
+            countryId !== undefined
+              ? countryId
+                ? { connect: { id: countryId } }
+                : { disconnect: true }
+              : undefined,
+          city:
+            cityId !== undefined
+              ? cityId
+                ? { connect: { id: cityId } }
+                : { disconnect: true }
+              : undefined,
         },
         include: listingIncludes,
       });
@@ -338,9 +403,16 @@ export class ListingsService {
     // 4. Attributes
     if (listing.categoryId) {
       const attrData = (listing.attribute?.data as Record<string, any>) || {};
-      const attrValidation = await this.validateDraft(listing.categoryId.toString(), attrData);
+      const attrValidation = await this.validateDraft(
+        listing.categoryId.toString(),
+        attrData,
+      );
       if (!attrValidation.success) {
-        errors.push(...attrValidation.errors.map(e => `Attribute ${e.field}: ${e.message}`));
+        errors.push(
+          ...attrValidation.errors.map(
+            (e) => `Attribute ${e.field}: ${e.message}`,
+          ),
+        );
       }
     }
 
@@ -397,7 +469,10 @@ export class ListingsService {
 
   async reject(id: string, reason: string) {
     const listing = await this.findById(id);
-    if (listing.status !== ListingStatus.SUBMITTED && listing.status !== ListingStatus.PENDING_MODERATION) {
+    if (
+      listing.status !== ListingStatus.SUBMITTED &&
+      listing.status !== ListingStatus.PENDING_MODERATION
+    ) {
       throw new BadRequestException(
         `Cannot reject listing in ${listing.status} status`,
       );
@@ -450,7 +525,10 @@ export class ListingsService {
 
   async resubmit(id: string) {
     const listing = await this.findById(id);
-    if (listing.status !== ListingStatus.REJECTED && listing.status !== ListingStatus.EXPIRED) {
+    if (
+      listing.status !== ListingStatus.REJECTED &&
+      listing.status !== ListingStatus.EXPIRED
+    ) {
       throw new BadRequestException(
         `Cannot resubmit listing in ${listing.status} status`,
       );
@@ -489,7 +567,10 @@ export class ListingsService {
   }
   // ─── Draft Validation ──────────────────────────────
 
-  async validateDraft(categoryId: string, attributes: Record<string, any> = {}) {
+  async validateDraft(
+    categoryId: string,
+    attributes: Record<string, any> = {},
+  ) {
     // 1. Fetch active template for category
     const category = await this.prisma.category.findUnique({
       where: { id: BigInt(categoryId) },
@@ -520,8 +601,14 @@ export class ListingsService {
       const value = attributes[field.fieldKey];
 
       // Check required
-      if (field.required && (value === undefined || value === null || value === '')) {
-        errors.push({ field: field.fieldKey, message: 'This field is required' });
+      if (
+        field.required &&
+        (value === undefined || value === null || value === '')
+      ) {
+        errors.push({
+          field: field.fieldKey,
+          message: 'This field is required',
+        });
         continue;
       }
 
@@ -541,10 +628,16 @@ export class ListingsService {
         if (field.validations) {
           const rules = field.validations as Record<string, any>;
           if (rules.min !== undefined && Number(value) < rules.min) {
-            errors.push({ field: field.fieldKey, message: `Minimum value is ${rules.min}` });
+            errors.push({
+              field: field.fieldKey,
+              message: `Minimum value is ${rules.min}`,
+            });
           }
           if (rules.max !== undefined && Number(value) > rules.max) {
-            errors.push({ field: field.fieldKey, message: `Maximum value is ${rules.max}` });
+            errors.push({
+              field: field.fieldKey,
+              message: `Maximum value is ${rules.max}`,
+            });
           }
         }
       }
@@ -567,11 +660,16 @@ export class ListingsService {
     }
 
     if (!listing.categoryId) {
-      throw new BadRequestException('Listing does not have a category assigned');
+      throw new BadRequestException(
+        'Listing does not have a category assigned',
+      );
     }
 
     // Validate attributes
-    const validation = await this.validateDraft(listing.categoryId.toString(), attributes);
+    const validation = await this.validateDraft(
+      listing.categoryId.toString(),
+      attributes,
+    );
     if (!validation.success) {
       throw new BadRequestException({
         message: 'Validation failed',

@@ -182,15 +182,14 @@ export class AuthService {
 
     const codeHash = await this.hashToken(code);
 
-    const verificationCode =
-      await this.prisma.emailVerificationCode.findFirst({
-        where: {
-          userId: user.id,
-          codeHash,
-          usedAt: null,
-          expiresAt: { gt: new Date() },
-        },
-      });
+    const verificationCode = await this.prisma.emailVerificationCode.findFirst({
+      where: {
+        userId: user.id,
+        codeHash,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    });
 
     if (!verificationCode) {
       throw new UnauthorizedException('Invalid or expired verification code');

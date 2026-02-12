@@ -13,7 +13,7 @@ export interface CategoryTreeNode {
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   create(dto: CreateCategoryDto) {
     const parentId = dto.parentId ? BigInt(dto.parentId) : undefined;

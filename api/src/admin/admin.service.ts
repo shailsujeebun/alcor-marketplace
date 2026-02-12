@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   // ─── Marketplaces ────────────────────────────────────
 
@@ -22,7 +22,10 @@ export class AdminService {
     });
   }
 
-  async updateMarketplace(id: number, data: { name?: string; isActive?: boolean }) {
+  async updateMarketplace(
+    id: number,
+    data: { name?: string; isActive?: boolean },
+  ) {
     return this.prisma.marketplace.update({
       where: { id },
       data,
@@ -50,12 +53,15 @@ export class AdminService {
     });
   }
 
-  async updateCategory(id: number, data: {
-    name?: string;
-    slug?: string;
-    parentId?: number;
-    sortOrder?: number;
-  }) {
+  async updateCategory(
+    id: number,
+    data: {
+      name?: string;
+      slug?: string;
+      parentId?: number;
+      sortOrder?: number;
+    },
+  ) {
     return this.prisma.category.update({
       where: { id },
       data,
@@ -73,7 +79,11 @@ export class AdminService {
 
   // ─── Form Templates ──────────────────────────────────
 
-  async createTemplate(data: { categoryId: number; name?: string; fields: any[] }) {
+  async createTemplate(data: {
+    categoryId: number;
+    name?: string;
+    fields: any[];
+  }) {
     // 1. Create the template
     const template = await this.prisma.formTemplate.create({
       data: {

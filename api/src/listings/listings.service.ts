@@ -79,6 +79,10 @@ export class ListingsService {
       ...rest
     } = dto;
 
+    const attributesData = attributes && attributes.length > 0
+      ? Object.fromEntries(attributes.map((a) => [a.key, a.value]))
+      : undefined;
+
     // Admin/Manager listings are auto-published; regular users start as DRAFT
     const isPrivileged =
       callerRole === UserRole.ADMIN || callerRole === UserRole.MANAGER;
@@ -138,9 +142,18 @@ export class ListingsService {
               condition,
             },
           },
-          media: media ? { createMany: { data: media } } : undefined,
-          attributes: attributes
-            ? { createMany: { data: attributes } }
+          media: media
+            ? {
+                createMany: {
+                  data: media.map((m) => {
+                    const { key, ...mediaData } = m;
+                    return mediaData;
+                  }),
+                },
+              }
+            : undefined,
+          attribute: attributesData
+            ? { create: { data: attributesData } }
             : undefined,
         },
         include: listingIncludes,
@@ -300,6 +313,10 @@ export class ListingsService {
       ...rest
     } = dto;
 
+    const attributesData = attributes && attributes.length > 0
+      ? Object.fromEntries(attributes.map((a) => [a.key, a.value]))
+      : undefined;
+
     return this.prisma.$transaction(async (tx) => {
       if (media !== undefined) {
         await tx.listingMedia.deleteMany({ where: { listingId: BigInt(id) } });
@@ -314,12 +331,20 @@ export class ListingsService {
       }
 
       if (attributes !== undefined) {
-        await tx.listingAttribute.deleteMany({
-          where: { listingId: BigInt(id) },
-        });
-        if (attributes.length > 0) {
-          await tx.listingAttribute.createMany({
-            data: attributes.map((a) => ({ ...a, listingId: BigInt(id) })),
+        if (attributesData) {
+          await tx.listingAttribute.upsert({
+            where: { listingId: BigInt(id) },
+            create: {
+              listingId: BigInt(id),
+              data: attributesData,
+            },
+            update: {
+              data: attributesData,
+            },
+          });
+        } else {
+          await tx.listingAttribute.deleteMany({
+            where: { listingId: BigInt(id) },
           });
         }
       }

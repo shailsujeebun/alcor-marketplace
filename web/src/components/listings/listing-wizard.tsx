@@ -62,6 +62,7 @@ function initMedia(listing?: Listing): MediaItem[] {
   return listing.media.map((m) => ({
     id: m.id,
     url: m.url,
+    type: m.type ?? 'PHOTO',
     isExisting: true,
   }));
 }

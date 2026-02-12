@@ -1,11 +1,45 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Loader2 } from 'lucide-react';
 import { useWizard } from './wizard-context';
 import { useAuthStore } from '@/stores/auth-store';
-import { useCompanies, useCreateListing, useUpdateListing } from '@/lib/queries';
+import { useCompanies, useCreateCompany, useCreateListing, useUpdateListing } from '@/lib/queries';
 import type { CreateListingPayload, Listing } from '@/types/api';
+
+const UA_TRANSLIT: Record<string, string> = {
+    а: 'a', б: 'b', в: 'v', г: 'h', ґ: 'g', д: 'd', е: 'e', є: 'ye',
+    ж: 'zh', з: 'z', и: 'y', і: 'i', ї: 'yi', й: 'y', к: 'k', л: 'l',
+    м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u',
+    ф: 'f', х: 'kh', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'shch', ь: '',
+    ю: 'yu', я: 'ya',
+};
+
+function slugifyCompany(input: string): string {
+    const lower = input.toLowerCase().trim();
+    let out = '';
+    for (const ch of lower) {
+        if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) {
+            out += ch;
+            continue;
+        }
+        if (UA_TRANSLIT[ch]) {
+            out += UA_TRANSLIT[ch];
+            continue;
+        }
+        if (ch === ' ' || ch === '-' || ch === '_') {
+            out += '-';
+            continue;
+        }
+        if (ch === '\'' || ch === '’' || ch === 'ʼ') {
+            continue;
+        }
+        out += '-';
+    }
+    const slug = out.replace(/-+/g, '-').replace(/^-|-$/g, '');
+    return slug || 'company';
+}
 
 export function ContactStep() {
     const {
@@ -23,8 +57,13 @@ export function ContactStep() {
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER';
     const isEditing = !!listing;
 
-    const { data: companiesData } = useCompanies({ limit: '200' });
+    const { data: companiesData } = useCompanies({ limit: '100' });
     const companies = companiesData?.data ?? [];
+
+    const createCompanyMutation = useCreateCompany();
+    const [showCreateCompany, setShowCreateCompany] = useState(false);
+    const [newCompanyName, setNewCompanyName] = useState('');
+    const [newCompanySlug, setNewCompanySlug] = useState('');
 
     const createMutation = useCreateListing();
     const updateMutation = useUpdateListing();
@@ -38,6 +77,23 @@ export function ContactStep() {
         setForm((prev) => ({ ...prev, companyId: e.target.value }));
     };
 
+    const handleCreateCompany = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const name = newCompanyName.trim();
+        if (!name) return;
+        const slug = (newCompanySlug || slugifyCompany(name)).toLowerCase();
+        try {
+            const created = await createCompanyMutation.mutateAsync({ name, slug });
+            setForm((prev) => ({ ...prev, companyId: created.id }));
+            setNewCompanyName('');
+            setNewCompanySlug('');
+            setShowCreateCompany(false);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            setError(`Помилка створення компанії: ${message}`);
+        }
+    };
+
     const handleBack = () => {
         setCurrentStep(2);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -49,9 +105,14 @@ export function ContactStep() {
         setSuccess('');
 
         try {
+            if (user && !isEditing && !form.companyId) {
+                setError('Оберіть компанію або створіть нову.');
+                return;
+            }
             const mediaPayload = media.map((m, i) => ({
                 url: m.url,
                 key: m.key,
+                type: m.type ?? 'PHOTO',
                 sortOrder: i,
             }));
 
@@ -148,6 +209,56 @@ export function ContactStep() {
                                 <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
                         </select>
+                        <div className="mt-3 flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowCreateCompany((prev) => !prev)}
+                                className="text-sm text-blue-bright hover:text-blue-light transition-colors"
+                            >
+                                {showCreateCompany ? 'Скасувати' : 'Додати компанію'}
+                            </button>
+                            {companies.length === 0 && (
+                                <span className="text-xs text-[var(--text-secondary)]">
+                                    Компаній немає — додайте нову.
+                                </span>
+                            )}
+                        </div>
+
+                        {showCreateCompany && (
+                            <form onSubmit={handleCreateCompany} className="mt-4 space-y-3">
+                                <div>
+                                    <label className={labelClass}>Назва компанії</label>
+                                    <input
+                                        type="text"
+                                        value={newCompanyName}
+                                        onChange={(e) => setNewCompanyName(e.target.value)}
+                                        className={inputClass}
+                                        placeholder="Наприклад: AgroTech LLC"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Slug (URL)</label>
+                                    <input
+                                        type="text"
+                                        value={newCompanySlug}
+                                        onChange={(e) => setNewCompanySlug(e.target.value)}
+                                        className={inputClass}
+                                        placeholder={slugifyCompany(newCompanyName || 'company')}
+                                    />
+                                    <p className="text-xs text-[var(--text-secondary)] mt-1">
+                                        Якщо порожньо — створимо автоматично.
+                                    </p>
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={createCompanyMutation.isPending}
+                                    className="px-4 py-2 rounded-lg border border-[var(--border-color)] text-[var(--text-primary)] hover:border-blue-bright/50 transition-colors text-sm"
+                                >
+                                    {createCompanyMutation.isPending ? 'Створення...' : 'Створити компанію'}
+                                </button>
+                            </form>
+                        )}
                     </div>
                 )}
 

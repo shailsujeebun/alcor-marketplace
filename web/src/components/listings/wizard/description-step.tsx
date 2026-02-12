@@ -1,5 +1,6 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { useWizard } from './wizard-context';
 import { useCategories, useBrands, useCountries, useCities, useCategoryTemplate } from '@/lib/queries';
 import { DynamicForm } from '../dynamic-form';
@@ -24,9 +25,11 @@ function buildLeafCategories(categories: Category[]): Array<{ id: string; label:
 }
 
 export function DescriptionStep() {
+    const searchParams = useSearchParams();
     const { form, setForm, setCurrentStep } = useWizard();
 
-    const { data: categories } = useCategories();
+    const marketplaceId = searchParams.get('marketplaceId') ?? undefined;
+    const { data: categories } = useCategories(marketplaceId);
     const { data: brands } = useBrands();
     const { data: countries } = useCountries();
     const { data: citiesData } = useCities(form.countryId || undefined);

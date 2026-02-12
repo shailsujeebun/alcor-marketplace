@@ -9,6 +9,7 @@ import type {
   Conversation,
   Country,
   CreateConversationPayload,
+  CreateCompanyPayload,
   CreateDealerLeadPayload,
   CreateListingPayload,
   CreateReviewPayload,
@@ -96,6 +97,12 @@ export const getCompanies = (params?: URLSearchParams) =>
 
 export const getCompanyBySlug = (slug: string) =>
   fetchApi<Company>(`/companies/${slug}`);
+
+export const createCompany = (data: CreateCompanyPayload) =>
+  fetchApi<Company>('/companies', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 
 export const getCompanyReviews = (companyId: string, params?: URLSearchParams) =>
   fetchApi<PaginatedResponse<CompanyReview>>(`/companies/${companyId}/reviews?${params?.toString() ?? ''}`);
@@ -467,6 +474,7 @@ export const updateListingContact = (id: string, data: ContactPayload) =>
 export interface PresignedUploadResponse {
   uploadUrl: string;
   key: string;
+  publicUrl: string;
 }
 
 export const getPresignedUploadUrl = () =>

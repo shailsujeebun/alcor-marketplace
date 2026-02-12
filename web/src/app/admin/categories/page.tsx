@@ -147,18 +147,15 @@ export default function AdminCategoriesPage() {
             // Actually, getCategories() returns plain list in current implementation?
             // Let's implement a fetcher here for now or update API.
             // Actually, let's fetch ALL and filter client side if the API is small.
-
+            setCategories([]);
             loadCategories();
         }
     }, [selectedMarketplace]);
 
     async function loadCategories() {
         try {
-            const allCats = await getCategories();
-            // Filter by marketplace is handled by backend usually. 
-            // For now, let's assume getCategories returns valid tree.
-            // We'll trust the public endpoint for now.
-            setCategories(allCats);
+            const scopedCats = await getCategories(selectedMarketplace);
+            setCategories(scopedCats);
         } catch (e) {
             console.error(e);
         }

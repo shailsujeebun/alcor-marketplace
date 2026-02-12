@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from './api';
 import type {
   CreateConversationPayload,
+  CreateCompanyPayload,
   CreateDealerLeadPayload,
   CreateListingPayload,
   CreateReviewPayload,
@@ -63,6 +64,16 @@ export function useCompanyListings(companyId: string, params: Record<string, str
     queryKey: ['company-listings', companyId, params],
     queryFn: () => api.getCompanyListings(companyId, searchParams),
     enabled: !!companyId,
+  });
+}
+
+export function useCreateCompany() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateCompanyPayload) => api.createCompany(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+    },
   });
 }
 
@@ -690,9 +701,9 @@ export function useUpdateListingContact() {
 export function usePresignedUpload() {
   return useMutation({
     mutationFn: async (file: File) => {
-      const { uploadUrl, key } = await api.getPresignedUploadUrl();
+      const { uploadUrl, key, publicUrl } = await api.getPresignedUploadUrl();
       await api.uploadToS3(uploadUrl, file);
-      return { key, url: uploadUrl.split('?')[0] }; // Return the base URL without query params
+      return { key, url: publicUrl };
     },
   });
 }

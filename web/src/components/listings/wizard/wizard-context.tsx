@@ -33,6 +33,7 @@ export interface MediaItem {
     key?: string;
     file?: File;
     isExisting?: boolean;
+    type?: 'PHOTO' | 'VIDEO' | 'PDF' | 'GALLERY' | 'COVER' | 'LOGO';
 }
 
 interface WizardContextType {

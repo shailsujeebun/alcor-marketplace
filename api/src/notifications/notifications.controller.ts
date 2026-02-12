@@ -1,4 +1,12 @@
-import { Controller, Get, Patch, Post, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Post,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -14,7 +22,11 @@ export class NotificationsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.notificationsService.findByUser(userId, page ? +page : 1, limit ? +limit : 20);
+    return this.notificationsService.findByUser(
+      userId,
+      page ? +page : 1,
+      limit ? +limit : 20,
+    );
   }
 
   @Get('unread-count')

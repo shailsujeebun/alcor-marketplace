@@ -11,6 +11,8 @@ The Ad Placement system has been significantly refactored to support a **Guest F
 - **Draft Persistence**: Listing data is saved to `localStorage` (`listing_draft`) as the user types.
 - **Smart Restore**: When a guest registers or logs in after starting an ad, the draft is automatically restored into the form.
 - **Guest Uploads**: The API has been updated to allow unauthenticated image uploads for draft listings.
+- **Marketplace Tabs**: Category selection starts with a marketplace selector, and categories are scoped to the chosen marketplace.
+- **Leaf-Only Selection**: Ads can be placed in subcategories, or in a main category only if it has no children.
 
 ### 2. Multi-Step Wizard UI
 Refactored from a single monolithic form into a structured 3-step process:
@@ -83,7 +85,9 @@ web/src/components/listings/
 
 ## Key API Endpoints Used
 
+- `GET /marketplaces`
 - `GET /categories`: Category tree
+- `GET /categories?marketplaceId=...`: Category tree scoped to marketplace
 - `GET /categories/:id/template`: Dynamic form fields
 - `POST /upload/images`: Image upload (Public)
 - `POST /listings`: Create listing (Authenticated)

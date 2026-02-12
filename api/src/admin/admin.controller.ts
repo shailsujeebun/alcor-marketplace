@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -8,7 +18,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'MANAGER')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) { }
+  constructor(private readonly adminService: AdminService) {}
 
   @Get('stats')
   getStats() {
@@ -28,32 +38,39 @@ export class AdminController {
   }
 
   @Patch('marketplaces/:id')
-  updateMarketplace(@Param('id', ParseIntPipe) id: number, @Body() body: { name?: string; isActive?: boolean }) {
+  updateMarketplace(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { name?: string; isActive?: boolean },
+  ) {
     return this.adminService.updateMarketplace(id, body);
   }
 
   // ─── Categories ──────────────────────────────────────
 
   @Post('categories')
-  createCategory(@Body() body: {
-    marketplaceId: number;
-    name: string;
-    slug: string;
-    parentId?: number;
-    sortOrder?: number;
-  }) {
+  createCategory(
+    @Body()
+    body: {
+      marketplaceId: number;
+      name: string;
+      slug: string;
+      parentId?: number;
+      sortOrder?: number;
+    },
+  ) {
     return this.adminService.createCategory(body);
   }
 
   @Patch('categories/:id')
   updateCategory(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: {
+    @Body()
+    body: {
       name?: string;
       slug?: string;
       parentId?: number;
       sortOrder?: number;
-    }
+    },
   ) {
     return this.adminService.updateCategory(id, body);
   }
@@ -66,7 +83,9 @@ export class AdminController {
   // ─── Form Templates ──────────────────────────────────
 
   @Post('templates')
-  createTemplate(@Body() body: { categoryId: number; name?: string; fields: any[] }) {
+  createTemplate(
+    @Body() body: { categoryId: number; name?: string; fields: any[] },
+  ) {
     return this.adminService.createTemplate(body);
   }
 

@@ -1,7 +1,7 @@
 export type ListingCondition = 'NEW' | 'USED' | 'DEMO';
 export type PriceType = 'FIXED' | 'NEGOTIABLE' | 'ON_REQUEST';
 export type ListingType = 'SALE' | 'RENT' | 'FROM_MANUFACTURER';
-export type MediaKind = 'LOGO' | 'COVER' | 'GALLERY';
+export type MediaKind = 'LOGO' | 'COVER' | 'GALLERY' | 'PHOTO' | 'VIDEO' | 'PDF';
 export type ListingStatus = 'DRAFT' | 'SUBMITTED' | 'PENDING_MODERATION' | 'ACTIVE' | 'PAUSED' | 'EXPIRED' | 'REJECTED' | 'REMOVED';
 export type DealerLeadStatus = 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'PACKAGE_SELECTED' | 'CONVERTED' | 'REJECTED';
 
@@ -29,11 +29,19 @@ export interface ActivityType {
   name: string;
 }
 
+export interface Marketplace {
+  id: string;
+  key: string;
+  name: string;
+  isActive: boolean;
+}
+
 export interface Category {
   id: string;
   slug: string;
   name: string;
   parentId: string | null;
+  marketplaceId: string;
   children?: Category[];
 }
 
@@ -94,10 +102,19 @@ export interface CompanyReview {
   createdAt: string;
 }
 
+export interface CreateCompanyPayload {
+  name: string;
+  slug: string;
+  description?: string;
+  countryId?: string;
+  cityId?: string;
+}
+
 export interface ListingMedia {
   id: string;
   url: string;
   sortOrder: number;
+  type?: MediaKind;
 }
 
 export interface ListingAttribute {

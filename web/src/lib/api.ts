@@ -9,6 +9,7 @@ import type {
   Conversation,
   Country,
   CreateConversationPayload,
+  CreateCompanyPayload,
   CreateDealerLeadPayload,
   CreateListingPayload,
   CreateReviewPayload,
@@ -16,6 +17,7 @@ import type {
   DealerLead,
   Favorite,
   Listing,
+  Marketplace,
   PaginatedResponse,
   ReplyTicketPayload,
   SendMessagePayload,
@@ -95,6 +97,12 @@ export const getCompanies = (params?: URLSearchParams) =>
 
 export const getCompanyBySlug = (slug: string) =>
   fetchApi<Company>(`/companies/${slug}`);
+
+export const createCompany = (data: CreateCompanyPayload) =>
+  fetchApi<Company>('/companies', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 
 export const getCompanyReviews = (companyId: string, params?: URLSearchParams) =>
   fetchApi<PaginatedResponse<CompanyReview>>(`/companies/${companyId}/reviews?${params?.toString() ?? ''}`);
@@ -363,7 +371,9 @@ export const getMySubscription = () =>
   fetchApi<import('@/types/api').Subscription | null>('/subscriptions/me');
 
 // Reference data
-export const getCategories = () => fetchApi<Category[]>('/categories');
+export const getMarketplaces = () => fetchApi<Marketplace[]>('/marketplaces');
+export const getCategories = (marketplaceId?: string) =>
+  fetchApi<Category[]>(`/categories${marketplaceId ? `?marketplaceId=${marketplaceId}` : ''}`);
 export const getBrands = () => fetchApi<Brand[]>('/brands');
 export const getCountries = () => fetchApi<Country[]>('/countries');
 export const getCities = (countryId?: string) =>
@@ -464,6 +474,7 @@ export const updateListingContact = (id: string, data: ContactPayload) =>
 export interface PresignedUploadResponse {
   uploadUrl: string;
   key: string;
+  publicUrl: string;
 }
 
 export const getPresignedUploadUrl = () =>

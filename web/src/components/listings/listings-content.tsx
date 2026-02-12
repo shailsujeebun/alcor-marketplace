@@ -8,6 +8,7 @@ import { ListingsFilters } from './listings-filters';
 import { ListingsGrid } from './listings-grid';
 
 interface FiltersState {
+  marketplaceId: string;
   search: string;
   categoryId: string;
   brandId: string;
@@ -25,6 +26,7 @@ interface FiltersState {
 }
 
 const emptyFilters: FiltersState = {
+  marketplaceId: '',
   search: '',
   categoryId: '',
   brandId: '',
@@ -63,11 +65,29 @@ export function ListingsContent() {
   const { data, isLoading } = useSearchListings(queryParams);
 
   const updateFilter = useCallback((key: keyof FiltersState, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters((prev) => {
+      const next = { ...prev, [key]: value };
+      // When marketplace changes, reset category (categories are marketplace-scoped)
+      if (key === 'marketplaceId') {
+        next.categoryId = '';
+      }
+      // When country changes, reset city
+      if (key === 'countryId') {
+        next.cityId = '';
+      }
+      return next;
+    });
     setPage(1);
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set(key, value);
     else params.delete(key);
+    // Also clear dependent fields in URL
+    if (key === 'marketplaceId') {
+      params.delete('categoryId');
+    }
+    if (key === 'countryId') {
+      params.delete('cityId');
+    }
     params.set('page', '1');
     router.replace(`/listings?${params.toString()}`, { scroll: false });
   }, [searchParams, router]);

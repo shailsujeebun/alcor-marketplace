@@ -10,6 +10,7 @@ export interface MediaItem {
     key?: string;
     isExisting?: boolean;
     file?: File;
+    type?: 'PHOTO' | 'VIDEO' | 'PDF' | 'GALLERY' | 'COVER' | 'LOGO';
 }
 
 interface MediaUploaderProps {
@@ -35,7 +36,7 @@ export function MediaUploader({ media, onChange, maxFiles = 10 }: MediaUploaderP
 
             for (const file of filesToUpload) {
                 const { key, url } = await uploadMutation.mutateAsync(file);
-                uploadedMedia.push({ url, key, file });
+                uploadedMedia.push({ url, key, file, type: 'PHOTO' });
             }
 
             onChange([...media, ...uploadedMedia]);

@@ -4,6 +4,50 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
 
+const UA_TRANSLIT: Record<string, string> = {
+  а: 'a', б: 'b', в: 'v', г: 'h', ґ: 'g', д: 'd', е: 'e', є: 'ye',
+  ж: 'zh', з: 'z', и: 'y', і: 'i', ї: 'yi', й: 'y', к: 'k', л: 'l',
+  м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u',
+  ф: 'f', х: 'kh', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'shch', ь: '',
+  ю: 'yu', я: 'ya',
+};
+
+function slugifyUa(input: string): string {
+  const lower = input.toLowerCase().trim();
+  let out = '';
+  for (const ch of lower) {
+    if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) {
+      out += ch;
+      continue;
+    }
+    if (UA_TRANSLIT[ch]) {
+      out += UA_TRANSLIT[ch];
+      continue;
+    }
+    if (ch === ' ' || ch === '-' || ch === '_') {
+      out += '-';
+      continue;
+    }
+    if (ch === '\'' || ch === '’' || ch === 'ʼ') {
+      continue;
+    }
+    out += '-';
+  }
+  return out.replace(/-+/g, '-').replace(/^-|-$/g, '');
+}
+
+function makeUniqueSlug(base: string, used: Set<string>, parentSlug?: string): string {
+  let slug = base;
+  if (!used.has(slug)) return slug;
+  if (parentSlug) {
+    slug = `${parentSlug}-${base}`;
+    if (!used.has(slug)) return slug;
+  }
+  let i = 2;
+  while (used.has(`${slug}-${i}`)) i += 1;
+  return `${slug}-${i}`;
+}
+
 async function main() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const adapter = new PrismaPg(pool);
@@ -350,6 +394,8 @@ async function main() {
     { key: 'commercial', name: 'Комерційний транспорт' },
     { key: 'industrial', name: 'Промислове обладнання' },
     { key: 'cars', name: 'Легкові авто' },
+    { key: 'agroline', name: 'Агролайн' },
+    { key: 'autoline', name: 'Автолайн' },
   ];
 
   const mpMap: Record<string, bigint> = {};
@@ -482,6 +528,83 @@ async function main() {
       catMpMap[cat.slug] = mpId;
     }
   }
+
+  // ─── Agroline / Autoline Trees ───────────────────
+  const agrolineTree = [
+    { name: 'Трактори', children: ['Колісні трактори', 'Мінітрактори', 'Гусеничні трактори', 'Мототрактори', 'Садові трактори'] },
+    { name: 'Комбайни', children: ['Зернозбиральні комбайни', 'Кормозбиральні комбайни', 'Бурякозбиральні комбайни'] },
+    { name: 'Жниварки', children: ['Зернові жниварки', 'Кукурудзяні жниварки', 'Соняшникові жниварки'] },
+    { name: 'Ґрунтообробна техніка', children: ['Плуги', 'Борони', 'Культиватори', 'Глибокорозпушувачі'] },
+    { name: 'Посівна техніка', children: ['Сівалки', 'Саджалки', 'Розсадосадильні машини'] },
+    { name: 'Техніка для внесення добрив', children: ['Розкидачі мінеральних добрив', 'Розкидачі органічних добрив', 'Обприскувачі'] },
+    { name: 'Техніка для заготівлі сіна', children: ['Косарки', 'Прес-підбирачі', 'Граблі-ворушилки'] },
+    { name: 'Тваринництво', children: ['Кормозмішувачі', 'Подрібнювачі зерна', 'Годівниці'] },
+    { name: 'Причепи та транспортування', children: ['Тракторні причепи', 'Бункери-перевантажувачі'] },
+    { name: 'Лісова техніка', children: ['Дровоколи', 'Подрібнювачі деревини'] },
+    { name: 'Садова техніка', children: ['Газонокосарки', 'Мотоблоки'] },
+    { name: 'Запчастини' },
+    { name: 'Шини та колеса' },
+    { name: 'Послуги' },
+  ];
+
+  const autolineTree = [
+    { name: 'Вантажівки', children: ['Бортові вантажівки', 'Тентовані вантажівки', 'Фургони', 'Рефрижератори', 'Самоскиди', 'Автовози', 'Контейнеровози', 'Лісовози'] },
+    { name: 'Тягачі' },
+    { name: 'Легкі комерційні авто', children: ['Вантажні фургони', 'Рефрижераторні фургони'] },
+    { name: 'Напівпричепи', children: ['Тентовані напівпричепи', 'Рефрижераторні напівпричепи', 'Контейнеровози', 'Самоскидні напівпричепи', 'Низькорамні платформи'] },
+    { name: 'Причепи', children: ['Самоскидні причепи', 'Платформи', 'Контейнерні причепи'] },
+    { name: 'Цистерни', children: ['Паливні цистерни', 'Харчові цистерни', 'Хімічні цистерни'] },
+    { name: 'Автобуси', children: ['Міські автобуси', 'Туристичні автобуси', 'Шкільні автобуси'] },
+    { name: 'Комунальна техніка', children: ['Сміттєвози', 'Асенізатори', 'Підмітальні машини', 'Снігоприбиральна техніка'] },
+    { name: 'Контейнери' },
+    { name: 'Обладнання' },
+    { name: 'Шини та колеса' },
+    { name: 'Запчастини' },
+    { name: 'Послуги' },
+  ];
+
+  async function insertTree(
+    nodes: Array<{ name: string; children?: string[] }>,
+    marketplaceKey: string,
+  ) {
+    const mpId = mpMap[marketplaceKey];
+    if (!mpId) return;
+    const used = new Set<string>();
+
+    for (const node of nodes) {
+      const baseSlug = slugifyUa(node.name);
+      const slug = makeUniqueSlug(baseSlug, used);
+      used.add(slug);
+      const createdParent = await prisma.category.create({
+        data: {
+          name: node.name,
+          slug,
+          marketplaceId: mpId,
+        },
+      });
+      catMap[slug] = createdParent.id;
+      catMpMap[slug] = mpId;
+
+      for (const childName of node.children ?? []) {
+        const childBase = slugifyUa(childName);
+        const childSlug = makeUniqueSlug(childBase, used, slug);
+        used.add(childSlug);
+        const createdChild = await prisma.category.create({
+          data: {
+            name: childName,
+            slug: childSlug,
+            parentId: createdParent.id,
+            marketplaceId: mpId,
+          },
+        });
+        catMap[childSlug] = createdChild.id;
+        catMpMap[childSlug] = mpId;
+      }
+    }
+  }
+
+  await insertTree(agrolineTree, 'agroline');
+  await insertTree(autolineTree, 'autoline');
 
   // ─── Form Templates ─────────────────────────────
   console.log('Seeding form templates...');

@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsNumber, IsEnum, IsNotEmpty, IsBoolean, IsInt } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  IsNotEmpty,
+  IsBoolean,
+  IsInt,
+} from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
 import { PlanInterval } from '@prisma/client';
 

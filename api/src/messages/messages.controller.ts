@@ -1,10 +1,22 @@
-import { Controller, Post, Get, Delete, Param, Query, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { MessagesService } from './messages.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { CreateConversationDto, SendMessageDto } from './dto/create-message.dto';
+import {
+  CreateConversationDto,
+  SendMessageDto,
+} from './dto/create-message.dto';
 
 @Controller('messages')
 @UseGuards(JwtAuthGuard)
@@ -16,7 +28,12 @@ export class MessagesController {
     @CurrentUser('id') userId: string,
     @Body() dto: CreateConversationDto,
   ) {
-    return this.messagesService.startConversation(userId, dto.listingId, dto.sellerId, dto.body);
+    return this.messagesService.startConversation(
+      userId,
+      dto.listingId,
+      dto.sellerId,
+      dto.body,
+    );
   }
 
   @Get('conversations')
@@ -25,7 +42,11 @@ export class MessagesController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.messagesService.getUserConversations(userId, page ? +page : 1, limit ? +limit : 20);
+    return this.messagesService.getUserConversations(
+      userId,
+      page ? +page : 1,
+      limit ? +limit : 20,
+    );
   }
 
   // ─── Admin endpoints (BEFORE :id to avoid route conflicts) ─
@@ -62,10 +83,7 @@ export class MessagesController {
   // ─── User endpoints ─────────────────────────────────
 
   @Get('conversations/:id')
-  getConversation(
-    @CurrentUser('id') userId: string,
-    @Param('id') id: string,
-  ) {
+  getConversation(@CurrentUser('id') userId: string, @Param('id') id: string) {
     return this.messagesService.getConversation(id, userId);
   }
 

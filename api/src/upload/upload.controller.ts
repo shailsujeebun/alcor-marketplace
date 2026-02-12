@@ -23,7 +23,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 @Controller('upload')
 export class UploadController {
-  constructor(private readonly uploadService: UploadService) { }
+  constructor(private readonly uploadService: UploadService) {}
 
   @Post('images')
   @UseInterceptors(
@@ -31,9 +31,7 @@ export class UploadController {
       limits: { fileSize: MAX_FILE_SIZE },
     }),
   )
-  async uploadImages(
-    @UploadedFiles() files: Express.Multer.File[],
-  ) {
+  async uploadImages(@UploadedFiles() files: Express.Multer.File[]) {
     if (!files || files.length === 0) {
       throw new BadRequestException('No files provided');
     }

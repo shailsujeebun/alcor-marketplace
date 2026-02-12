@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { DealerLeadStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaginatedResponseDto } from '../common';
@@ -52,7 +56,9 @@ export class DealerLeadsService {
         include: {
           country: true,
           city: true,
-          assignedToUser: { select: { id: true, email: true, firstName: true, lastName: true } },
+          assignedToUser: {
+            select: { id: true, email: true, firstName: true, lastName: true },
+          },
         },
       }),
       this.prisma.dealerLead.count({ where }),
@@ -67,7 +73,9 @@ export class DealerLeadsService {
       include: {
         country: true,
         city: true,
-        assignedToUser: { select: { id: true, email: true, firstName: true, lastName: true } },
+        assignedToUser: {
+          select: { id: true, email: true, firstName: true, lastName: true },
+        },
       },
     });
 
@@ -96,12 +104,15 @@ export class DealerLeadsService {
         status: dto.status,
         assignedToUserId: dto.assignedToUserId,
         notes: dto.notes,
-        convertedAt: dto.status === DealerLeadStatus.CONVERTED ? new Date() : undefined,
+        convertedAt:
+          dto.status === DealerLeadStatus.CONVERTED ? new Date() : undefined,
       },
       include: {
         country: true,
         city: true,
-        assignedToUser: { select: { id: true, email: true, firstName: true, lastName: true } },
+        assignedToUser: {
+          select: { id: true, email: true, firstName: true, lastName: true },
+        },
       },
     });
   }

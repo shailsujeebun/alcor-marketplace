@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { TicketStatus, TicketPriority, NotificationType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaginatedResponseDto } from '../common';
@@ -6,11 +10,15 @@ import { NotificationsService } from '../notifications/notifications.service';
 
 const ticketIncludes = {
   user: { select: { id: true, email: true, firstName: true, lastName: true } },
-  assignedTo: { select: { id: true, email: true, firstName: true, lastName: true } },
+  assignedTo: {
+    select: { id: true, email: true, firstName: true, lastName: true },
+  },
   messages: {
     orderBy: { createdAt: 'asc' as const },
     include: {
-      sender: { select: { id: true, email: true, firstName: true, lastName: true } },
+      sender: {
+        select: { id: true, email: true, firstName: true, lastName: true },
+      },
     },
   },
 };
@@ -22,7 +30,12 @@ export class SupportService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  async createTicket(userId: string, subject: string, body: string, priority?: string) {
+  async createTicket(
+    userId: string,
+    subject: string,
+    body: string,
+    priority?: string,
+  ) {
     const ticket = await this.prisma.supportTicket.create({
       data: {
         userId,
@@ -46,7 +59,9 @@ export class SupportService {
         take: limit,
         orderBy: { updatedAt: 'desc' },
         include: {
-          user: { select: { id: true, email: true, firstName: true, lastName: true } },
+          user: {
+            select: { id: true, email: true, firstName: true, lastName: true },
+          },
           _count: { select: { messages: true } },
         },
       }),
@@ -66,8 +81,12 @@ export class SupportService {
         take: limit,
         orderBy: { updatedAt: 'desc' },
         include: {
-          user: { select: { id: true, email: true, firstName: true, lastName: true } },
-          assignedTo: { select: { id: true, email: true, firstName: true, lastName: true } },
+          user: {
+            select: { id: true, email: true, firstName: true, lastName: true },
+          },
+          assignedTo: {
+            select: { id: true, email: true, firstName: true, lastName: true },
+          },
           _count: { select: { messages: true } },
         },
       }),
@@ -88,8 +107,15 @@ export class SupportService {
     return ticket;
   }
 
-  async replyToTicket(ticketId: string, senderId: string, body: string, isStaff: boolean) {
-    const ticket = await this.prisma.supportTicket.findUnique({ where: { id: ticketId } });
+  async replyToTicket(
+    ticketId: string,
+    senderId: string,
+    body: string,
+    isStaff: boolean,
+  ) {
+    const ticket = await this.prisma.supportTicket.findUnique({
+      where: { id: ticketId },
+    });
     if (!ticket) throw new NotFoundException('Ticket not found');
 
     if (!isStaff && ticket.userId !== senderId) {
@@ -99,7 +125,9 @@ export class SupportService {
     const message = await this.prisma.ticketMessage.create({
       data: { ticketId, senderId, body, isStaff },
       include: {
-        sender: { select: { id: true, email: true, firstName: true, lastName: true } },
+        sender: {
+          select: { id: true, email: true, firstName: true, lastName: true },
+        },
       },
     });
 
@@ -125,7 +153,10 @@ export class SupportService {
     return message;
   }
 
-  async updateTicket(ticketId: string, data: { status?: string; assignedToId?: string; priority?: string }) {
+  async updateTicket(
+    ticketId: string,
+    data: { status?: string; assignedToId?: string; priority?: string },
+  ) {
     const updateData: any = {};
     if (data.status) {
       updateData.status = data.status as TicketStatus;
@@ -133,15 +164,20 @@ export class SupportService {
         updateData.closedAt = new Date();
       }
     }
-    if (data.assignedToId !== undefined) updateData.assignedToId = data.assignedToId || null;
+    if (data.assignedToId !== undefined)
+      updateData.assignedToId = data.assignedToId || null;
     if (data.priority) updateData.priority = data.priority as TicketPriority;
 
     return this.prisma.supportTicket.update({
       where: { id: ticketId },
       data: updateData,
       include: {
-        user: { select: { id: true, email: true, firstName: true, lastName: true } },
-        assignedTo: { select: { id: true, email: true, firstName: true, lastName: true } },
+        user: {
+          select: { id: true, email: true, firstName: true, lastName: true },
+        },
+        assignedTo: {
+          select: { id: true, email: true, firstName: true, lastName: true },
+        },
       },
     });
   }

@@ -48,3 +48,4 @@
 - 2026-02-12: Company selector now requests max 100 companies to satisfy backend limit validation
 - 2026-02-12: Listing attribute storage now maps key/value array into JSON attribute record
 - 2026-02-12: Strip media `key` before Prisma createMany to match schema
+- 2026-02-12: Upload service now sets MinIO bucket policy to public-read so images render

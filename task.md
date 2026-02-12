@@ -4,8 +4,8 @@
     - [ ] Create tables: `marketplace`, `category`, `listing`, `attributes`, `facts`, `media`, `seller_contact`
     - [ ] Build endpoints:
         - [ ] `POST /listings/draft` (Creates draft)
-        - [ ] `GET /marketplaces`
-        - [ ] `GET /categories?marketplace_id=...`
+        - [x] `GET /marketplaces`
+        - [x] `GET /categories?marketplaceId=...`
 - [ ] Phase 2 — Dynamic Forms (Core of Step 2)
     - [ ] Build template tables: `form_template`, `form_field`, `field_option`
     - [ ] Create admin seed scripts for templates
@@ -30,3 +30,10 @@
     - [ ] Public Endpoints:
         - [ ] `GET /search`
         - [ ] `GET /listings/:id`
+
+## Test Status
+
+- 2026-02-12: `api` tests passed (`npm test`)
+- 2026-02-12: `api` lint failed with existing errors (`npm run lint`)
+- 2026-02-12: `web` lint failed with existing errors (`npm run lint`)
+- 2026-02-12: Fixed `react-hooks/set-state-in-effect` warnings in marketplace default selection (no tests rerun)

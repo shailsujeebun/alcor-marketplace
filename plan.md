@@ -22,6 +22,8 @@
 **Section Selector (Grid):**
 - Changes based on Marketplace selection
 - Search bar filters sections
+- Category tree is scoped by `marketplaceId`
+- Listings must be placed in a **leaf category** (subcategory), or the **main category** if it has no children
 
 **Output Stored:**
 - `marketplace_id`

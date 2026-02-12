@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Layers, ChevronRight } from 'lucide-react';
 import { useCategories, useMarketplaces } from '@/lib/queries';
@@ -9,16 +9,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 export function CategoriesPageContent() {
   const { data: marketplaces, isLoading: loadingMarketplaces } = useMarketplaces();
   const [activeMarketplaceId, setActiveMarketplaceId] = useState<string | undefined>(undefined);
+  const fallbackMarketplaceId = useMemo(
+    () => marketplaces?.[0]?.id,
+    [marketplaces],
+  );
+  const effectiveMarketplaceId = activeMarketplaceId ?? fallbackMarketplaceId;
 
-  const { data: categories, isLoading: loadingCategories } = useCategories(activeMarketplaceId);
+  const { data: categories, isLoading: loadingCategories } = useCategories(effectiveMarketplaceId);
   const topLevel = categories?.filter((c) => !c.parentId) ?? [];
-
-  // Set first marketplace as active when data loads
-  useEffect(() => {
-    if (marketplaces && marketplaces.length > 0 && activeMarketplaceId === undefined) {
-      setActiveMarketplaceId(marketplaces[0].id);
-    }
-  }, [marketplaces, activeMarketplaceId]);
 
   const isLoading = loadingMarketplaces || loadingCategories;
 
@@ -51,13 +49,13 @@ export function CategoriesPageContent() {
             <button
               key={mp.id}
               onClick={() => setActiveMarketplaceId(mp.id)}
-              className={`px-6 py-3 font-medium transition-colors relative whitespace-nowrap ${activeMarketplaceId === mp.id
+              className={`px-6 py-3 font-medium transition-colors relative whitespace-nowrap ${effectiveMarketplaceId === mp.id
                 ? 'text-blue-bright'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
             >
               {mp.name}
-              {activeMarketplaceId === mp.id && (
+              {effectiveMarketplaceId === mp.id && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-bright rounded-full" />
               )}
             </button>
@@ -80,7 +78,7 @@ export function CategoriesPageContent() {
                   <Layers size={24} className="text-blue-bright" />
                 </div>
                 <Link
-                  href={`/listings?marketplaceId=${activeMarketplaceId ?? ''}&categoryId=${cat.id}`}
+                  href={`/listings?marketplaceId=${effectiveMarketplaceId ?? ''}&categoryId=${cat.id}`}
                   className="font-heading font-bold text-lg text-[var(--text-primary)] hover:text-blue-bright transition-colors"
                 >
                   {cat.name}
@@ -92,7 +90,7 @@ export function CategoriesPageContent() {
                   {cat.children.map((child) => (
                     <Link
                       key={child.id}
-                      href={`/listings?marketplaceId=${activeMarketplaceId ?? ''}&categoryId=${child.id}`}
+                      href={`/listings?marketplaceId=${effectiveMarketplaceId ?? ''}&categoryId=${child.id}`}
                       className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-blue-bright transition-colors py-1"
                     >
                       <ChevronRight size={14} />
@@ -104,7 +102,7 @@ export function CategoriesPageContent() {
 
               {(!cat.children || cat.children.length === 0) && (
                 <Link
-                  href={`/listings?marketplaceId=${activeMarketplaceId ?? ''}&categoryId=${cat.id}`}
+                  href={`/listings?marketplaceId=${effectiveMarketplaceId ?? ''}&categoryId=${cat.id}`}
                   className="inline-flex items-center gap-1 text-sm text-blue-bright hover:text-blue-light transition-colors ml-16"
                 >
                   Переглянути оголошення

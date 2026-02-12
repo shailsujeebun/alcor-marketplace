@@ -395,7 +395,7 @@ w-full px-4 py-2.5 rounded-lg bg-[var(--bg-primary)] border border-[var(--border
 ### Listings (`/listings`)
 - `POST /listings` - Create listing (requires JWT)
 - `GET /listings` - Browse all listings with filters and sorting
-  - Query params: `page`, `limit`, `categoryId`, `brandId`, `companyId`, `countryId`, `cityId`, `condition`, `listingType`, `euroClass`, `priceCurrency`, `priceMin`, `priceMax`, `yearMin`, `yearMax`, `search`, `sort`, `status`
+  - Query params: `page`, `limit`, `marketplaceId`, `categoryId`, `brandId`, `companyId`, `countryId`, `cityId`, `condition`, `listingType`, `euroClass`, `priceCurrency`, `priceMin`, `priceMax`, `yearMin`, `yearMax`, `search`, `sort`, `status`
   - Sort options: `publishedAt` (default), `priceAsc`, `priceDesc`, `yearDesc`, `yearAsc`
 - `GET /listings/:id` - Get single listing with all relations
 - `PATCH /listings/:id` - Update listing (requires JWT)
@@ -484,7 +484,9 @@ w-full px-4 py-2.5 rounded-lg bg-[var(--bg-primary)] border border-[var(--border
 - `POST /subscriptions` - Create subscription (requires ADMIN)
 
 ### Reference Data
+- `GET /marketplaces` - All active marketplaces
 - `GET /categories` - All categories (hierarchical with parent/children)
+  - Optional query: `marketplaceId` to scope the category tree
 - `POST /categories` - Create category
 - `GET /brands` - All brands
 - `POST /brands` - Create brand
@@ -621,7 +623,7 @@ w-full px-4 py-2.5 rounded-lg bg-[var(--bg-primary)] border border-[var(--border
 10. **STATUS_BADGE pattern** - `Record<Status, { label, className }>` for consistent status display
 11. **Cabinet layout** - Sidebar navigation + mobile horizontal tabs, auth guard in layout.tsx
 12. **Admin layout** - Same pattern as cabinet, with ADMIN/MANAGER role guard
-13. **Listing wizard** - Multi-step form with photo upload (drag & drop + MinIO integration)
+13. **Listing wizard** - Multi-step form with photo upload (drag & drop + MinIO integration). Category selection uses a marketplace-scoped tree and requires leaf categories.
 14. **Tailwind dynamic classes** - Use explicit class strings, NOT template literals like `bg-${color}-500/20`
 15. **Light/dark theme** - All theme-dependent colors use CSS variables (not hardcoded Tailwind classes). Theme toggled via `data-theme="light"` attribute on root element. Light mode overrides defined in `globals.css` under `[data-theme="light"]`
 16. **Hero gradient** - Uses inline `style={{ background: 'linear-gradient(...)' }}` with CSS variables (`--hero-from`, `--hero-via`, `--hero-to`) instead of Tailwind gradient classes, to support theme switching
@@ -632,6 +634,7 @@ w-full px-4 py-2.5 rounded-lg bg-[var(--bg-primary)] border border-[var(--border
 ### Listing Filters (Frontend)
 
 The listings page supports these filters (in `listings-filters.tsx`):
+- **Marketplace** - Marketplace selector (scopes available categories)
 - **Search** - Text search with debounce
 - **Sort** - За замовчуванням, Ціна (зростання/спадання), Рік (спадання/зростання)
 - **Category** - From categories API

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, ChevronRight, ChevronDown } from 'lucide-react';
@@ -23,16 +23,14 @@ export default function SelectCategoryPage() {
     const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
     const { data: marketplaces, isLoading: loadingMarketplaces } = useMarketplaces();
-    const { data: categories, isLoading: loadingCategories } = useCategories(activeMarketplaceId ?? undefined);
+    const fallbackMarketplaceId = useMemo(
+        () => marketplaces?.[0]?.id ?? null,
+        [marketplaces],
+    );
+    const effectiveMarketplaceId = activeMarketplaceId ?? fallbackMarketplaceId;
+    const { data: categories, isLoading: loadingCategories } = useCategories(effectiveMarketplaceId ?? undefined);
 
-    // Set first marketplace as active when data loads
-    useEffect(() => {
-        if (marketplaces && marketplaces.length > 0 && !activeMarketplaceId) {
-            setActiveMarketplaceId(marketplaces[0].id);
-        }
-    }, [marketplaces, activeMarketplaceId]);
-
-    const activeMarketplace = marketplaces?.find((m) => m.id === activeMarketplaceId);
+    const activeMarketplace = marketplaces?.find((m) => m.id === effectiveMarketplaceId);
 
     // Get top-level categories
     const topLevelCategories = categories?.filter((c) => !c.parentId) ?? [];
@@ -61,7 +59,7 @@ export default function SelectCategoryPage() {
     };
 
     const handleCategorySelect = (categoryId: string) => {
-        router.push(`/ad-placement/details?categoryId=${categoryId}&marketplaceId=${activeMarketplaceId}`);
+        router.push(`/ad-placement/details?categoryId=${categoryId}&marketplaceId=${effectiveMarketplaceId ?? ''}`);
     };
 
     const isLoading = loadingMarketplaces || loadingCategories;
@@ -123,7 +121,7 @@ export default function SelectCategoryPage() {
                             <button
                                 key={mp.id}
                                 onClick={() => setActiveMarketplaceId(mp.id)}
-                                className={`px-6 py-3 font-medium transition-colors relative whitespace-nowrap ${activeMarketplaceId === mp.id
+                                className={`px-6 py-3 font-medium transition-colors relative whitespace-nowrap ${effectiveMarketplaceId === mp.id
                                     ? 'text-blue-bright'
                                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                                     }`}
@@ -132,7 +130,7 @@ export default function SelectCategoryPage() {
                                     <span>{getMarketplaceIcon(mp.key)}</span>
                                     {mp.name}
                                 </span>
-                                {activeMarketplaceId === mp.id && (
+                                {effectiveMarketplaceId === mp.id && (
                                     <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-bright" />
                                 )}
                             </button>

@@ -6,6 +6,7 @@ import {
   DeleteObjectCommand,
   CreateBucketCommand,
   HeadBucketCommand,
+  PutBucketPolicyCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
@@ -49,6 +50,31 @@ export class UploadService implements OnModuleInit {
           `Could not create bucket: ${err}. Will retry on first upload.`,
         );
       }
+    }
+
+    // Ensure public read access for uploaded assets
+    try {
+      const policy = {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Sid: 'PublicRead',
+            Effect: 'Allow',
+            Principal: '*',
+            Action: ['s3:GetObject'],
+            Resource: [`arn:aws:s3:::${this.bucket}/*`],
+          },
+        ],
+      };
+      await this.s3.send(
+        new PutBucketPolicyCommand({
+          Bucket: this.bucket,
+          Policy: JSON.stringify(policy),
+        }),
+      );
+      this.logger.log(`Bucket "${this.bucket}" policy set to public-read`);
+    } catch (err) {
+      this.logger.warn(`Could not set public policy: ${err}`);
     }
   }
 

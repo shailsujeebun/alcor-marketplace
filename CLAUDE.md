@@ -867,6 +867,7 @@ cd api && npx nest build
 - Verify MinIO is running: `docker-compose ps`
 - Check MinIO console at http://localhost:9001 (minioadmin/minioadmin)
 - Ensure `marketplace` bucket exists
+- Upload service sets bucket policy to public-read on startup so image URLs render in the UI
 
 ### Hydration mismatch errors
 - Never use `Math.random()` or `Date.now()` in components that render on the server

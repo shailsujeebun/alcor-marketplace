@@ -59,6 +59,7 @@ export function Navbar() {
 
   return (
     <>
+<<<<<<< HEAD
       <header className="site-navbar sticky top-0 z-50 border-b border-[var(--border-color)] bg-[color:var(--bg-secondary)]/90 backdrop-blur-xl">
         <div className="container-main flex items-center justify-between h-18 min-h-[72px]">
           <Link href="/" className="logo-link flex items-center gap-3">
@@ -71,11 +72,18 @@ export function Navbar() {
               priority
             />
             <span className="logo-text font-heading font-bold text-2xl tracking-tight">
+=======
+      <header className="sticky top-0 z-50 glass-card !rounded-none border-x-0 border-t-0">
+        <div className="container-main flex items-center h-16">
+          <Link href="/" className="flex items-center gap-3 mr-12">
+
+            <span className="font-heading font-bold text-xl gradient-text">
+>>>>>>> feat-add
               АЛЬКОР
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-8 mr-auto">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -158,6 +166,7 @@ export function Navbar() {
               <div className="flex items-center gap-3">
                 <Link
                   href="/login"
+<<<<<<< HEAD
                   className="site-auth-link flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-blue-light transition-colors font-medium"
                 >
                   <LogIn size={16} />
@@ -166,9 +175,13 @@ export function Navbar() {
                 <Link
                   href="/register"
                   className="site-auth-primary gradient-cta text-white px-5 py-2 rounded-full text-sm font-semibold hover:opacity-90 transition-all flex items-center gap-1.5"
+=======
+                  // Combined Sign In / Registration button
+                  className="gradient-cta text-white px-5 py-2 rounded-full text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5"
+>>>>>>> feat-add
                 >
-                  <UserPlus size={16} />
-                  Реєстрація
+                  <LogIn size={16} />
+                  Вхід / Реєстрація
                 </Link>
                 <Link
                   href="/ad-placement"

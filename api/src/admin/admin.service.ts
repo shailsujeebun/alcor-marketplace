@@ -105,6 +105,7 @@ export class AdminService {
             sortOrder: field.order || 0,
             validations: field.validations || {},
             visibilityIf: field.visibilityIf || {},
+            section: field.section || null,
           },
         });
 
@@ -146,6 +147,45 @@ export class AdminService {
     // but NestJS serializer usually handles BigInt if configured,
     // or we rely on the interceptor we made earlier.
     return template;
+  }
+
+  async updateTemplate(id: number, data: { fields: any[] }) {
+    // 1. Delete existing fields (cascade will handle options)
+    await this.prisma.formField.deleteMany({
+      where: { templateId: id },
+    });
+
+    // 2. Create new fields
+    if (data.fields && data.fields.length > 0) {
+      for (const field of data.fields) {
+        const createdField = await this.prisma.formField.create({
+          data: {
+            templateId: id,
+            fieldKey: field.key,
+            label: field.label,
+            fieldType: field.type,
+            required: field.required || false,
+            sortOrder: field.order || 0,
+            validations: field.validations || {},
+            visibilityIf: field.visibilityIf || {},
+            section: field.section || null,
+          },
+        });
+
+        if (field.options && field.options.length > 0) {
+          await this.prisma.fieldOption.createMany({
+            data: field.options.map((opt: any, index: number) => ({
+              fieldId: createdField.id,
+              value: opt.value,
+              label: opt.label,
+              sortOrder: index,
+            })),
+          });
+        }
+      }
+    }
+
+    return this.getTemplate(id);
   }
 
   async getStats() {

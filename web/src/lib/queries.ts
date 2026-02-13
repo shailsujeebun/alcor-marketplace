@@ -632,6 +632,14 @@ export function useDeleteSavedSearch() {
 
 // ─── Plans & Subscriptions ─────────────────────────
 
+export function useMarketplaces() {
+  return useQuery({
+    queryKey: ['marketplaces'],
+    queryFn: api.getMarketplaces,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function usePlans() {
   return useQuery({
     queryKey: ['plans'],
@@ -718,5 +726,11 @@ export function usePresignedUpload() {
       await api.uploadToS3(uploadUrl, file);
       return { key, url: publicUrl };
     },
+  });
+}
+
+export function useUploadImages() {
+  return useMutation({
+    mutationFn: (files: File[]) => api.uploadImages(files),
   });
 }

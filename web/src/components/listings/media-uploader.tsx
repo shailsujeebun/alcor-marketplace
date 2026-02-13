@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { Upload, X, Loader2 } from 'lucide-react';
-import { usePresignedUpload } from '@/lib/queries';
+import { useUploadImages } from '@/lib/queries';
 
 export interface MediaItem {
     id?: string;
@@ -21,7 +21,8 @@ interface MediaUploaderProps {
 
 export function MediaUploader({ media, onChange, maxFiles = 10 }: MediaUploaderProps) {
     const [uploading, setUploading] = useState(false);
-    const uploadMutation = usePresignedUpload();
+    // Switch to server-side upload to avoid CORS/S3 configuration issues on client
+    const { mutateAsync: uploadImages } = useUploadImages();
 
     const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
@@ -32,22 +33,30 @@ export function MediaUploader({ media, onChange, maxFiles = 10 }: MediaUploaderP
 
         setUploading(true);
         try {
-            const uploadedMedia: MediaItem[] = [];
+            const { urls } = await uploadImages(filesToUpload);
 
+<<<<<<< HEAD
             for (const file of filesToUpload) {
                 const { key, url } = await uploadMutation.mutateAsync(file);
                 uploadedMedia.push({ url, key, file, type: 'PHOTO' });
             }
+=======
+            const newMediaItems: MediaItem[] = urls.map((url, index) => ({
+                url,
+                file: filesToUpload[index],
+                // Key is optional now
+            }));
+>>>>>>> feat-add
 
-            onChange([...media, ...uploadedMedia]);
+            onChange([...media, ...newMediaItems]);
         } catch (error) {
             console.error('Upload failed:', error);
-            alert('Помилка завантаження файлів');
+            alert('Помилка завантаження файлів. Будь ласка, спробуйте ще раз.');
         } finally {
             setUploading(false);
             e.target.value = ''; // Reset input
         }
-    }, [media, maxFiles, onChange, uploadMutation]);
+    }, [media, maxFiles, onChange, uploadImages]);
 
     const handleRemove = useCallback((index: number) => {
         onChange(media.filter((_, i) => i !== index));

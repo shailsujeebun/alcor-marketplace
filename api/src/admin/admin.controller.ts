@@ -93,4 +93,9 @@ export class AdminController {
   getTemplate(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.getTemplate(id);
   }
+
+  @Patch('templates/:id')
+  updateTemplate(@Param('id', ParseIntPipe) id: number, @Body() body: { fields: any[] }) {
+    return this.adminService.updateTemplate(id, body);
+  }
 }

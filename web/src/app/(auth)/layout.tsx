@@ -8,8 +8,9 @@ export default function AuthLayout({
 }) {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--bg-primary)]">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-4xl">
         <div className="text-center mb-8">
+<<<<<<< HEAD
           <Link href="/" className="logo-link inline-flex items-center gap-3">
             <Image
               src="/alcor-logo.png"
@@ -20,6 +21,11 @@ export default function AuthLayout({
               priority
             />
             <span className="logo-text font-heading font-bold text-2xl">
+=======
+          <Link href="/" className="inline-flex items-center gap-3">
+
+            <span className="font-heading font-bold text-2xl gradient-text">
+>>>>>>> feat-add
               АЛЬКОР
             </span>
           </Link>

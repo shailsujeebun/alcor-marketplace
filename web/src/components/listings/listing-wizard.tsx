@@ -23,12 +23,15 @@ interface ListingWizardProps {
 function initFormData(listing?: Listing): FormData {
   if (!listing) {
     return {
-      title: '', description: '', categoryId: '', brandId: '',
-      listingType: '', condition: '', year: '', priceAmount: '',
-      priceCurrency: 'EUR', priceType: 'FIXED', hoursValue: '',
-      hoursUnit: '', euroClass: '', countryId: '', cityId: '',
-      sellerName: '', sellerEmail: '', sellerPhones: '',
-      companyId: '', externalUrl: '',
+      title: '',
+      description: '',
+      categoryId: '',
+      countryId: '',
+      cityId: '',
+      sellerName: '',
+      sellerEmail: '',
+      sellerPhones: '',
+      companyId: '',
       dynamicAttributes: {},
     };
   }
@@ -36,23 +39,12 @@ function initFormData(listing?: Listing): FormData {
     title: listing.title,
     description: listing.description ?? '',
     categoryId: listing.categoryId ?? '',
-    brandId: listing.brandId ?? '',
-    listingType: listing.listingType ?? '',
-    condition: listing.condition ?? '',
-    year: listing.year?.toString() ?? '',
-    priceAmount: listing.priceAmount?.toString() ?? '',
-    priceCurrency: listing.priceCurrency ?? 'EUR',
-    priceType: listing.priceType ?? 'FIXED',
-    hoursValue: listing.hoursValue?.toString() ?? '',
-    hoursUnit: listing.hoursUnit ?? '',
-    euroClass: listing.euroClass ?? '',
     countryId: listing.countryId ?? '',
     cityId: listing.cityId ?? '',
     sellerName: listing.sellerName ?? '',
     sellerEmail: listing.sellerEmail ?? '',
     sellerPhones: listing.sellerPhones?.join(', ') ?? '',
     companyId: listing.companyId,
-    externalUrl: listing.externalUrl ?? '',
     dynamicAttributes: listing.attributes?.reduce((acc, attr) => ({ ...acc, [attr.key]: attr.value }), {}) ?? {},
   };
 }

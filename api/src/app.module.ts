@@ -28,6 +28,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { SavedSearchesModule } from './saved-searches/saved-searches.module';
 import { SearchModule } from './search/search.module';
 
+import { MarketplacesModule } from './marketplaces/marketplaces.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
@@ -55,6 +57,7 @@ import { SearchModule } from './search/search.module';
     NotificationsModule,
     SavedSearchesModule,
     SearchModule,
+    MarketplacesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

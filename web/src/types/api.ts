@@ -43,6 +43,7 @@ export interface Marketplace {
 
 export interface Category {
   id: string;
+  marketplaceId: string;
   slug: string;
   name: string;
   parentId: string | null;

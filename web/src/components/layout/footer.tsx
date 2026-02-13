@@ -9,6 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10">
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
+<<<<<<< HEAD
             <div className="logo-link flex items-center gap-3 mb-4">
               <Image
                 src="/alcor-logo.png"
@@ -18,6 +19,11 @@ export function Footer() {
                 className="logo-image h-10 w-auto"
               />
               <span className="logo-text font-heading font-bold text-xl">
+=======
+            <div className="flex items-center gap-3 mb-4">
+
+              <span className="font-heading font-bold text-xl gradient-text">
+>>>>>>> feat-add
                 АЛЬКОР
               </span>
             </div>

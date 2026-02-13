@@ -1,7 +1,7 @@
 'use client';
 
 import { SearchInput } from '@/components/ui/search-input';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCountries, useCities, useActivityTypes, useBrands } from '@/lib/queries';
 
 interface FiltersState {
@@ -28,6 +28,31 @@ export function CompaniesFilters({ filters, onFilterChange, onClear }: Companies
 
   const hasFilters = Object.values(filters).some(Boolean);
 
+  const FilterSelect = ({
+    value,
+    onChange,
+    placeholder,
+    options,
+  }: {
+    value: string;
+    onChange: (val: string) => void;
+    placeholder: string;
+    options: { value: string; label: string }[];
+  }) => (
+    <Select value={value || undefined} onValueChange={onChange}>
+      <SelectTrigger>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((opt) => (
+          <SelectItem key={opt.value} value={opt.value}>
+            {opt.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
   return (
     <div className="glass-card p-6 space-y-5">
       <div className="flex items-center justify-between">
@@ -47,7 +72,7 @@ export function CompaniesFilters({ filters, onFilterChange, onClear }: Companies
 
       <div>
         <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Вид діяльності</label>
-        <Select
+        <FilterSelect
           value={filters.activityTypeId}
           onChange={(v) => onFilterChange('activityTypeId', v)}
           placeholder="Усі види діяльності"
@@ -57,7 +82,7 @@ export function CompaniesFilters({ filters, onFilterChange, onClear }: Companies
 
       <div>
         <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Марка</label>
-        <Select
+        <FilterSelect
           value={filters.brandId}
           onChange={(v) => onFilterChange('brandId', v)}
           placeholder="Усі марки"
@@ -67,7 +92,7 @@ export function CompaniesFilters({ filters, onFilterChange, onClear }: Companies
 
       <div>
         <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Країна</label>
-        <Select
+        <FilterSelect
           value={filters.countryId}
           onChange={(v) => {
             onFilterChange('countryId', v);
@@ -81,7 +106,7 @@ export function CompaniesFilters({ filters, onFilterChange, onClear }: Companies
       {filters.countryId && (
         <div>
           <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Місто</label>
-          <Select
+          <FilterSelect
             value={filters.cityId}
             onChange={(v) => onFilterChange('cityId', v)}
             placeholder="Усі міста"
@@ -92,25 +117,21 @@ export function CompaniesFilters({ filters, onFilterChange, onClear }: Companies
 
       <div>
         <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Верифікація</label>
-        <Select
+        <FilterSelect
           value={filters.isVerified}
           onChange={(v) => onFilterChange('isVerified', v)}
           placeholder="Усі компанії"
-          options={[
-            { value: 'true', label: 'Лише верифіковані' },
-          ]}
+          options={[{ value: 'true', label: 'Лише верифіковані' }]}
         />
       </div>
 
       <div>
         <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Офіційний дилер</label>
-        <Select
+        <FilterSelect
           value={filters.isOfficialDealer}
           onChange={(v) => onFilterChange('isOfficialDealer', v)}
           placeholder="Усі компанії"
-          options={[
-            { value: 'true', label: 'Лише офіційні дилери' },
-          ]}
+          options={[{ value: 'true', label: 'Лише офіційні дилери' }]}
         />
       </div>
     </div>

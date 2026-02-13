@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import { LoginForm } from '@/components/auth/login-form';
-
-export const metadata: Metadata = {
-  title: 'Вхід — АЛЬКОР',
-};
+import { AuthTabs } from '@/components/auth/auth-tabs';
 
 export default function LoginPage() {
-  return <LoginForm />;
+  return (
+    <div className="container-main py-12 md:py-20 min-h-[calc(100vh-200px)]">
+      <AuthTabs defaultTab="login" />
+    </div>
+  );
 }

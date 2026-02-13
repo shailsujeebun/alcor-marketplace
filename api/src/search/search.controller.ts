@@ -3,14 +3,14 @@ import { SearchService } from './search.service';
 
 @Controller('search')
 export class SearchController {
-  constructor(private readonly searchService: SearchService) {}
+  constructor(private readonly searchService: SearchService) { }
 
   @Get()
   async search(@Query() query: any) {
     // Convert numeric params
     const q = { ...query };
-    if (q.minPrice) q.minPrice = Number(q.minPrice);
-    if (q.maxPrice) q.maxPrice = Number(q.maxPrice);
+    if (q.priceMin) q.priceMin = Number(q.priceMin);
+    if (q.priceMax) q.priceMax = Number(q.priceMax);
     if (q.yearMin) q.yearMin = Number(q.yearMin);
     if (q.yearMax) q.yearMax = Number(q.yearMax);
     if (q.page) q.page = Number(q.page);

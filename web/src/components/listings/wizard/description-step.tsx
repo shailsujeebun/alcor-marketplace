@@ -3,7 +3,11 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useWizard } from './wizard-context';
+<<<<<<< HEAD
 import { useCategories, useBrands, useCountries, useCities, useCategoryTemplate, useCreateBrand } from '@/lib/queries';
+=======
+import { useCategories, useCountries, useCities, useCategoryTemplate } from '@/lib/queries';
+>>>>>>> feat-add
 import { DynamicForm } from '../dynamic-form';
 import type { Category } from '@/types/api';
 import { ChevronDown } from 'lucide-react';
@@ -65,10 +69,14 @@ export function DescriptionStep() {
     const searchParams = useSearchParams();
     const { form, setForm, setCurrentStep } = useWizard();
 
+<<<<<<< HEAD
     const marketplaceId = searchParams.get('marketplaceId') ?? undefined;
     const { data: categories } = useCategories(marketplaceId);
     const { data: brands } = useBrands(form.categoryId || undefined);
     const createBrandMutation = useCreateBrand();
+=======
+    const { data: categories } = useCategories();
+>>>>>>> feat-add
     const { data: countries } = useCountries();
     const { data: citiesData } = useCities(form.countryId || undefined);
     const cities = citiesData?.data ?? [];
@@ -122,9 +130,14 @@ export function DescriptionStep() {
 
     const handleNext = () => {
         // Basic validation
+<<<<<<< HEAD
         if (!form.categoryId || !form.brandId || !form.title.trim()) {
             // ideally handle validation error here
             alert('Будь ласка, заповніть обов\'язкові поля (Категорія, Бренд, Назва)');
+=======
+        if (!form.title.trim() || !form.categoryId) {
+            alert('Будь ласка, заповніть обов\'язкові поля (Назва, Категорія)');
+>>>>>>> feat-add
             return;
         }
         setCurrentStep(2);
@@ -195,8 +208,16 @@ export function DescriptionStep() {
 
     return (
         <div className="space-y-6">
+<<<<<<< HEAD
             <AccordionSection id="basic" title="Основні характеристики" expanded={!!expandedSections.basic} onToggle={toggleSection} className={sectionClass} titleClassName={sectionTitleClass}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+=======
+            {/* 1. Basic Information - Universal Fields */}
+            <div className={sectionClass}>
+                <h2 className={sectionTitleClass}>Основна інформація</h2>
+
+                <div className="space-y-4">
+>>>>>>> feat-add
                     <div>
                         <label className={labelClass}>Категорія *</label>
                         <select
@@ -212,6 +233,7 @@ export function DescriptionStep() {
                             ))}
                         </select>
                     </div>
+<<<<<<< HEAD
                     <div>
                         <label className={labelClass}>Бренд *</label>
                         <select
@@ -504,9 +526,16 @@ export function DescriptionStep() {
                             <option value="hybrid">Гібрид</option>
                             <option value="electric">Електро</option>
                         </select>
+=======
+
+                    <div>
+                        <label className={labelClass}>Назва оголошення *</label>
+                        <input type="text" name="title" value={form.title} onChange={handleChange} className={inputClass} placeholder="Наприклад: Екскаватор CAT 320 2019" />
+>>>>>>> feat-add
                     </div>
                 </div>
 
+<<<<<<< HEAD
                 <div className="flex flex-wrap gap-4">
                     {[
                         ['turbo', 'Турбо'],
@@ -829,6 +858,46 @@ export function DescriptionStep() {
             </AccordionSection>
 
             <AccordionSection id="location" title="Локація" expanded={!!expandedSections.location} onToggle={toggleSection} className={sectionClass} titleClassName={sectionTitleClass}>
+=======
+            {/* 2. Category-Specific Fields (Dynamic from Template) */}
+            {form.categoryId && (
+                <div className={sectionClass}>
+                    <h2 className={sectionTitleClass}>Деталі</h2>
+                    {template ? (
+                        <DynamicForm
+                            categoryId={form.categoryId}
+                            template={template}
+                            values={form.dynamicAttributes}
+                            onChange={(values) => setForm((prev) => ({ ...prev, dynamicAttributes: values }))}
+                        />
+                    ) : (
+                        <p className="text-[var(--text-secondary)] text-sm">
+                            Завантаження полів форми...
+                        </p>
+                    )}
+                </div>
+            )}
+
+            {/* 3. Description - Universal Field */}
+            <div className={sectionClass}>
+                <h2 className={sectionTitleClass}>Опис</h2>
+                <div>
+                    <label className={labelClass}>Детальний опис</label>
+                    <textarea
+                        name="description"
+                        value={form.description}
+                        onChange={handleChange}
+                        rows={6}
+                        className={inputClass}
+                        placeholder="Детально опишіть техніку, її стан, особливості..."
+                    />
+                </div>
+            </div>
+
+            {/* 4. Location - Universal Fields */}
+            <div className={sectionClass}>
+                <h2 className={sectionTitleClass}>Місцезнаходження</h2>
+>>>>>>> feat-add
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className={labelClass}>Країна</label>
@@ -850,6 +919,7 @@ export function DescriptionStep() {
                     </div>
                 </div>
 
+<<<<<<< HEAD
                 <div>
                     <label className={labelClass}>Пошук локації</label>
                     <input
@@ -917,6 +987,8 @@ export function DescriptionStep() {
                 </div>
             )}
 
+=======
+>>>>>>> feat-add
             {/* Next Button */}
             <div className="flex justify-end">
                 <button

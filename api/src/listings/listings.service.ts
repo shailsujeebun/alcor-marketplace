@@ -165,6 +165,28 @@ export class ListingsService {
       throw error;
     }
 
+    // Ensure brand/category mapping is persisted for future dropdown filtering.
+    if (brandId && categoryId) {
+      try {
+        await this.prisma.brandCategory.upsert({
+          where: {
+            brandId_categoryId: {
+              brandId,
+              categoryId: BigInt(categoryId),
+            },
+          },
+          create: {
+            brandId,
+            categoryId: BigInt(categoryId),
+          },
+          update: {},
+        });
+      } catch {
+        // Keep listing creation resilient even if category-brand mapping table
+        // is not migrated yet or category relation is temporarily invalid.
+      }
+    }
+
     // Skip syncFacts for now since we create ListingFact during creation
     // await this.syncFacts(listing.id.toString());
 

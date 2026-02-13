@@ -58,11 +58,11 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="container-main py-6">
-      <div className="flex flex-col md:flex-row gap-6">
+    <div className="container-main pt-16 md:pt-20 pb-10 md:pb-14">
+      <div className="grid grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] items-start gap-6 md:gap-8 mt-10 md:mt-12">
         {/* Sidebar — desktop */}
         <aside className="hidden md:block w-60 flex-shrink-0">
-          <nav className="glass-card p-3 sticky top-24 space-y-1">
+          <nav className="glass-card p-3 sticky top-28 space-y-1">
             {sidebarLinks.map((link) => {
               const Icon = link.icon;
               const isActive =
@@ -115,7 +115,7 @@ export default function AdminLayout({
         </div>
 
         {/* Main content */}
-        <main className="flex-1 min-w-0">{children}</main>
+        <main className="min-w-0">{children}</main>
       </div>
     </div>
   );

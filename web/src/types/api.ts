@@ -23,6 +23,11 @@ export interface Brand {
   name: string;
 }
 
+export interface CreateBrandPayload {
+  name: string;
+  categoryId?: string;
+}
+
 export interface ActivityType {
   id: string;
   code: string;

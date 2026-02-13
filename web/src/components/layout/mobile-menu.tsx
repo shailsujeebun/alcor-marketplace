@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { X, LogIn, UserPlus, LogOut } from 'lucide-react';
+import { X, LogIn, UserPlus, LogOut, Shield } from 'lucide-react';
 import type { User } from '@/types/api';
 
 interface MobileMenuProps {
@@ -15,6 +15,7 @@ interface MobileMenuProps {
 
 export function MobileMenu({ open, onClose, links, isAuthenticated, user, onLogout }: MobileMenuProps) {
   if (!open) return null;
+  const isAdminUser = user?.role === 'ADMIN' || user?.role === 'MANAGER';
 
   return (
     <div className="fixed inset-0 z-[100]">
@@ -58,13 +59,25 @@ export function MobileMenu({ open, onClose, links, isAuthenticated, user, onLogo
 
         <div className="mt-auto space-y-3">
           {isAuthenticated ? (
-            <button
-              onClick={() => { onClose(); onLogout(); }}
-              className="w-full flex items-center justify-center gap-2 border border-red-500/30 text-red-400 px-5 py-3 rounded-full font-semibold hover:bg-red-500/10 transition-colors"
-            >
-              <LogOut size={18} />
-              Вийти
-            </button>
+            <>
+              {isAdminUser && (
+                <Link
+                  href="/admin"
+                  onClick={onClose}
+                  className="w-full flex items-center justify-center gap-2 border border-orange-500/30 text-orange-400 px-5 py-3 rounded-full font-semibold hover:bg-orange-500/10 transition-colors"
+                >
+                  <Shield size={18} />
+                  Вхід в адмін
+                </Link>
+              )}
+              <button
+                onClick={() => { onClose(); onLogout(); }}
+                className="w-full flex items-center justify-center gap-2 border border-red-500/30 text-red-400 px-5 py-3 rounded-full font-semibold hover:bg-red-500/10 transition-colors"
+              >
+                <LogOut size={18} />
+                Вийти з акаунта
+              </button>
+            </>
           ) : (
             <>
               <Link
@@ -81,7 +94,7 @@ export function MobileMenu({ open, onClose, links, isAuthenticated, user, onLogo
                 className="flex items-center justify-center gap-2 border border-[var(--border-color)] text-[var(--text-primary)] px-5 py-3 rounded-full font-semibold hover:border-blue-bright/40 transition-colors"
               >
                 <LogIn size={18} />
-                Вхід
+                Увійти
               </Link>
               <Link
                 href="/register"

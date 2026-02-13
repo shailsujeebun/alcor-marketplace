@@ -237,6 +237,7 @@ model Brand {
 
   companyBrands CompanyBrand[]
   listings      Listing[]
+  categories    BrandCategory[]
 }
 
 model Category {
@@ -252,9 +253,22 @@ model Category {
 
   listings      Listing[]
   formTemplates FormTemplate[]
+  brands        BrandCategory[]
 
   @@unique([marketplaceId, slug])
   @@map("category")
+}
+
+model BrandCategory {
+  brandId    String
+  brand      Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  categoryId BigInt   @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@id([brandId, categoryId])
+  @@index([categoryId])
+  @@map("brand_category")
 }
 
 // ─── Form Templates ──────────────────────────────────

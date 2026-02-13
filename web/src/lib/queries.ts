@@ -93,11 +93,24 @@ export function useCategories(marketplaceId?: string) {
   });
 }
 
-export function useBrands() {
+export function useBrands(categoryId?: string) {
   return useQuery({
-    queryKey: ['brands'],
-    queryFn: api.getBrands,
+    queryKey: ['brands', categoryId ?? 'all'],
+    queryFn: () => api.getBrands(categoryId),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCreateBrand() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name: string; categoryId?: string }) => api.createBrand(data),
+    onSuccess: (_brand, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['brands'] });
+      if (variables.categoryId) {
+        queryClient.invalidateQueries({ queryKey: ['brands', variables.categoryId] });
+      }
+    },
   });
 }
 

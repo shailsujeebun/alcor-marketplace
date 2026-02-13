@@ -1,9 +1,7 @@
-'use client';
-
 import { useState } from 'react';
 import { Bookmark } from 'lucide-react';
 import { SearchInput } from '@/components/ui/search-input';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCategories, useBrands, useCountries, useCities, useCreateSavedSearch } from '@/lib/queries';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -47,6 +45,31 @@ export function ListingsFilters({ filters, onFilterChange, onClear }: ListingsFi
 
   const hasFilters = Object.values(filters).some(Boolean);
 
+  const FilterSelect = ({
+    value,
+    onChange,
+    placeholder,
+    options,
+  }: {
+    value: string;
+    onChange: (val: string) => void;
+    placeholder: string;
+    options: { value: string; label: string }[];
+  }) => (
+    <Select value={value || undefined} onValueChange={onChange}>
+      <SelectTrigger>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((opt) => (
+          <SelectItem key={opt.value} value={opt.value}>
+            {opt.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
   return (
     <div className="glass-card p-6 space-y-5">
       <div className="flex items-center justify-between">
@@ -66,7 +89,7 @@ export function ListingsFilters({ filters, onFilterChange, onClear }: ListingsFi
 
       <div>
         <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Сортування</label>
-        <Select
+        <FilterSelect
           value={filters.sort}
           onChange={(v) => onFilterChange('sort', v)}
           placeholder="За замовчуванням"
@@ -82,7 +105,7 @@ export function ListingsFilters({ filters, onFilterChange, onClear }: ListingsFi
 
       <div>
         <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Категорія</label>
-        <Select
+        <FilterSelect
           value={filters.categoryId}
           onChange={(v) => onFilterChange('categoryId', v)}
           placeholder="Усі категорії"
@@ -95,7 +118,7 @@ export function ListingsFilters({ filters, onFilterChange, onClear }: ListingsFi
 
       <div>
         <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Марка</label>
-        <Select
+        <FilterSelect
           value={filters.brandId}
           onChange={(v) => onFilterChange('brandId', v)}
           placeholder="Усі марки"
@@ -105,7 +128,7 @@ export function ListingsFilters({ filters, onFilterChange, onClear }: ListingsFi
 
       <div>
         <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Тип оголошення</label>
-        <Select
+        <FilterSelect
           value={filters.listingType}
           onChange={(v) => onFilterChange('listingType', v)}
           placeholder="Усі типи"
@@ -119,7 +142,7 @@ export function ListingsFilters({ filters, onFilterChange, onClear }: ListingsFi
 
       <div>
         <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Стан</label>
-        <Select
+        <FilterSelect
           value={filters.condition}
           onChange={(v) => onFilterChange('condition', v)}
           placeholder="Будь-який стан"
@@ -153,7 +176,7 @@ export function ListingsFilters({ filters, onFilterChange, onClear }: ListingsFi
 
       <div>
         <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Валюта</label>
-        <Select
+        <FilterSelect
           value={filters.priceCurrency}
           onChange={(v) => onFilterChange('priceCurrency', v)}
           placeholder="Усі валюти"
@@ -187,7 +210,7 @@ export function ListingsFilters({ filters, onFilterChange, onClear }: ListingsFi
 
       <div>
         <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Євро клас</label>
-        <Select
+        <FilterSelect
           value={filters.euroClass}
           onChange={(v) => onFilterChange('euroClass', v)}
           placeholder="Усі класи"
@@ -202,7 +225,7 @@ export function ListingsFilters({ filters, onFilterChange, onClear }: ListingsFi
 
       <div>
         <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Країна</label>
-        <Select
+        <FilterSelect
           value={filters.countryId}
           onChange={(v) => {
             onFilterChange('countryId', v);
@@ -216,7 +239,7 @@ export function ListingsFilters({ filters, onFilterChange, onClear }: ListingsFi
       {filters.countryId && (
         <div>
           <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Місто</label>
-          <Select
+          <FilterSelect
             value={filters.cityId}
             onChange={(v) => onFilterChange('cityId', v)}
             placeholder="Усі міста"

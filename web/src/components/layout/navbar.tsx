@@ -58,17 +58,15 @@ export function Navbar() {
   return (
     <>
       <header className="sticky top-0 z-50 glass-card !rounded-none border-x-0 border-t-0">
-        <div className="container-main flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl gradient-cta flex items-center justify-center text-white font-bold text-lg">
-              А
-            </div>
+        <div className="container-main flex items-center h-16">
+          <Link href="/" className="flex items-center gap-3 mr-12">
+
             <span className="font-heading font-bold text-xl gradient-text">
               АЛЬКОР
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-8 mr-auto">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -88,7 +86,7 @@ export function Navbar() {
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-3 ml-auto">
+          <div className="hidden md:flex items-center gap-3">
             {isLoading ? (
               <div className="w-8 h-8 rounded-full bg-[var(--border-color)] animate-pulse" />
             ) : isAuthenticated && user ? (

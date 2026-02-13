@@ -10,7 +10,7 @@ interface AuthTabsProps {
 
 export function AuthTabs({ defaultTab = 'login' }: AuthTabsProps) {
     return (
-        <div className="w-full max-w-md mx-auto">
+        <div className="w-full max-w-4xl mx-auto px-4">
             <div className="mb-8 text-center">
                 <h1 className="font-heading font-bold text-3xl gradient-text mb-2">
                     АЛЬКОР
@@ -27,7 +27,7 @@ export function AuthTabs({ defaultTab = 'login' }: AuthTabsProps) {
                             value="login"
                             className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm text-[var(--text-secondary)] font-medium h-full"
                         >
-                            Вхід
+                            Login
                         </TabsTrigger>
                         <TabsTrigger
                             value="register"
@@ -37,7 +37,7 @@ export function AuthTabs({ defaultTab = 'login' }: AuthTabsProps) {
                         </TabsTrigger>
                     </TabsList>
 
-                    <div className="mt-6 glass-card p-6 sm:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="mt-6 glass-card p-8 sm:p-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <TabsContent value="login" className="mt-0">
                             {/* We pass a prop to hide the bottom link if we wanted, but for now standard form */}
                             <LoginForm />
@@ -51,3 +51,4 @@ export function AuthTabs({ defaultTab = 'login' }: AuthTabsProps) {
         </div>
     );
 }
+ 

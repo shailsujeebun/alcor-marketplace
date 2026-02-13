@@ -18,6 +18,35 @@
   --animate-float: float 6s ease-in-out infinite;
   --animate-fade-up: fade-up 0.6s ease-out forwards;
   --animate-pulse-slow: pulse 3s ease-in-out infinite;
+  
+  /* Shadcn UI Semantics */
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+  
+  --color-card: var(--bg-card);
+  --color-card-foreground: var(--text-primary);
+  
+  --color-popover: var(--bg-secondary);
+  --color-popover-foreground: var(--text-primary);
+  
+  --color-primary: var(--color-blue-bright);
+  --color-primary-foreground: #ffffff;
+  
+  --color-secondary: var(--bg-secondary);
+  --color-secondary-foreground: var(--text-primary);
+  
+  --color-muted: var(--bg-secondary);
+  --color-muted-foreground: var(--text-secondary);
+  
+  --color-accent: var(--color-blue-accent);
+  --color-accent-foreground: var(--text-primary);
+  
+  --color-destructive: var(--status-red);
+  --color-destructive-foreground: #ffffff;
+  
+  --color-border: var(--border-color);
+  --color-input: var(--border-color);
+  --color-ring: var(--color-blue-bright);
 
   @keyframes float {
     0%, 100% { transform: translateY(0) rotate(0deg); }

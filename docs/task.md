@@ -1,0 +1,32 @@
+# Task Checklist
+
+- [/] Phase 1 — Foundations (Week 1 Equivalent Scope)
+    - [ ] Create tables: `marketplace`, `category`, `listing`, `attributes`, `facts`, `media`, `seller_contact`
+    - [ ] Build endpoints:
+        - [ ] `POST /listings/draft` (Creates draft)
+        - [ ] `GET /marketplaces`
+        - [ ] `GET /categories?marketplace_id=...`
+- [ ] Phase 2 — Dynamic Forms (Core of Step 2)
+    - [ ] Build template tables: `form_template`, `form_field`, `field_option`
+    - [ ] Create admin seed scripts for templates
+    - [ ] Build endpoints:
+        - [ ] `GET /categories/:id/template` (Returns schema + options)
+        - [ ] `PUT /listings/:id/attributes` (Validates + stores)
+    - [ ] Implement Validator: Required, min/max, regex, conditional rules
+- [ ] Phase 3 — Media Pipeline (Step 3)
+    - [ ] Build Endpoint: Presigned upload
+    - [ ] Implement Features:
+        - [ ] Save media rows
+        - [ ] Background job: Thumbnails, metadata extraction
+- [ ] Phase 4 — Contacts + Publish (Step 4)
+    - [ ] Build Endpoints:
+        - [ ] `PUT /listings/:id/contact`
+        - [ ] `POST /listings/:id/publish` (Validate all steps, set status published, build slug, index to search)
+- [ ] Phase 5 — Search & Filters
+    - [ ] Build Search Index
+    - [ ] Implement Features:
+        - [ ] Facets per marketplace (Cars facets differ)
+        - [ ] Related listings logic
+    - [ ] Public Endpoints:
+        - [ ] `GET /search`
+        - [ ] `GET /listings/:id`

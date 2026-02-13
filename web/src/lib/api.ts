@@ -363,6 +363,7 @@ export const getMySubscription = () =>
   fetchApi<import('@/types/api').Subscription | null>('/subscriptions/me');
 
 // Reference data
+export const getMarketplaces = () => fetchApi<import('@/types/api').Marketplace[]>('/marketplaces');
 export const getCategories = () => fetchApi<Category[]>('/categories');
 export const getBrands = () => fetchApi<Brand[]>('/brands');
 export const getCountries = () => fetchApi<Country[]>('/countries');
@@ -407,8 +408,9 @@ export interface FormField {
   id: string;
   key: string;
   label: string;
-  type: 'TEXT' | 'NUMBER' | 'SELECT' | 'MULTISELECT' | 'BOOLEAN';
+  type: 'TEXT' | 'NUMBER' | 'SELECT' | 'MULTISELECT' | 'BOOLEAN' | 'RADIO' | 'CHECKBOX_GROUP' | 'DATE' | 'YEAR_RANGE' | 'COLOR' | 'LOCATION' | 'MEDIA' | 'RICHTEXT' | 'PRICE';
   isRequired: boolean;
+  section?: string;
   validationRules?: Record<string, any>;
   options?: FieldOption[];
 }
@@ -546,5 +548,15 @@ export const createAdminTemplate = (data: { categoryId: number; name?: string; f
     body: JSON.stringify(data),
   });
 
+export const updateAdminTemplate = (id: number, data: { fields: any[] }) =>
+  fetchApi<FormTemplate>(`/admin/templates/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+
 export const getAdminTemplate = (id: number) =>
   fetchApi<FormTemplate>(`/admin/templates/${id}`);
+
+export const getCategoryTemplateByCategory = (categoryId: number) =>
+  fetchApi<FormTemplate | null>(`/categories/${categoryId}/template`).catch(() => null);
+

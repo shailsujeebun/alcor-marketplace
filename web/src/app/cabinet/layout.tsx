@@ -48,7 +48,7 @@ export default function CabinetLayout({
 
   return (
     <div className="container-main py-6">
-      <div className="flex flex-col md:flex-row gap-6">
+      <div className="flex flex-col md:flex-row gap-10">
         {/* Sidebar — desktop */}
         <aside className="hidden md:block w-60 flex-shrink-0">
           <nav className="glass-card p-3 sticky top-24 space-y-1">

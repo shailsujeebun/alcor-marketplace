@@ -1,30 +1,39 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
-import { useCategories } from '@/lib/queries';
-
-// Category tabs - these are just views/filters of existing categories
-const CATEGORY_TABS = [
-    { id: 'agroline', label: 'Agroline', icon: '🚜' },
-    { id: 'autoline', label: 'Autoline', icon: '🚛' },
-    { id: 'machineryline', label: 'Machineryline', icon: '⚙️' },
-];
+import { useCategories, useMarketplaces } from '@/lib/queries';
 
 export default function SelectCategoryPage() {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState('autoline');
-    const [searchQuery, setSearchQuery] = useState('');
-    const { data: categories, isLoading } = useCategories();
+    const { data: marketplaces, isLoading: isMarketplacesLoading } = useMarketplaces();
+    const { data: categories, isLoading: isCategoriesLoading } = useCategories();
 
-    // Filter categories based on active tab and search
+    const [activeTab, setActiveTab] = useState<string>('');
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // Set initial active tab once marketplaces are loaded
+    useEffect(() => {
+        if (marketplaces && marketplaces.length > 0 && !activeTab) {
+            setActiveTab(marketplaces[0].id);
+        }
+    }, [marketplaces, activeTab]);
+
+    const isLoading = isMarketplacesLoading || isCategoriesLoading;
+
+    // Filter categories based on active tab (marketplace) and search
     const filteredCategories = categories?.filter((cat) => {
-        const matchesSearch = cat.name.toLowerCase().includes(searchQuery.toLowerCase());
-        // For now, show all categories in all tabs
-        // You can add category.type field in database to filter by tab
-        return matchesSearch;
+        // Filter by marketplace
+        if (activeTab && cat.marketplaceId !== activeTab) return false;
+
+        // Filter by search
+        if (searchQuery) {
+            return cat.name.toLowerCase().includes(searchQuery.toLowerCase());
+        }
+
+        return true;
     });
 
     const handleCategorySelect = (categoryId: string) => {
@@ -76,26 +85,28 @@ export default function SelectCategoryPage() {
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex gap-2 mb-8 border-b border-[var(--border-color)]">
-                        {CATEGORY_TABS.map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`px-6 py-3 font-medium transition-colors relative ${activeTab === tab.id
-                                    ? 'text-blue-bright'
-                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                                    }`}
-                            >
-                                <span className="flex items-center gap-2">
-                                    <span>{tab.icon}</span>
-                                    {tab.label}
-                                </span>
-                                {activeTab === tab.id && (
-                                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-bright" />
-                                )}
-                            </button>
-                        ))}
-                    </div>
+                    {marketplaces && marketplaces.length > 0 && (
+                        <div className="flex gap-2 mb-8 border-b border-[var(--border-color)] overflow-x-auto pb-1">
+                            {marketplaces.map((mp) => (
+                                <button
+                                    key={mp.id}
+                                    onClick={() => setActiveTab(mp.id)}
+                                    className={`px-6 py-3 font-medium transition-colors relative whitespace-nowrap ${activeTab === mp.id
+                                        ? 'text-blue-bright'
+                                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                                        }`}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <span>{getMarketplaceIcon(mp.key)}</span>
+                                        {mp.name}
+                                    </span>
+                                    {activeTab === mp.id && (
+                                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-bright" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Categories Grid */}
                     {isLoading ? (
@@ -115,7 +126,7 @@ export default function SelectCategoryPage() {
                                     onClick={() => handleCategorySelect(category.id)}
                                     className="glass-card p-6 hover:border-blue-bright/40 transition-all group text-center"
                                 >
-                                    {/* Icon placeholder - you can add category icons later */}
+                                    {/* Icon placeholder */}
                                     <div className="w-16 h-16 mx-auto mb-3 text-4xl flex items-center justify-center">
                                         {getCategoryIcon(category.name)}
                                     </div>
@@ -130,7 +141,9 @@ export default function SelectCategoryPage() {
                     {filteredCategories?.length === 0 && !isLoading && (
                         <div className="text-center py-12">
                             <p className="text-[var(--text-secondary)]">
-                                Категорій не знайдено. Спробуйте інший пошуковий запит.
+                                {marketplaces && marketplaces.length === 0
+                                    ? 'No marketplaces found.'
+                                    : 'Категорій не знайдено. Спробуйте інший пошуковий запит.'}
                             </p>
                         </div>
                     )}
@@ -172,6 +185,16 @@ export default function SelectCategoryPage() {
             </div>
         </div>
     );
+}
+
+function getMarketplaceIcon(key: string): string {
+    const k = key.toLowerCase();
+    if (k.includes('agro') || k.includes('farm')) return '🚜';
+    if (k.includes('auto') || k.includes('car')) return '🚗';
+    if (k.includes('truck') || k.includes('transport')) return '🚛';
+    if (k.includes('machinery') || k.includes('industry')) return '⚙️';
+    if (k.includes('construct')) return '🏗️';
+    return '📦';
 }
 
 // Helper function to get category icon based on name

@@ -4,6 +4,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 
 export interface CategoryTreeNode {
   id: string;
+  marketplaceId: string;
   slug: string;
   name: string;
   parentId: string | null;
@@ -42,6 +43,7 @@ export class CategoriesService {
     const buildTree = (parentId: string | null): CategoryTreeNode[] => {
       return (map.get(parentId) ?? []).map((cat) => ({
         id: cat.id.toString(),
+        marketplaceId: cat.marketplaceId.toString(),
         slug: cat.slug,
         name: cat.name,
         parentId: cat.parentId ? cat.parentId.toString() : null,

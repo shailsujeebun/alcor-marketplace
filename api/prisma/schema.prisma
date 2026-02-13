@@ -285,6 +285,7 @@ model FormField {
   helpText     String?      @map("help_text")
   validations  Json         @default("{}") // min/max/regex/unit
   visibilityIf Json         @default("{}") @map("visibility_if") // conditional rules
+  section      String?      // Logic grouping like 'Engine', 'Dimensions'
 
   options FieldOption[]
 

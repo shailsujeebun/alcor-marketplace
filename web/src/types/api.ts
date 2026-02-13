@@ -29,8 +29,16 @@ export interface ActivityType {
   name: string;
 }
 
+export interface Marketplace {
+  id: string;
+  key: string;
+  name: string;
+  isActive: boolean;
+}
+
 export interface Category {
   id: string;
+  marketplaceId: string;
   slug: string;
   name: string;
   parentId: string | null;

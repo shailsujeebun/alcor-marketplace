@@ -124,3 +124,8 @@ The API is failing to start due to two critical issues identified from the termi
 - **API:** Running on port 3000 (no conflicts).
 - **Frontend:** Running on port 3001.
 - **Database:** Seeded with test data (Users, Companies, Categories).
+
+### Dashboard UX Improvements (New)
+1.  **Layout Spacing:** Increased gap between sidebar and content to **40px** (`gap-10`) for better separation.
+2.  **Redundancy Removal:** Hidden "Quick Actions" bar when there are 0 ads, leaving only the main "Create your first ad" button.
+3.  **Typography:** Fixed trailing space in "Welcome, Admin!" greeting.

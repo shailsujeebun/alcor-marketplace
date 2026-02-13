@@ -33,7 +33,7 @@ export function CabinetOverview() {
   const paused = listings.filter((l: Listing) => l.status === 'PAUSED').length;
   const recent = listings.slice(0, 5);
 
-  const displayName = user?.firstName || user?.email?.split('@')[0] || 'Користувач';
+  const displayName = (user?.firstName || user?.email?.split('@')[0] || 'Користувач').trim();
 
   return (
     <div>
@@ -69,23 +69,25 @@ export function CabinetOverview() {
         })}
       </div>
 
-      {/* Quick actions */}
-      <div className="flex gap-3 mb-8">
-        <Link
-          href="/cabinet/listings/new"
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg gradient-cta text-white font-medium hover:opacity-90 transition-opacity"
-        >
-          <PlusCircle size={18} />
-          Нове оголошення
-        </Link>
-        <Link
-          href="/cabinet/listings"
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-blue-bright/40 transition-colors"
-        >
-          <List size={18} />
-          Всі оголошення
-        </Link>
-      </div>
+      {/* Quick actions - only show if there are listings */}
+      {total > 0 && (
+        <div className="flex gap-3 mb-8">
+          <Link
+            href="/cabinet/listings/new"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg gradient-cta text-white font-medium hover:opacity-90 transition-opacity"
+          >
+            <PlusCircle size={18} />
+            Нове оголошення
+          </Link>
+          <Link
+            href="/cabinet/listings"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-blue-bright/40 transition-colors"
+          >
+            <List size={18} />
+            Всі оголошення
+          </Link>
+        </div>
+      )}
 
       {/* Recent listings */}
       <h2 className="text-lg font-heading font-semibold text-[var(--text-primary)] mb-4">

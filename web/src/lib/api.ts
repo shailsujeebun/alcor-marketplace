@@ -8,6 +8,7 @@ import type {
   CompanyReview,
   Conversation,
   Country,
+  CreateBrandPayload,
   CreateConversationPayload,
   CreateCompanyPayload,
   CreateDealerLeadPayload,
@@ -374,7 +375,13 @@ export const getMySubscription = () =>
 export const getMarketplaces = () => fetchApi<Marketplace[]>('/marketplaces');
 export const getCategories = (marketplaceId?: string) =>
   fetchApi<Category[]>(`/categories${marketplaceId ? `?marketplaceId=${marketplaceId}` : ''}`);
-export const getBrands = () => fetchApi<Brand[]>('/brands');
+export const getBrands = (categoryId?: string) =>
+  fetchApi<Brand[]>(`/brands${categoryId ? `?categoryId=${categoryId}` : ''}`);
+export const createBrand = (data: CreateBrandPayload) =>
+  fetchApi<Brand>('/brands', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 export const getCountries = () => fetchApi<Country[]>('/countries');
 export const getCities = (countryId?: string) =>
   fetchApi<PaginatedResponse<City>>(`/cities${countryId ? `?countryId=${countryId}` : ''}`);

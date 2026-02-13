@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, LogIn, UserPlus, User, LogOut, ChevronDown, LayoutDashboard, Shield } from 'lucide-react';
+import { Menu, LogIn, UserPlus, LogOut, ChevronDown, LayoutDashboard, Shield } from 'lucide-react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
 import { logoutUser } from '@/lib/auth-api';
@@ -18,13 +19,14 @@ export function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, isLoading, accessToken, logout } = useAuthStore();
+  const isAdminUser = user?.role === 'ADMIN' || user?.role === 'MANAGER';
 
   const navLinks = [
     { href: '/', label: 'Головна' },
     { href: '/listings', label: 'Оголошення' },
     { href: '/companies', label: 'Компанії' },
     { href: '/categories', label: 'Категорії' },
-    ...((user?.role === 'ADMIN' || user?.role === 'MANAGER')
+    ...((isAdminUser)
       ? [{ href: '/admin', label: 'Адмін' }]
       : []),
   ];
@@ -57,13 +59,18 @@ export function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 glass-card !rounded-none border-x-0 border-t-0">
-        <div className="container-main flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl gradient-cta flex items-center justify-center text-white font-bold text-lg">
-              А
-            </div>
-            <span className="font-heading font-bold text-xl gradient-text">
+      <header className="site-navbar sticky top-0 z-50 border-b border-[var(--border-color)] bg-[color:var(--bg-secondary)]/90 backdrop-blur-xl">
+        <div className="container-main flex items-center justify-between h-18 min-h-[72px]">
+          <Link href="/" className="logo-link flex items-center gap-3">
+            <Image
+              src="/alcor-logo.png"
+              alt="АЛЬКОР Logo"
+              width={50}
+              height={50}
+              className="logo-image h-[42px] w-auto"
+              priority
+            />
+            <span className="logo-text font-heading font-bold text-2xl tracking-tight">
               АЛЬКОР
             </span>
           </Link>
@@ -74,10 +81,10 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  'text-sm font-medium transition-colors relative py-1',
+                  'site-nav-link text-sm font-medium transition-colors relative py-1',
                   pathname === link.href
-                    ? 'text-blue-bright'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
+                    ? 'site-nav-link-active text-blue-bright'
+                    : 'text-[var(--text-secondary)] hover:text-blue-light',
                 )}
               >
                 {link.label}
@@ -126,12 +133,22 @@ export function Navbar() {
                         <LayoutDashboard size={16} />
                         Кабінет
                       </Link>
+                      {isAdminUser && (
+                        <Link
+                          href="/admin"
+                          onClick={() => setDropdownOpen(false)}
+                          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-orange-400 hover:bg-orange-500/10 transition-colors"
+                        >
+                          <Shield size={16} />
+                          Вхід в адмін
+                        </Link>
+                      )}
                       <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
                       >
                         <LogOut size={16} />
-                        Вийти
+                        Вийти з акаунта
                       </button>
                     </div>
                   )}
@@ -141,21 +158,21 @@ export function Navbar() {
               <div className="flex items-center gap-3">
                 <Link
                   href="/login"
-                  className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors font-medium"
+                  className="site-auth-link flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-blue-light transition-colors font-medium"
                 >
                   <LogIn size={16} />
-                  Вхід
+                  Увійти
                 </Link>
                 <Link
                   href="/register"
-                  className="gradient-cta text-white px-5 py-2 rounded-full text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                  className="site-auth-primary gradient-cta text-white px-5 py-2 rounded-full text-sm font-semibold hover:opacity-90 transition-all flex items-center gap-1.5"
                 >
                   <UserPlus size={16} />
                   Реєстрація
                 </Link>
                 <Link
                   href="/ad-placement"
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-1.5"
+                  className="site-action-orange bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5"
                 >
                   <span className="text-lg">+</span>
                   Розмістити оголошення

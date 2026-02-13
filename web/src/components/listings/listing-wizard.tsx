@@ -102,9 +102,10 @@ export function ListingWizard({ listing }: ListingWizardProps) {
   }, [user, listing]);
 
   const steps = [
+    { num: 0, label: 'Розділ', icon: CheckCircle2 },
     { num: 1, label: 'Опис', icon: FileText },
     { num: 2, label: 'Фото та відео', icon: ImageIcon },
-    { num: 3, label: 'Контакти', icon: User },
+    { num: 3, label: 'Контакти продавця', icon: User },
   ];
 
   return (
@@ -128,7 +129,7 @@ export function ListingWizard({ listing }: ListingWizardProps) {
 
         {/* Right Sidebar - Steps (Sticky) */}
         <div className="hidden xl:block w-72 flex-shrink-0 sticky top-24">
-          <div className="glass-card p-6">
+          <div className="glass-card wizard-section-card animate-fade-up p-6">
             <h3 className="font-heading font-bold text-[var(--text-primary)] mb-6">Етапи подачі</h3>
 
             <div className="space-y-6 relative">
@@ -137,8 +138,7 @@ export function ListingWizard({ listing }: ListingWizardProps) {
 
               {steps.map((step) => {
                 const isActive = currentStep === step.num;
-                const isCompleted = currentStep > step.num;
-                const Icon = step.icon;
+                const isCompleted = step.num === 0 ? true : currentStep > step.num;
 
                 return (
                   <div key={step.num} className={`flex items-center gap-4 ${isActive ? 'opacity-100' : 'opacity-60'}`}>

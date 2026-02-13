@@ -22,17 +22,27 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div>
-      <h1 className="text-3xl font-heading font-bold text-[var(--text-primary)] mb-6">
-        Панель адміністратора
-      </h1>
+    <div className="space-y-6">
+      <section className="glass-card p-5 md:p-7">
+        <div className="flex flex-col gap-2">
+          <span className="inline-flex w-fit px-3 py-1 rounded-full text-xs font-semibold bg-blue-bright/10 text-blue-bright border border-blue-bright/25">
+            Admin Center
+          </span>
+          <h1 className="text-3xl md:text-4xl font-heading font-bold text-[var(--text-primary)]">
+            Панель адміністратора
+          </h1>
+          <p className="text-sm md:text-base text-[var(--text-secondary)]">
+            Контролюйте ключові показники платформи, модеруйте контент і керуйте операційними процесами.
+          </p>
+        </div>
+      </section>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {statCards.map((card) => {
           const Icon = card.icon;
           return (
-            <div key={card.label} className="glass-card p-5">
+            <div key={card.label} className="glass-card p-5 card-hover">
               <div className="flex items-center justify-between mb-3">
                 <div className={`w-12 h-12 rounded-xl ${card.bgClass} flex items-center justify-center`}>
                   <Icon size={24} className={card.iconClass} />
@@ -50,19 +60,19 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Links */}
-      <div className="glass-card p-6">
-        <h2 className="text-xl font-heading font-bold text-[var(--text-primary)] mb-4">
+      <div className="glass-card p-6 md:p-7">
+        <h2 className="text-xl md:text-2xl font-heading font-bold text-[var(--text-primary)] mb-5">
           Швидкі дії
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
           {quickLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="p-4 rounded-lg border border-[var(--border-color)] hover:border-blue-bright/40 transition-colors"
+              className="p-4 md:p-5 rounded-xl border border-[var(--border-color)] hover:border-blue-bright/40 hover:bg-blue-bright/[0.04] transition-all"
             >
-              <div className="font-medium text-[var(--text-primary)]">{link.label}</div>
-              <div className="text-sm text-[var(--text-secondary)] mt-1">{link.desc}</div>
+              <div className="font-semibold text-[var(--text-primary)]">{link.label}</div>
+              <div className="text-sm text-[var(--text-secondary)] mt-1.5">{link.desc}</div>
             </Link>
           ))}
         </div>

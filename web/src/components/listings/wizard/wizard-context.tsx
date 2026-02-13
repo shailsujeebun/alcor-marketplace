@@ -4,27 +4,24 @@ import type { Dispatch, SetStateAction } from 'react';
 
 // Unified types
 export interface FormData {
+    // Universal fields (always present)
     title: string;
     description: string;
     categoryId: string;
-    brandId: string;
-    listingType: string;
-    condition: string;
-    year: string;
-    priceAmount: string;
-    priceCurrency: string;
-    priceType: string;
-    hoursValue: string;
-    hoursUnit: string;
-    euroClass: string;
+
+    // Location (universal)
     countryId: string;
     cityId: string;
+
+    // Seller information (universal)
     sellerName: string;
     sellerEmail: string;
     sellerPhones: string;
     companyId: string;
-    externalUrl: string;
-    dynamicAttributes: Record<string, string>;
+
+    // Category-specific fields (from template)
+    // This includes: brand, year, condition, price, etc.
+    dynamicAttributes: Record<string, any>;
 }
 
 export interface MediaItem {

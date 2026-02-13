@@ -28,7 +28,7 @@ export interface FormData {
 }
 
 export interface MediaItem {
-    id: string;
+    id?: string;
     url: string;
     key?: string;
     file?: File;

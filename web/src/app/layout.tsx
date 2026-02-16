@@ -9,6 +9,7 @@ import { TopBar } from '@/components/layout/top-bar';
 import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
 import { DomErrorBoundary } from '@/components/providers/dom-error-boundary';
+import { TranslationProvider } from '@/components/providers/translation-provider';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -37,12 +38,14 @@ export default function RootLayout({
           <QueryProvider>
             <AuthProvider>
               <DomErrorBoundary>
-                <AOSProvider>
-                  <TopBar />
-                  <Navbar />
-                  <main className="min-h-screen pb-24 md:pb-32">{children}</main>
-                  <Footer />
-                </AOSProvider>
+                <TranslationProvider>
+                  <AOSProvider>
+                    <TopBar />
+                    <Navbar />
+                    <main className="min-h-screen pb-24 md:pb-32">{children}</main>
+                    <Footer />
+                  </AOSProvider>
+                </TranslationProvider>
               </DomErrorBoundary>
             </AuthProvider>
           </QueryProvider>

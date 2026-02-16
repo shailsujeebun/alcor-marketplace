@@ -94,3 +94,33 @@ web/src/components/listings/
 - **Validation**: Add stricter Zod validation for each step before proceeding.
 - **Draft Expiry**: Implement cleanup for old drafts in `localStorage`.
 - **Mobile UI**: Further optimize the sidebar for mobile views (currently stacks or hides).
+
+---
+
+## Updates (2026-02-16)
+
+### Listing Wizard
+
+- Fixed directive typo in Step 1 component (`'use client'`).
+- Updated category selection in `description-step.tsx` to a parent/subcategory cascading flow:
+  - Parent category selection first.
+  - Subcategory selection appears only when children exist.
+  - Wizard stores the final selected category id for template loading.
+- Added better dynamic form states in Step 1:
+  - Spinner while template is loading.
+  - Clear empty-state message when no custom template is configured.
+- Expanded shared `FormData` in `wizard-context.tsx` and `listing-wizard.tsx` initialization for core listing fields:
+  - `brandId`, `condition`, `year`, `priceAmount`, `priceCurrency`, `priceType`, `listingType`, `euroClass`, `hoursValue`, `hoursUnit`, `externalUrl`.
+- Wrapped `ListingWizard` `useSearchParams` usage with `Suspense` to satisfy Next.js 16 App Router behavior.
+
+### Project-Wide Translation
+
+- Added global translation provider at `web/src/components/providers/translation-provider.tsx`.
+- Added fixed `EN/UA` language toggle button in the app shell.
+- Added translation API route `web/src/app/api/translate/route.ts`:
+  - Batch translation endpoint with simple server-side cache.
+  - Safe fallback to original text on request failures.
+- Translation behavior applies across the app, including:
+  - Text nodes in rendered pages.
+  - Common UI attributes (`placeholder`, `title`, `aria-label`, button `value`).
+  - Dynamically inserted content via `MutationObserver`.

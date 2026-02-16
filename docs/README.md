@@ -89,3 +89,21 @@ This project is proprietary software.
 ## 👥 Contact
 
 For more information, please refer to the detailed documentation files listed above.
+
+## Updates (2026-02-16)
+
+- Admin templates were expanded into full lifecycle management:
+  - New admin template list page at `/admin/templates`.
+  - Backend endpoints for listing, deleting, and toggling template status.
+  - Versioned template creation per category with automatic active-template switching.
+- Form Builder (`/admin/templates/builder`) now supports loading by query params (`templateId`, `categoryId`) and has separate actions for "Save Changes" and "Save as New Version".
+- Listing wizard improvements shipped:
+  - Fixed client directive issue in description step.
+  - Added parent/subcategory cascading selection and better dynamic-form loading states.
+  - Extended wizard form state with listing core fields (brand, condition, year, price, listing type, euro class, hours, external URL).
+  - Wrapped wizard usage of `useSearchParams` with `Suspense` for Next.js 16 compatibility.
+- Project-wide language toggle was added:
+  - Global `EN/UA` switch button in the app shell.
+  - `/api/translate` endpoint for batch translation requests.
+  - Full-page runtime translation for text nodes and common UI attributes.
+- Lint cleanup was applied and web lint/build are passing after rule and code adjustments.

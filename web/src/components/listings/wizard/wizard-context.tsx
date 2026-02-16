@@ -13,6 +13,19 @@ export interface FormData {
     countryId: string;
     cityId: string;
 
+    // Core listing details (optional by category)
+    brandId: string;
+    condition: string;
+    year: string;
+    priceAmount: string;
+    priceCurrency: string;
+    priceType: string;
+    listingType: string;
+    euroClass: string;
+    hoursValue: string;
+    hoursUnit: string;
+    externalUrl: string;
+
     // Seller information (universal)
     sellerName: string;
     sellerEmail: string;

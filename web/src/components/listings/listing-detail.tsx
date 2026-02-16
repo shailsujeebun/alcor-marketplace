@@ -33,7 +33,6 @@ export function ListingDetail({ id }: { id: string }) {
     if (isAuthenticated && id) {
       recordView.mutate(id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isAuthenticated]);
 
   if (isLoading) {

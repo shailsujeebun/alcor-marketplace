@@ -85,7 +85,15 @@ export function useMarketplaces() {
   });
 }
 
-export function useCategories(marketplaceId?: string) {
+export function useMarketplaces() {
+  return useQuery({
+    queryKey: ['marketplaces'],
+    queryFn: api.getMarketplaces,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useBrands() {
   return useQuery({
     queryKey: ['categories', marketplaceId ?? 'all'],
     queryFn: () => api.getCategories(marketplaceId),
@@ -253,6 +261,34 @@ export function useAdminStats() {
   return useQuery({
     queryKey: ['admin-stats'],
     queryFn: api.getAdminStats,
+  });
+}
+
+export function useAdminTemplates() {
+  return useQuery({
+    queryKey: ['admin-templates'],
+    queryFn: api.getAdminTemplates,
+  });
+}
+
+export function useDeleteAdminTemplate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.deleteAdminTemplate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-templates'] });
+    },
+  });
+}
+
+export function useUpdateAdminTemplateStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) =>
+      api.updateAdminTemplateStatus(id, isActive),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-templates'] });
+    },
   });
 }
 
@@ -631,6 +667,8 @@ export function useDeleteSavedSearch() {
 }
 
 // ─── Plans & Subscriptions ─────────────────────────
+
+
 
 export function usePlans() {
   return useQuery({

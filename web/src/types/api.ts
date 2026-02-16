@@ -465,3 +465,18 @@ export interface Subscription {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface AdminTemplate {
+  id: string;
+  categoryId: string;
+  version: number;
+  isActive: boolean;
+  createdAt: string;
+  category?: {
+    id: string;
+    name: string;
+    slug: string;
+    marketplace?: { name: string };
+  };
+  fields?: { id: string }[];
+}

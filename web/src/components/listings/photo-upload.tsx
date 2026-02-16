@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useRef, useState, useCallback } from 'react';
 import { ImagePlus, X, GripVertical } from 'lucide-react';
@@ -45,13 +45,12 @@ function PhotoThumb({ photo, index, onRemove, onDragStart, onDragEnter, onDragEn
     >
       {imgError ? (
         <div className="w-full h-full flex items-center justify-center bg-[var(--bg-primary)] text-[var(--text-secondary)] text-xs">
-          Помилка
+          ÐŸÐ¾Ð¼Ð¸Ð»ÐºÐ°
         </div>
       ) : (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={photo.url}
-          alt={`Фото ${index + 1}`}
+          alt={`Ð¤Ð¾Ñ‚Ð¾ ${index + 1}`}
           className="w-full h-full object-cover"
           onError={() => setImgError(true)}
         />
@@ -79,7 +78,7 @@ function PhotoThumb({ photo, index, onRemove, onDragStart, onDragEnter, onDragEn
       {/* Index badge */}
       {index === 0 && (
         <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded text-xs bg-blue-500/80 text-white font-medium">
-          Головне
+          Ð“Ð¾Ð»Ð¾Ð²Ð½Ðµ
         </span>
       )}
     </div>
@@ -152,10 +151,10 @@ export function PhotoUpload({ photos, onChange, maxPhotos = 10 }: PhotoUploadPro
         >
           <ImagePlus size={40} className="text-[var(--text-secondary)]" />
           <span className="text-sm text-[var(--text-secondary)]">
-            Натисніть, щоб додати фото ({photos.length}/{maxPhotos})
+            ÐÐ°Ñ‚Ð¸ÑÐ½Ñ–Ñ‚ÑŒ, Ñ‰Ð¾Ð± Ð´Ð¾Ð´Ð°Ñ‚Ð¸ Ñ„Ð¾Ñ‚Ð¾ ({photos.length}/{maxPhotos})
           </span>
           <span className="text-xs text-[var(--text-secondary)]">
-            JPG, PNG, WebP — до 10 МБ кожне
+            JPG, PNG, WebP â€” Ð´Ð¾ 10 ÐœÐ‘ ÐºÐ¾Ð¶Ð½Ðµ
           </span>
         </button>
       )}
@@ -188,7 +187,7 @@ export function PhotoUpload({ photos, onChange, maxPhotos = 10 }: PhotoUploadPro
 
       {photos.length > 1 && (
         <p className="text-xs text-[var(--text-secondary)] mt-2">
-          Перетягніть фото, щоб змінити порядок. Перше фото буде головним.
+          ÐŸÐµÑ€ÐµÑ‚ÑÐ³Ð½Ñ–Ñ‚ÑŒ Ñ„Ð¾Ñ‚Ð¾, Ñ‰Ð¾Ð± Ð·Ð¼Ñ–Ð½Ð¸Ñ‚Ð¸ Ð¿Ð¾Ñ€ÑÐ´Ð¾Ðº. ÐŸÐµÑ€ÑˆÐµ Ñ„Ð¾Ñ‚Ð¾ Ð±ÑƒÐ´Ðµ Ð³Ð¾Ð»Ð¾Ð²Ð½Ð¸Ð¼.
         </p>
       )}
     </div>

@@ -96,3 +96,35 @@ Updated `web/src/app/admin/layout.tsx` to include sidebar links:
     2.  Go to **Categories** to build the hierarchy (e.g., Industrial -> Generators -> Diesel).
     3.  Go to **Form Builder**, select a category (e.g., "Diesel Generators"), and define the specific fields (e.g., "Power Output", "Year", "Hours").
 4.  **Result**: Users trying to place an ad in "Diesel Generators" will now see the custom form you created.
+
+---
+
+## Updates (2026-02-16)
+
+### Backend (`api/src/admin`, `api/src/categories`)
+
+- Added template management endpoints:
+  - `GET /admin/templates`
+  - `DELETE /admin/templates/:id`
+  - `PATCH /admin/templates/:id/status` (`{ isActive: boolean }`)
+- Template creation now uses category-based versioning:
+  - New templates are created as the next version for that category.
+  - Existing active templates in the same category are automatically deactivated.
+- Template update/create operations now run in transactions with shared field/option creation logic.
+- Template responses are normalized for frontend usage (`id` as string, `key`, `type`, `isRequired`, `validationRules`, ordered options).
+- `GET /categories/:id-or-slug/template` now accepts both numeric category id and slug and returns the same normalized template structure.
+
+### Frontend Admin (`web/src/app/admin`, `web/src/lib`)
+
+- Admin sidebar template link moved from `/admin/templates/builder` to `/admin/templates`.
+- New template list page: `web/src/app/admin/templates/page.tsx`:
+  - Shows category, marketplace, version, status, field count, created date.
+  - Supports activate/deactivate, delete, and edit actions.
+- Form Builder improvements (`/admin/templates/builder`):
+  - Supports loading by `templateId` or `categoryId` query parameters.
+  - Better state hydration when editing existing templates.
+  - Distinct actions for `Save Changes` (update current template) and `Save as New Version` (create new template version).
+- API/query/type layer updates:
+  - Added `getAdminTemplates`, `deleteAdminTemplate`, `updateAdminTemplateStatus`.
+  - Added related React Query hooks.
+  - Added `AdminTemplate` type and `version` support in `FormTemplate`.

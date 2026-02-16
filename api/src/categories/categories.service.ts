@@ -13,7 +13,7 @@ export interface CategoryTreeNode {
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   create(dto: CreateCategoryDto) {
     const parentId = dto.parentId ? BigInt(dto.parentId) : undefined;
@@ -51,7 +51,6 @@ export class CategoriesService {
       orderBy: { name: 'asc' },
     });
 
-    // Map by parentId (converted to string for map key)
     const map = new Map<string | null, typeof all>();
     for (const cat of all) {
       const parentId = cat.parentId ? cat.parentId.toString() : null;
@@ -72,9 +71,42 @@ export class CategoriesService {
 
     return buildTree(null);
   }
+
+  private mapTemplate(template: any) {
+    return {
+      id: template.id.toString(),
+      categoryId: template.categoryId.toString(),
+      version: template.version,
+      isActive: template.isActive,
+      createdAt: template.createdAt,
+      fields: (template.fields ?? []).map((field: any) => ({
+        id: field.id.toString(),
+        key: field.fieldKey,
+        label: field.label,
+        type: field.fieldType,
+        isRequired: field.required,
+        section: field.section ?? undefined,
+        validationRules: field.validations ?? {},
+        options: (field.options ?? []).map((option: any) => ({
+          id: option.id.toString(),
+          value: option.value,
+          label: option.label,
+        })),
+      })),
+    };
+  }
+
   async findTemplate(slug: string) {
+    let whereCondition: any = { slug };
+
+    if (/^\d+$/.test(slug)) {
+      whereCondition = {
+        OR: [{ id: BigInt(slug) }, { slug }],
+      };
+    }
+
     const category = await this.prisma.category.findFirst({
-      where: { slug },
+      where: whereCondition,
       include: {
         formTemplates: {
           where: { isActive: true },
@@ -85,7 +117,7 @@ export class CategoriesService {
               orderBy: { sortOrder: 'asc' },
               include: {
                 options: {
-                  orderBy: { id: 'asc' },
+                  orderBy: { sortOrder: 'asc' },
                 },
               },
             },
@@ -98,17 +130,6 @@ export class CategoriesService {
       return null;
     }
 
-    const template = category.formTemplates[0];
-
-    // Serialization helper for BigInt
-    const serialize = (obj: any): any => {
-      return JSON.parse(
-        JSON.stringify(obj, (key, value) =>
-          typeof value === 'bigint' ? value.toString() : value,
-        ),
-      );
-    };
-
-    return serialize(template);
+    return this.mapTemplate(category.formTemplates[0]);
   }
 }

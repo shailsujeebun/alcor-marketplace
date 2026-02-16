@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+﻿import { createContext, useContext, useState } from 'react';
 import type { Listing } from '@/types/api';
 import type { Dispatch, SetStateAction } from 'react';
 
@@ -30,7 +30,6 @@ export interface MediaItem {
     key?: string;
     file?: File;
     isExisting?: boolean;
-    type?: 'PHOTO' | 'VIDEO' | 'PDF' | 'GALLERY' | 'COVER' | 'LOGO';
 }
 
 interface WizardContextType {

@@ -1,6 +1,5 @@
 'use client';
 
-<<<<<<< HEAD
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -10,10 +9,34 @@ import type { Category } from '@/types/api';
 
 // Helper to get marketplace icon by key
 function getMarketplaceIcon(key: string): string {
-    if (key.includes('agro')) return '🚜';
-    if (key.includes('auto')) return '🚛';
-    if (key.includes('machinery')) return '⚙️';
-    if (key.includes('drone')) return '🛸';
+    const k = key.toLowerCase();
+    if (k.includes('agro') || k.includes('farm')) return '🚜';
+    if (k.includes('auto') || k.includes('car')) return '🚗';
+    if (k.includes('truck') || k.includes('transport')) return '🚛';
+    if (k.includes('machinery') || k.includes('industry')) return '⚙️';
+    if (k.includes('construct')) return '🏗️';
+    return '📦';
+}
+
+// Helper function to get category icon based on name
+function getCategoryIcon(name: string): string {
+    const nameLower = name.toLowerCase();
+
+    if (nameLower.includes('трактор') || nameLower.includes('tractor')) return '🚜';
+    if (nameLower.includes('вантаж') || nameLower.includes('truck')) return '🚛';
+    if (nameLower.includes('автобус') || nameLower.includes('bus')) return '🚌';
+    if (nameLower.includes('причіп') || nameLower.includes('trailer')) return '🚚';
+    if (nameLower.includes('авто') || nameLower.includes('car')) return '🚗';
+    if (nameLower.includes('мото') || nameLower.includes('motorcycle')) return '🏍️';
+    if (nameLower.includes('екскаватор') || nameLower.includes('excavator')) return '🏗️';
+    if (nameLower.includes('навантажувач') || nameLower.includes('loader')) return '⚙️';
+    if (nameLower.includes('комбайн') || nameLower.includes('harvester')) return '🌾';
+    if (nameLower.includes('запчастин') || nameLower.includes('parts')) return '🔧';
+    if (nameLower.includes('бурова') || nameLower.includes('drill')) return '🔩';
+    if (nameLower.includes('кран') || nameLower.includes('crane')) return '🏗️';
+    if (nameLower.includes('генератор') || nameLower.includes('generator')) return '⚡';
+    if (nameLower.includes('насос') || nameLower.includes('pump')) return '🔧';
+
     return '📦';
 }
 
@@ -58,43 +81,6 @@ export default function SelectCategoryPage() {
             return next;
         });
     };
-=======
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Search } from 'lucide-react';
-import { useCategories, useMarketplaces } from '@/lib/queries';
-
-export default function SelectCategoryPage() {
-    const router = useRouter();
-    const { data: marketplaces, isLoading: isMarketplacesLoading } = useMarketplaces();
-    const { data: categories, isLoading: isCategoriesLoading } = useCategories();
-
-    const [activeTab, setActiveTab] = useState<string>('');
-    const [searchQuery, setSearchQuery] = useState('');
-
-    // Set initial active tab once marketplaces are loaded
-    useEffect(() => {
-        if (marketplaces && marketplaces.length > 0 && !activeTab) {
-            setActiveTab(marketplaces[0].id);
-        }
-    }, [marketplaces, activeTab]);
-
-    const isLoading = isMarketplacesLoading || isCategoriesLoading;
-
-    // Filter categories based on active tab (marketplace) and search
-    const filteredCategories = categories?.filter((cat) => {
-        // Filter by marketplace
-        if (activeTab && cat.marketplaceId !== activeTab) return false;
-
-        // Filter by search
-        if (searchQuery) {
-            return cat.name.toLowerCase().includes(searchQuery.toLowerCase());
-        }
-
-        return true;
-    });
->>>>>>> feat-add
 
     const handleCategorySelect = (categoryId: string) => {
         router.push(`/ad-placement/details?categoryId=${categoryId}&marketplaceId=${effectiveMarketplaceId ?? ''}`);
@@ -119,7 +105,6 @@ export default function SelectCategoryPage() {
                 </div>
             </div>
 
-<<<<<<< HEAD
             <div className="container-main py-8">
                 {/* Step Indicator */}
                 <div className="mb-8">
@@ -187,23 +172,9 @@ export default function SelectCategoryPage() {
                                     <div className="h-4 bg-[var(--border-color)] rounded w-1/2" />
                                     <div className="h-4 bg-[var(--border-color)] rounded w-2/3" />
                                 </div>
-=======
-            <div className="container-main py-8 grid grid-cols-1 xl:grid-cols-4 gap-8">
-                {/* Main Content */}
-                <div className="xl:col-span-3">
-                    {/* Step Indicator */}
-                    <div className="mb-8">
-                        <div className="flex items-center gap-2 mb-2">
-                            <div className="w-8 h-8 rounded-full bg-blue-bright text-white flex items-center justify-center font-bold">
-                                1
->>>>>>> feat-add
                             </div>
-                            <h1 className="text-2xl font-heading font-bold text-[var(--text-primary)]">
-                                Оберіть розділ
-                            </h1>
-                        </div>
+                        ))}
                     </div>
-<<<<<<< HEAD
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filteredCategories.map((category) => (
@@ -278,154 +249,9 @@ export default function SelectCategoryPage() {
                         <p className="text-[var(--text-secondary)]">
                             Категорій не знайдено. Спробуйте інший пошуковий запит.
                         </p>
-=======
-
-                    {/* Search */}
-                    <div className="mb-6">
-                        <div className="relative max-w-2xl">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={20} />
-                            <input
-                                type="text"
-                                placeholder="Пошук..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:border-blue-bright outline-none transition-colors"
-                            />
-                        </div>
->>>>>>> feat-add
                     </div>
-
-                    {/* Tabs */}
-                    {marketplaces && marketplaces.length > 0 && (
-                        <div className="flex gap-2 mb-8 border-b border-[var(--border-color)] overflow-x-auto pb-1">
-                            {marketplaces.map((mp) => (
-                                <button
-                                    key={mp.id}
-                                    onClick={() => setActiveTab(mp.id)}
-                                    className={`px-6 py-3 font-medium transition-colors relative whitespace-nowrap ${activeTab === mp.id
-                                        ? 'text-blue-bright'
-                                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                                        }`}
-                                >
-                                    <span className="flex items-center gap-2">
-                                        <span>{getMarketplaceIcon(mp.key)}</span>
-                                        {mp.name}
-                                    </span>
-                                    {activeTab === mp.id && (
-                                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-bright" />
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Categories Grid */}
-                    {isLoading ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {[...Array(10)].map((_, i) => (
-                                <div key={i} className="glass-card p-6 animate-pulse">
-                                    <div className="w-16 h-16 bg-[var(--border-color)] rounded-lg mx-auto mb-3" />
-                                    <div className="h-4 bg-[var(--border-color)] rounded" />
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {filteredCategories?.map((category) => (
-                                <button
-                                    key={category.id}
-                                    onClick={() => handleCategorySelect(category.id)}
-                                    className="glass-card p-6 hover:border-blue-bright/40 transition-all group text-center"
-                                >
-                                    {/* Icon placeholder */}
-                                    <div className="w-16 h-16 mx-auto mb-3 text-4xl flex items-center justify-center">
-                                        {getCategoryIcon(category.name)}
-                                    </div>
-                                    <p className="text-sm text-[var(--text-primary)] font-medium group-hover:text-blue-bright transition-colors">
-                                        {category.name}
-                                    </p>
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    {filteredCategories?.length === 0 && !isLoading && (
-                        <div className="text-center py-12">
-                            <p className="text-[var(--text-secondary)]">
-                                {marketplaces && marketplaces.length === 0
-                                    ? 'No marketplaces found.'
-                                    : 'Категорій не знайдено. Спробуйте інший пошуковий запит.'}
-                            </p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Right Sidebar - Steps */}
-                <div className="hidden xl:block xl:col-span-1">
-                    <div className="sticky top-24">
-                        <div className="glass-card p-6 w-full">
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-6 h-6 rounded-full bg-blue-bright text-white text-xs flex items-center justify-center font-bold">
-                                        1
-                                    </div>
-                                    <span className="text-sm font-medium text-[var(--text-primary)]">Rozdil</span>
-                                </div>
-                                <div className="flex items-center gap-3 opacity-50">
-                                    <div className="w-6 h-6 rounded-full border-2 border-[var(--border-color)] text-xs flex items-center justify-center">
-                                        2
-                                    </div>
-                                    <span className="text-sm text-[var(--text-secondary)]">Opis</span>
-                                </div>
-                                <div className="flex items-center gap-3 opacity-50">
-                                    <div className="w-6 h-6 rounded-full border-2 border-[var(--border-color)] text-xs flex items-center justify-center">
-                                        3
-                                    </div>
-                                    <span className="text-sm text-[var(--text-secondary)]">Foto ta video</span>
-                                </div>
-                                <div className="flex items-center gap-3 opacity-50">
-                                    <div className="w-6 h-6 rounded-full border-2 border-[var(--border-color)] text-xs flex items-center justify-center">
-                                        4
-                                    </div>
-                                    <span className="text-sm text-[var(--text-secondary)]">Kontakty prodavtsya</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                )}
             </div>
         </div>
     );
-}
-
-function getMarketplaceIcon(key: string): string {
-    const k = key.toLowerCase();
-    if (k.includes('agro') || k.includes('farm')) return '🚜';
-    if (k.includes('auto') || k.includes('car')) return '🚗';
-    if (k.includes('truck') || k.includes('transport')) return '🚛';
-    if (k.includes('machinery') || k.includes('industry')) return '⚙️';
-    if (k.includes('construct')) return '🏗️';
-    return '📦';
-}
-
-// Helper function to get category icon based on name
-function getCategoryIcon(name: string): string {
-    const nameLower = name.toLowerCase();
-
-    if (nameLower.includes('трактор') || nameLower.includes('tractor')) return '🚜';
-    if (nameLower.includes('вантаж') || nameLower.includes('truck')) return '🚛';
-    if (nameLower.includes('автобус') || nameLower.includes('bus')) return '🚌';
-    if (nameLower.includes('причіп') || nameLower.includes('trailer')) return '🚚';
-    if (nameLower.includes('авто') || nameLower.includes('car')) return '🚗';
-    if (nameLower.includes('мото') || nameLower.includes('motorcycle')) return '🏍️';
-    if (nameLower.includes('екскаватор') || nameLower.includes('excavator')) return '🏗️';
-    if (nameLower.includes('навантажувач') || nameLower.includes('loader')) return '⚙️';
-    if (nameLower.includes('комбайн') || nameLower.includes('harvester')) return '🌾';
-    if (nameLower.includes('запчастин') || nameLower.includes('parts')) return '🔧';
-    if (nameLower.includes('бурова') || nameLower.includes('drill')) return '🔩';
-    if (nameLower.includes('кран') || nameLower.includes('crane')) return '🏗️';
-    if (nameLower.includes('генератор') || nameLower.includes('generator')) return '⚡';
-    if (nameLower.includes('насос') || nameLower.includes('pump')) return '🔧';
-
-    return '📦';
 }

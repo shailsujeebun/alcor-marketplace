@@ -1,13 +1,8 @@
 import { useState } from 'react';
 import { Bookmark } from 'lucide-react';
 import { SearchInput } from '@/components/ui/search-input';
-<<<<<<< HEAD
-import { Select } from '@/components/ui/select';
-import { useMarketplaces, useCategories, useBrands, useCountries, useCities, useCreateSavedSearch } from '@/lib/queries';
-=======
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCategories, useBrands, useCountries, useCities, useCreateSavedSearch } from '@/lib/queries';
->>>>>>> feat-add
+import { useMarketplaces, useCategories, useBrands, useCountries, useCities, useCreateSavedSearch } from '@/lib/queries';
 import { useAuthStore } from '@/stores/auth-store';
 
 interface FiltersState {
@@ -92,7 +87,7 @@ export function ListingsFilters({ filters, onFilterChange, onClear }: ListingsFi
       {marketplaces && marketplaces.length > 1 && (
         <div>
           <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Майданчик</label>
-          <Select
+          <FilterSelect
             value={filters.marketplaceId}
             onChange={(v) => onFilterChange('marketplaceId', v)}
             placeholder="Усі майданчики"

@@ -3,22 +3,35 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, List, PlusCircle, Settings, Heart, Clock, MessageSquare, HelpCircle, Crown, Bell, Search } from 'lucide-react';
+import {
+  LayoutDashboard,
+  List,
+  PlusCircle,
+  Settings,
+  Heart,
+  Clock,
+  MessageSquare,
+  HelpCircle,
+  Crown,
+  Bell,
+  Search,
+} from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/components/providers/translation-provider';
 
 const sidebarLinks = [
-  { href: '/cabinet', label: 'Огляд', icon: LayoutDashboard },
-  { href: '/cabinet/listings', label: 'Мої оголошення', icon: List },
-  { href: '/cabinet/listings/new', label: 'Нове оголошення', icon: PlusCircle },
-  { href: '/cabinet/favorites', label: 'Обране', icon: Heart },
-  { href: '/cabinet/history', label: 'Історія', icon: Clock },
-  { href: '/cabinet/messages', label: 'Повідомлення', icon: MessageSquare },
-  { href: '/cabinet/saved-searches', label: 'Збережені пошуки', icon: Search },
-  { href: '/cabinet/notifications', label: 'Сповіщення', icon: Bell },
-  { href: '/cabinet/support', label: 'Підтримка', icon: HelpCircle },
-  { href: '/cabinet/subscription', label: 'Підписка', icon: Crown },
-  { href: '/cabinet/settings', label: 'Налаштування', icon: Settings },
+  { href: '/cabinet', labelKey: 'cabinet.sidebar.overview', icon: LayoutDashboard },
+  { href: '/cabinet/listings', labelKey: 'cabinet.sidebar.myListings', icon: List },
+  { href: '/cabinet/listings/new', labelKey: 'cabinet.sidebar.newListing', icon: PlusCircle },
+  { href: '/cabinet/favorites', labelKey: 'cabinet.sidebar.favorites', icon: Heart },
+  { href: '/cabinet/history', labelKey: 'cabinet.sidebar.history', icon: Clock },
+  { href: '/cabinet/messages', labelKey: 'cabinet.sidebar.messages', icon: MessageSquare },
+  { href: '/cabinet/saved-searches', labelKey: 'cabinet.sidebar.savedSearches', icon: Search },
+  { href: '/cabinet/notifications', labelKey: 'cabinet.sidebar.notifications', icon: Bell },
+  { href: '/cabinet/support', labelKey: 'cabinet.sidebar.support', icon: HelpCircle },
+  { href: '/cabinet/subscription', labelKey: 'cabinet.sidebar.subscription', icon: Crown },
+  { href: '/cabinet/settings', labelKey: 'cabinet.sidebar.settings', icon: Settings },
 ];
 
 export default function CabinetLayout({
@@ -29,6 +42,7 @@ export default function CabinetLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuthStore();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -49,14 +63,12 @@ export default function CabinetLayout({
   return (
     <div className="container-main pt-16 md:pt-20 pb-10 md:pb-14">
       <div className="grid grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] items-start gap-6 md:gap-8 mt-10 md:mt-12">
-        {/* Sidebar — desktop */}
         <aside className="hidden md:block w-60 flex-shrink-0">
           <nav className="glass-card p-3 sticky top-28 space-y-1">
             {sidebarLinks.map((link) => {
               const Icon = link.icon;
-              const isActive = link.href === '/cabinet'
-                ? pathname === '/cabinet'
-                : pathname.startsWith(link.href);
+              const isActive =
+                link.href === '/cabinet' ? pathname === '/cabinet' : pathname.startsWith(link.href);
               return (
                 <Link
                   key={link.href}
@@ -69,42 +81,35 @@ export default function CabinetLayout({
                   )}
                 >
                   <Icon size={18} />
-                  {link.label}
+                  {t(link.labelKey)}
                 </Link>
               );
             })}
           </nav>
         </aside>
 
-        {/* Mobile tabs */}
         <div className="md:hidden flex gap-1 overflow-x-auto pb-2">
           {sidebarLinks.map((link) => {
             const Icon = link.icon;
-            const isActive = link.href === '/cabinet'
-              ? pathname === '/cabinet'
-              : pathname.startsWith(link.href);
+            const isActive =
+              link.href === '/cabinet' ? pathname === '/cabinet' : pathname.startsWith(link.href);
             return (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
                   'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
-                  isActive
-                    ? 'gradient-cta text-white'
-                    : 'glass-card text-[var(--text-secondary)]',
+                  isActive ? 'gradient-cta text-white' : 'glass-card text-[var(--text-secondary)]',
                 )}
               >
                 <Icon size={14} />
-                {link.label}
+                {t(link.labelKey)}
               </Link>
             );
           })}
         </div>
 
-        {/* Main content */}
-        <main className="min-w-0">
-          {children}
-        </main>
+        <main className="min-w-0">{children}</main>
       </div>
     </div>
   );

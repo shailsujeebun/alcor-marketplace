@@ -8,13 +8,8 @@ import { MediaStep } from './wizard/media-step';
 import { ContactStep } from './wizard/contact-step';
 import { useAuthStore } from '@/stores/auth-store';
 import type { Listing } from '@/types/api';
-
-import {
-  FileText, // Description
-  Image as ImageIcon, // Media
-  User, // Contacts
-  CheckCircle2 // Success
-} from 'lucide-react';
+import { FileText, Image as ImageIcon, User, CheckCircle2 } from 'lucide-react';
+import { useTranslation } from '../providers/translation-provider';
 
 interface ListingWizardProps {
   listing?: Listing;
@@ -46,6 +41,7 @@ function initFormData(listing?: Listing): FormData {
       dynamicAttributes: {},
     };
   }
+
   return {
     title: listing.title,
     description: listing.description ?? '',
@@ -67,7 +63,8 @@ function initFormData(listing?: Listing): FormData {
     sellerEmail: listing.sellerEmail ?? '',
     sellerPhones: listing.sellerPhones?.join(', ') ?? '',
     companyId: listing.companyId,
-    dynamicAttributes: listing.attributes?.reduce((acc, attr) => ({ ...acc, [attr.key]: attr.value }), {}) ?? {},
+    dynamicAttributes:
+      listing.attributes?.reduce((acc, attr) => ({ ...acc, [attr.key]: attr.value }), {}) ?? {},
   };
 }
 
@@ -84,8 +81,8 @@ function initMedia(listing?: Listing): MediaItem[] {
 function ListingWizardInner({ listing }: ListingWizardProps) {
   const searchParams = useSearchParams();
   const { user } = useAuthStore();
+  const { t } = useTranslation();
 
-  // Initialize form with category from URL if present
   const initialForm = initFormData(listing);
   const urlCategoryId = searchParams.get('categoryId');
   if (urlCategoryId && !initialForm.categoryId) {
@@ -99,14 +96,13 @@ function ListingWizardInner({ listing }: ListingWizardProps) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Restore draft effect
   useEffect(() => {
     if (!user && !listing) {
       const savedDraft = localStorage.getItem('listing_draft');
       if (savedDraft) {
         try {
           const { form: savedForm, media: savedMedia } = JSON.parse(savedDraft);
-          setForm(prev => ({ ...prev, ...savedForm }));
+          setForm((prev) => ({ ...prev, ...savedForm }));
           if (savedMedia) setMedia(savedMedia);
         } catch (e) {
           console.error('Failed to parse draft', e);
@@ -116,38 +112,44 @@ function ListingWizardInner({ listing }: ListingWizardProps) {
   }, [user, listing]);
 
   const steps = [
-    { num: 0, label: 'Розділ', icon: CheckCircle2 },
-    { num: 1, label: 'Опис', icon: FileText },
-    { num: 2, label: 'Фото та відео', icon: ImageIcon },
-    { num: 3, label: 'Контакти продавця', icon: User },
+    { num: 0, label: t('wizard.stepCategory'), icon: CheckCircle2 },
+    { num: 1, label: t('wizard.stepDescription'), icon: FileText },
+    { num: 2, label: t('wizard.stepMedia'), icon: ImageIcon },
+    { num: 3, label: t('wizard.stepContacts'), icon: User },
   ];
 
   return (
-    <WizardContext.Provider value={{
-      listing,
-      form, setForm,
-      media, setMedia,
-      currentStep, setCurrentStep,
-      isSubmitting, setIsSubmitting,
-      error, setError,
-      success, setSuccess
-    }}>
+    <WizardContext.Provider
+      value={{
+        listing,
+        form,
+        setForm,
+        media,
+        setMedia,
+        currentStep,
+        setCurrentStep,
+        isSubmitting,
+        setIsSubmitting,
+        error,
+        setError,
+        success,
+        setSuccess,
+      }}
+    >
       <div className="flex flex-col xl:flex-row gap-8 items-start">
-
-        {/* Main Content Area */}
         <div className="flex-1 w-full min-w-0">
           {currentStep === 1 && <DescriptionStep />}
           {currentStep === 2 && <MediaStep />}
           {currentStep === 3 && <ContactStep />}
         </div>
 
-        {/* Right Sidebar - Steps (Sticky) */}
         <div className="hidden xl:block w-72 flex-shrink-0 sticky top-24">
           <div className="glass-card wizard-section-card animate-fade-up p-6">
-            <h3 className="font-heading font-bold text-[var(--text-primary)] mb-6">Етапи подачі</h3>
+            <h3 className="font-heading font-bold text-[var(--text-primary)] mb-6">
+              {t('wizard.stepsTitle')}
+            </h3>
 
             <div className="space-y-6 relative">
-              {/* Connecting Line */}
               <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-[var(--border-color)] -z-10" />
 
               {steps.map((step) => {
@@ -155,17 +157,32 @@ function ListingWizardInner({ listing }: ListingWizardProps) {
                 const isCompleted = step.num === 0 ? true : currentStep > step.num;
 
                 return (
-                  <div key={step.num} className={`flex items-center gap-4 ${isActive ? 'opacity-100' : 'opacity-60'}`}>
-                    <div className={`
-                                w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors z-10
-                                ${isActive ? 'bg-blue-bright border-blue-bright text-white' :
-                        isCompleted ? 'bg-green-500 border-green-500 text-white' :
-                          'bg-[var(--bg-secondary)] border-[var(--border-color)] text-[var(--text-secondary)]'}
-                            `}>
-                      {isCompleted ? <CheckCircle2 size={16} /> : <span className="text-sm font-bold">{step.num}</span>}
+                  <div
+                    key={step.num}
+                    className={`flex items-center gap-4 ${isActive ? 'opacity-100' : 'opacity-60'}`}
+                  >
+                    <div
+                      className={`
+                        w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors z-10
+                        ${
+                          isActive
+                            ? 'bg-blue-bright border-blue-bright text-white'
+                            : isCompleted
+                              ? 'bg-green-500 border-green-500 text-white'
+                              : 'bg-[var(--bg-secondary)] border-[var(--border-color)] text-[var(--text-secondary)]'
+                        }
+                      `}
+                    >
+                      {isCompleted ? (
+                        <CheckCircle2 size={16} />
+                      ) : (
+                        <span className="text-sm font-bold">{step.num}</span>
+                      )}
                     </div>
                     <div>
-                      <p className={`font-medium ${isActive ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
+                      <p
+                        className={`font-medium ${isActive ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}
+                      >
                         {step.label}
                       </p>
                     </div>
@@ -174,10 +191,9 @@ function ListingWizardInner({ listing }: ListingWizardProps) {
               })}
             </div>
 
-            {/* Tips Box */}
             <div className="mt-8 p-4 bg-blue-900/20 border border-blue-500/20 rounded-lg">
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                💡 <strong>Порада:</strong> Чим детальніше ви опишете техніку та додасте більше якісних фото, тим швидше знайдете покупця.
+                <strong>{t('wizard.tipPrefix')}</strong> {t('wizard.tipBody')}
               </p>
             </div>
           </div>
@@ -188,8 +204,16 @@ function ListingWizardInner({ listing }: ListingWizardProps) {
 }
 
 export function ListingWizard(props: ListingWizardProps) {
+  const { t } = useTranslation();
+
   return (
-    <Suspense fallback={<div className="glass-card p-6 text-sm text-[var(--text-secondary)]">Loading listing wizard...</div>}>
+    <Suspense
+      fallback={
+        <div className="glass-card p-6 text-sm text-[var(--text-secondary)]">
+          {t('wizard.loading')}
+        </div>
+      }
+    >
       <ListingWizardInner {...props} />
     </Suspense>
   );

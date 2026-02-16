@@ -2,9 +2,11 @@
 
 import { Phone, Mail, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../providers/theme-provider';
+import { useTranslation } from '../providers/translation-provider';
 
 export function TopBar() {
   const { theme, toggleTheme } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <div className="border-b border-[var(--border-color)]" style={{ background: 'var(--bg-secondary)' }}>
@@ -22,7 +24,7 @@ export function TopBar() {
         <button
           onClick={toggleTheme}
           className="p-2 rounded-lg hover:bg-[var(--border-color)] transition-colors text-[var(--text-secondary)] hover:text-blue-bright"
-          aria-label="Toggle theme"
+          aria-label={t('topBar.toggleTheme')}
         >
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
         </button>

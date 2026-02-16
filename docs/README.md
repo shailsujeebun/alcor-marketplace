@@ -107,3 +107,20 @@ For more information, please refer to the detailed documentation files listed ab
   - `/api/translate` endpoint for batch translation requests.
   - Full-page runtime translation for text nodes and common UI attributes.
 - Lint cleanup was applied and web lint/build are passing after rule and code adjustments.
+
+### Translation Architecture Refactor (2026-02-16, `feature-translation`)
+
+- Replaced runtime DOM auto-translation with dictionary-based i18n (`web/src/i18n/*` + `t(key)` helper).
+- Translation toggle now only switches `locale` (`uk`/`en`) in memory:
+  - No language persistence.
+  - No automatic translation on initial load.
+  - No MutationObserver/text-node rewriting.
+- Removed deprecated translation API route:
+  - Deleted `web/src/app/api/translate/route.ts`.
+- Migrated shared UI to key-based translations:
+  - Top bar, navbar, mobile menu, footer.
+  - Admin sidebar labels.
+  - Cabinet sidebar labels.
+  - Listing wizard step labels and tip text.
+- Validation status:
+  - `web`: lint/build passing after refactor.

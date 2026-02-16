@@ -128,3 +128,18 @@ web/src/components/listings/
   - Text nodes in rendered pages.
   - Common UI attributes (`placeholder`, `title`, `aria-label`, button `value`).
   - Dynamically inserted content via `MutationObserver`.
+
+### Translation Architecture Refactor (2026-02-16, `feature-translation`)
+
+- Replaced runtime full-page DOM translation with key-based dictionary i18n:
+  - Added message dictionaries in `web/src/i18n/messages/uk.ts` and `web/src/i18n/messages/en.ts`.
+  - Added central translator utility in `web/src/i18n/index.ts`.
+  - `TranslationProvider` now exposes `locale`, `toggleLocale`, and `t(key)`.
+- Language switching behavior:
+  - Default load is always `uk` for fast first paint.
+  - `EN` applies only when user clicks the toggle.
+  - No persistence across reloads (avoids slow/looping startup issues).
+- Removed runtime translation endpoint usage:
+  - Deleted `web/src/app/api/translate/route.ts`.
+- Listing wizard translations migrated to i18n keys:
+  - Step labels, sidebar title, tip copy, and loading fallback now translate via `t(key)`.

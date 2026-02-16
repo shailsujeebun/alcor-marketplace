@@ -3,7 +3,15 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, LogIn, UserPlus, LogOut, ChevronDown, LayoutDashboard, Shield } from 'lucide-react';
+import {
+  Menu,
+  LogIn,
+  UserPlus,
+  LogOut,
+  ChevronDown,
+  LayoutDashboard,
+  Shield,
+} from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
@@ -11,6 +19,7 @@ import { logoutUser } from '@/lib/auth-api';
 import Cookies from 'js-cookie';
 import { MobileMenu } from './mobile-menu';
 import { NotificationBell } from './notification-bell';
+import { useTranslation } from '../providers/translation-provider';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -19,16 +28,15 @@ export function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, isLoading, accessToken, logout } = useAuthStore();
+  const { t } = useTranslation();
   const isAdminUser = user?.role === 'ADMIN' || user?.role === 'MANAGER';
 
   const navLinks = [
-    { href: '/', label: 'Головна' },
-    { href: '/listings', label: 'Оголошення' },
-    { href: '/companies', label: 'Компанії' },
-    { href: '/categories', label: 'Категорії' },
-    ...((isAdminUser)
-      ? [{ href: '/admin', label: 'Адмін' }]
-      : []),
+    { href: '/', label: t('nav.home') },
+    { href: '/listings', label: t('nav.listings') },
+    { href: '/companies', label: t('nav.companies') },
+    { href: '/categories', label: t('nav.categories') },
+    ...(isAdminUser ? [{ href: '/admin', label: t('nav.admin') }] : []),
   ];
 
   useEffect(() => {
@@ -55,7 +63,7 @@ export function Navbar() {
     router.push('/');
   };
 
-  const displayName = user?.firstName || user?.email?.split('@')[0] || 'Користувач';
+  const displayName = user?.firstName || user?.email?.split('@')[0] || t('nav.userFallback');
 
   return (
     <>
@@ -64,15 +72,13 @@ export function Navbar() {
           <Link href="/" className="logo-link flex items-center gap-3">
             <Image
               src="/alcor-logo.png"
-              alt="АЛЬКОР Logo"
+              alt={t('brand.logoAlt')}
               width={50}
               height={50}
               className="logo-image h-[42px] w-auto"
               priority
             />
-            <span className="logo-text font-heading font-bold text-2xl tracking-tight">
-              АЛЬКОР
-            </span>
+            <span className="logo-text font-heading font-bold text-2xl tracking-tight">АЛЬКОР</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-8 mr-auto">
@@ -112,7 +118,13 @@ export function Navbar() {
                     <span className="text-sm text-[var(--text-primary)] font-medium max-w-[120px] truncate">
                       {displayName}
                     </span>
-                    <ChevronDown size={14} className={cn('text-[var(--text-secondary)] transition-transform', dropdownOpen && 'rotate-180')} />
+                    <ChevronDown
+                      size={14}
+                      className={cn(
+                        'text-[var(--text-secondary)] transition-transform',
+                        dropdownOpen && 'rotate-180',
+                      )}
+                    />
                   </button>
 
                   {dropdownOpen && (
@@ -121,9 +133,7 @@ export function Navbar() {
                         <p className="text-sm font-medium text-[var(--text-primary)] truncate">
                           {user.firstName} {user.lastName}
                         </p>
-                        <p className="text-xs text-[var(--text-secondary)] truncate">
-                          {user.email}
-                        </p>
+                        <p className="text-xs text-[var(--text-secondary)] truncate">{user.email}</p>
                       </div>
                       <Link
                         href="/cabinet"
@@ -131,7 +141,7 @@ export function Navbar() {
                         className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--border-color)] transition-colors"
                       >
                         <LayoutDashboard size={16} />
-                        Кабінет
+                        {t('nav.cabinet')}
                       </Link>
                       {isAdminUser && (
                         <Link
@@ -140,7 +150,7 @@ export function Navbar() {
                           className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-orange-400 hover:bg-orange-500/10 transition-colors"
                         >
                           <Shield size={16} />
-                          Вхід в адмін
+                          {t('nav.adminEntry')}
                         </Link>
                       )}
                       <button
@@ -148,7 +158,7 @@ export function Navbar() {
                         className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
                       >
                         <LogOut size={16} />
-                        Вийти з акаунта
+                        {t('nav.logout')}
                       </button>
                     </div>
                   )}
@@ -161,21 +171,21 @@ export function Navbar() {
                   className="site-auth-link flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-blue-light transition-colors font-medium"
                 >
                   <LogIn size={16} />
-                  Увійти
+                  {t('nav.login')}
                 </Link>
                 <Link
                   href="/register"
                   className="site-auth-primary gradient-cta text-white px-5 py-2 rounded-full text-sm font-semibold hover:opacity-90 transition-all flex items-center gap-1.5"
                 >
                   <UserPlus size={16} />
-                  Реєстрація
+                  {t('nav.register')}
                 </Link>
                 <Link
                   href="/ad-placement"
                   className="site-action-orange bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5"
                 >
                   <span className="text-lg">+</span>
-                  Розмістити оголошення
+                  {t('nav.placeAd')}
                 </Link>
               </div>
             )}
@@ -184,7 +194,7 @@ export function Navbar() {
           <button
             onClick={() => setMobileOpen(true)}
             className="md:hidden p-2 text-[var(--text-secondary)]"
-            aria-label="Open menu"
+            aria-label={t('nav.openMenu')}
           >
             <Menu size={24} />
           </button>

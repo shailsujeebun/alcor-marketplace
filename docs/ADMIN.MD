@@ -128,3 +128,12 @@ Updated `web/src/app/admin/layout.tsx` to include sidebar links:
   - Added `getAdminTemplates`, `deleteAdminTemplate`, `updateAdminTemplateStatus`.
   - Added related React Query hooks.
   - Added `AdminTemplate` type and `version` support in `FormTemplate`.
+
+### Translation Refactor (2026-02-16, `feature-translation`)
+
+- Admin layout (`web/src/app/admin/layout.tsx`) was migrated to key-based translation labels:
+  - Sidebar items now use locale keys (`admin.sidebar.*`) instead of hardcoded strings.
+  - Desktop and mobile admin navigation remain aligned under one translation source.
+- Translation implementation changed globally from DOM runtime translation to dictionary i18n:
+  - Admin pages now switch language via `t(key)` lookups.
+  - No runtime page parsing or auto-translation requests.

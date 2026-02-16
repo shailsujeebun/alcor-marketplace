@@ -3,22 +3,35 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Users, ListChecks, MessageSquare, Briefcase, Building2, Mail, PlusCircle, Globe, Layers, FileEdit } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Users,
+  ListChecks,
+  MessageSquare,
+  Briefcase,
+  Building2,
+  Mail,
+  PlusCircle,
+  Globe,
+  Layers,
+  FileEdit,
+} from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/components/providers/translation-provider';
 
 const sidebarLinks = [
-  { href: '/admin', label: 'Огляд', icon: LayoutDashboard },
-  { href: '/admin/marketplaces', label: 'Маркетплейси', icon: Globe },
-  { href: '/admin/categories', label: 'Категорії', icon: Layers },
-  { href: '/admin/templates', label: 'Шаблони форм', icon: FileEdit },
-  { href: '/admin/listings/new', label: 'Додати оголошення', icon: PlusCircle },
-  { href: '/admin/users', label: 'Користувачі', icon: Users },
-  { href: '/admin/moderation', label: 'Модерація', icon: ListChecks },
-  { href: '/admin/tickets', label: 'Тікети', icon: MessageSquare },
-  { href: '/admin/dealer-leads', label: 'Заявки дилерів', icon: Briefcase },
-  { href: '/admin/companies', label: 'Компанії', icon: Building2 },
-  { href: '/admin/messages', label: 'Повідомлення', icon: Mail },
+  { href: '/admin', labelKey: 'admin.sidebar.overview', icon: LayoutDashboard },
+  { href: '/admin/marketplaces', labelKey: 'admin.sidebar.marketplaces', icon: Globe },
+  { href: '/admin/categories', labelKey: 'admin.sidebar.categories', icon: Layers },
+  { href: '/admin/templates', labelKey: 'admin.sidebar.templates', icon: FileEdit },
+  { href: '/admin/listings/new', labelKey: 'admin.sidebar.addListing', icon: PlusCircle },
+  { href: '/admin/users', labelKey: 'admin.sidebar.users', icon: Users },
+  { href: '/admin/moderation', labelKey: 'admin.sidebar.moderation', icon: ListChecks },
+  { href: '/admin/tickets', labelKey: 'admin.sidebar.tickets', icon: MessageSquare },
+  { href: '/admin/dealer-leads', labelKey: 'admin.sidebar.dealerLeads', icon: Briefcase },
+  { href: '/admin/companies', labelKey: 'admin.sidebar.companies', icon: Building2 },
+  { href: '/admin/messages', labelKey: 'admin.sidebar.messages', icon: Mail },
 ];
 
 export default function AdminLayout({
@@ -29,13 +42,12 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { user, isAuthenticated, isLoading } = useAuthStore();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (
       !isLoading &&
-      (!isAuthenticated ||
-        !user ||
-        (user.role !== 'ADMIN' && user.role !== 'MANAGER'))
+      (!isAuthenticated || !user || (user.role !== 'ADMIN' && user.role !== 'MANAGER'))
     ) {
       router.push('/');
     }
@@ -49,26 +61,19 @@ export default function AdminLayout({
     );
   }
 
-  if (
-    !isAuthenticated ||
-    !user ||
-    (user.role !== 'ADMIN' && user.role !== 'MANAGER')
-  ) {
+  if (!isAuthenticated || !user || (user.role !== 'ADMIN' && user.role !== 'MANAGER')) {
     return null;
   }
 
   return (
     <div className="container-main pt-16 md:pt-20 pb-10 md:pb-14">
       <div className="grid grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] items-start gap-6 md:gap-8 mt-10 md:mt-12">
-        {/* Sidebar — desktop */}
         <aside className="hidden md:block w-60 flex-shrink-0">
           <nav className="glass-card p-3 sticky top-28 space-y-1">
             {sidebarLinks.map((link) => {
               const Icon = link.icon;
               const isActive =
-                link.href === '/admin'
-                  ? pathname === '/admin'
-                  : pathname.startsWith(link.href);
+                link.href === '/admin' ? pathname === '/admin' : pathname.startsWith(link.href);
               return (
                 <Link
                   key={link.href}
@@ -81,40 +86,34 @@ export default function AdminLayout({
                   )}
                 >
                   <Icon size={18} />
-                  {link.label}
+                  {t(link.labelKey)}
                 </Link>
               );
             })}
           </nav>
         </aside>
 
-        {/* Mobile tabs */}
         <div className="md:hidden flex gap-1 overflow-x-auto pb-2">
           {sidebarLinks.map((link) => {
             const Icon = link.icon;
             const isActive =
-              link.href === '/admin'
-                ? pathname === '/admin'
-                : pathname.startsWith(link.href);
+              link.href === '/admin' ? pathname === '/admin' : pathname.startsWith(link.href);
             return (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
                   'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
-                  isActive
-                    ? 'gradient-cta text-white'
-                    : 'glass-card text-[var(--text-secondary)]',
+                  isActive ? 'gradient-cta text-white' : 'glass-card text-[var(--text-secondary)]',
                 )}
               >
                 <Icon size={14} />
-                {link.label}
+                {t(link.labelKey)}
               </Link>
             );
           })}
         </div>
 
-        {/* Main content */}
         <main className="min-w-0">{children}</main>
       </div>
     </div>

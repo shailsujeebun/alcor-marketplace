@@ -115,8 +115,10 @@ For more information, please refer to the detailed documentation files listed ab
   - No language persistence.
   - No automatic translation on initial load.
   - No MutationObserver/text-node rewriting.
-- Removed deprecated translation API route:
-  - Deleted `web/src/app/api/translate/route.ts`.
+- Kept `/api/translate` as a compatibility fallback for still-hardcoded pages:
+  - Translation requests run only after the user clicks `EN`.
+  - Provider runs controlled one/two-pass translation per route (no observer loop).
+  - Default load remains fast in `uk`.
 - Migrated shared UI to key-based translations:
   - Top bar, navbar, mobile menu, footer.
   - Admin sidebar labels.

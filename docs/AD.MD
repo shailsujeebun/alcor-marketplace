@@ -139,7 +139,9 @@ web/src/components/listings/
   - Default load is always `uk` for fast first paint.
   - `EN` applies only when user clicks the toggle.
   - No persistence across reloads (avoids slow/looping startup issues).
-- Removed runtime translation endpoint usage:
-  - Deleted `web/src/app/api/translate/route.ts`.
+- Added compatibility fallback for not-yet-migrated hardcoded strings:
+  - Reintroduced `web/src/app/api/translate/route.ts` as an on-demand endpoint.
+  - Called only when locale is switched to `EN` (not on initial load).
+  - Provider performs controlled pass-based translation without MutationObserver loops.
 - Listing wizard translations migrated to i18n keys:
   - Step labels, sidebar title, tip copy, and loading fallback now translate via `t(key)`.

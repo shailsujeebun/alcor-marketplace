@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { WizardContext, type FormData, type MediaItem } from './wizard/wizard-context';
 import { DescriptionStep } from './wizard/description-step';
@@ -28,6 +28,17 @@ function initFormData(listing?: Listing): FormData {
       categoryId: '',
       countryId: '',
       cityId: '',
+      brandId: '',
+      condition: '',
+      year: '',
+      priceAmount: '',
+      priceCurrency: '',
+      priceType: '',
+      listingType: '',
+      euroClass: '',
+      hoursValue: '',
+      hoursUnit: '',
+      externalUrl: '',
       sellerName: '',
       sellerEmail: '',
       sellerPhones: '',
@@ -41,6 +52,17 @@ function initFormData(listing?: Listing): FormData {
     categoryId: listing.categoryId ?? '',
     countryId: listing.countryId ?? '',
     cityId: listing.cityId ?? '',
+    brandId: listing.brandId ?? '',
+    condition: listing.condition ?? '',
+    year: listing.year?.toString() ?? '',
+    priceAmount: listing.priceAmount?.toString() ?? '',
+    priceCurrency: listing.priceCurrency ?? '',
+    priceType: listing.priceType ?? '',
+    listingType: listing.listingType ?? '',
+    euroClass: listing.euroClass ?? '',
+    hoursValue: listing.hoursValue?.toString() ?? '',
+    hoursUnit: listing.hoursUnit ?? '',
+    externalUrl: listing.externalUrl ?? '',
     sellerName: listing.sellerName ?? '',
     sellerEmail: listing.sellerEmail ?? '',
     sellerPhones: listing.sellerPhones?.join(', ') ?? '',
@@ -58,7 +80,7 @@ function initMedia(listing?: Listing): MediaItem[] {
   }));
 }
 
-export function ListingWizard({ listing }: ListingWizardProps) {
+function ListingWizardInner({ listing }: ListingWizardProps) {
   const searchParams = useSearchParams();
   const { user } = useAuthStore();
 
@@ -161,5 +183,13 @@ export function ListingWizard({ listing }: ListingWizardProps) {
         </div>
       </div>
     </WizardContext.Provider>
+  );
+}
+
+export function ListingWizard(props: ListingWizardProps) {
+  return (
+    <Suspense fallback={<div className="glass-card p-6 text-sm text-[var(--text-secondary)]">Loading listing wizard...</div>}>
+      <ListingWizardInner {...props} />
+    </Suspense>
   );
 }

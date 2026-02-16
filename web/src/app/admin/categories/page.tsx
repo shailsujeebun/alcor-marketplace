@@ -259,7 +259,7 @@ export default function AdminCategoriesPage() {
                             className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/20"
                         >
                             <Plus className="w-4 h-4 mr-2" />
-                            Add Root Category
+                            Add Marketplace
                         </Button>
                     </DialogTrigger>
                     <DialogContent>

@@ -35,18 +35,11 @@ export function MediaUploader({ media, onChange, maxFiles = 10 }: MediaUploaderP
         try {
             const { urls } = await uploadImages(filesToUpload);
 
-<<<<<<< HEAD
-            for (const file of filesToUpload) {
-                const { key, url } = await uploadMutation.mutateAsync(file);
-                uploadedMedia.push({ url, key, file, type: 'PHOTO' });
-            }
-=======
             const newMediaItems: MediaItem[] = urls.map((url, index) => ({
                 url,
                 file: filesToUpload[index],
-                // Key is optional now
+                type: 'PHOTO',
             }));
->>>>>>> feat-add
 
             onChange([...media, ...newMediaItems]);
         } catch (error) {

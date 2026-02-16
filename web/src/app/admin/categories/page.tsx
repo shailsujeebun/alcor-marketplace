@@ -169,41 +169,10 @@ export default function AdminCategoriesPage() {
 
     // Set initial selected marketplace
     useEffect(() => {
-<<<<<<< HEAD
-        if (selectedMarketplace) {
-            // In a real generic app, we'd have a 'getAdminCategories(marketplaceId)' endpoint
-            // that returns a raw list or tree. For now, reusing public getCategories() 
-            // but strictly speaking we might want a filtered admin view.
-            // Assuming existing getCategories returns the full tree for the specific marketplace context?
-            // Wait, the current public API returns ALL categories grouped by parent? 
-            // Let's assume we need to filter client-side or add query param.
-            // For this demo: fetching all and filtering by marketplaceId is tricky if the public API doesn't expose it easily.
-            // But let's try the public one for now.
-
-            // Ideally: fetchApi(`/admin/marketplaces/${selectedMarketplace}/categories`)
-            // Creating a temporary workaround: reusing getCategories but filtering
-            // Actually, getCategories() returns plain list in current implementation?
-            // Let's implement a fetcher here for now or update API.
-            // Actually, let's fetch ALL and filter client side if the API is small.
-            setCategories([]);
-            loadCategories();
-        }
-    }, [selectedMarketplace]);
-
-    async function loadCategories() {
-        try {
-            const scopedCats = await getCategories(selectedMarketplace);
-            setCategories(scopedCats);
-        } catch (e) {
-            console.error(e);
-        }
-    }
-=======
         if (marketplaces && marketplaces.length > 0 && !selectedMarketplace) {
             setSelectedMarketplace(marketplaces[0].id);
         }
     }, [marketplaces, selectedMarketplace]);
->>>>>>> feat-add
 
     // ... handle submit functions ...
     // Note: Re-using existing handler logic, just updating the UI part so keeping logic here

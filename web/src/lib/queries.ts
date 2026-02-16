@@ -85,15 +85,7 @@ export function useMarketplaces() {
   });
 }
 
-export function useMarketplaces() {
-  return useQuery({
-    queryKey: ['marketplaces'],
-    queryFn: api.getMarketplaces,
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
-export function useBrands() {
+export function useCategories(marketplaceId?: string) {
   return useQuery({
     queryKey: ['categories', marketplaceId ?? 'all'],
     queryFn: () => api.getCategories(marketplaceId),

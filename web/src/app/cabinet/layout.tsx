@@ -47,13 +47,8 @@ export default function CabinetLayout({
   if (!isAuthenticated) return null;
 
   return (
-<<<<<<< HEAD
     <div className="container-main pt-16 md:pt-20 pb-10 md:pb-14">
       <div className="grid grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] items-start gap-6 md:gap-8 mt-10 md:mt-12">
-=======
-    <div className="container-main py-6">
-      <div className="flex flex-col md:flex-row gap-10">
->>>>>>> feat-add
         {/* Sidebar — desktop */}
         <aside className="hidden md:block w-60 flex-shrink-0">
           <nav className="glass-card p-3 sticky top-28 space-y-1">

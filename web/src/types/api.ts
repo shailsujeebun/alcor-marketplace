@@ -47,7 +47,6 @@ export interface Category {
   slug: string;
   name: string;
   parentId: string | null;
-  marketplaceId: string;
   children?: Category[];
 }
 

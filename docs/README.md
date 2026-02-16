@@ -126,3 +126,18 @@ For more information, please refer to the detailed documentation files listed ab
   - Listing wizard step labels and tip text.
 - Validation status:
   - `web`: lint/build passing after refactor.
+
+### Comprehensive Seed Data (2026-02-16)
+
+- Added `api/prisma/seed-all.ts` to populate test data across the full Prisma schema.
+- Added `npm run seed:all` in `api/package.json`.
+- Updated default Prisma seed command to use `seed-all.ts`:
+  - `npx prisma db seed` now runs the comprehensive dataset.
+- The new seed includes linked data for:
+  - auth/session/reset/email verification models,
+  - marketplaces/categories/brands/brand-category,
+  - form templates/fields/options,
+  - companies/listings/listing facts/media/seller/wizard state,
+  - favorites/history/conversations/messages,
+  - support tickets/ticket messages,
+  - dealer leads/plans/subscriptions/notifications/saved searches.

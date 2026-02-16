@@ -137,3 +137,15 @@ Updated `web/src/app/admin/layout.tsx` to include sidebar links:
 - Translation implementation changed globally from DOM runtime translation to dictionary i18n:
   - Admin pages now switch language via `t(key)` lookups.
   - No runtime page parsing or auto-translation requests.
+
+### Seed Data Update (2026-02-16)
+
+- Added a full-dataset seed script: `api/prisma/seed-all.ts`.
+- Admin-relevant seeded entities now include:
+  - users across roles/statuses,
+  - marketplaces/category trees,
+  - brand-to-category links,
+  - form templates (with fields and options),
+  - moderation data (`DRAFT`, `SUBMITTED`, `ACTIVE` listings),
+  - dealer leads, support tickets, notifications, and plans/subscriptions.
+- `api/package.json` now exposes `npm run seed:all` and uses it as default Prisma seed.

@@ -145,3 +145,16 @@ web/src/components/listings/
   - Provider performs controlled pass-based translation without MutationObserver loops.
 - Listing wizard translations migrated to i18n keys:
   - Step labels, sidebar title, tip copy, and loading fallback now translate via `t(key)`.
+
+### Seed Data Update (2026-02-16)
+
+- Added comprehensive seed script: `api/prisma/seed-all.ts`.
+- Ad/listing flow now has seeded end-to-end test data for:
+  - marketplaces and nested categories,
+  - dynamic form templates by leaf subcategory,
+  - companies and company-user links,
+  - listings with `ListingAttribute`, `ListingFact`, `ListingMedia`,
+  - `SellerContact`, `ListingSeller`, and `ListingWizardState`,
+  - favorites/view history, buyer-seller conversations, and support tickets.
+- Run with:
+  - `cd api && npm run seed:all`

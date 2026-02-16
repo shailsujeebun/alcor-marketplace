@@ -8,13 +8,12 @@ export interface CategoryTreeNode {
   slug: string;
   name: string;
   parentId: string | null;
-  marketplaceId: string;
   children: CategoryTreeNode[];
 }
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   create(dto: CreateCategoryDto) {
     const parentId = dto.parentId ? BigInt(dto.parentId) : undefined;
@@ -67,7 +66,6 @@ export class CategoriesService {
         slug: cat.slug,
         name: cat.name,
         parentId: cat.parentId ? cat.parentId.toString() : null,
-        marketplaceId: cat.marketplaceId.toString(),
         children: buildTree(cat.id.toString()),
       }));
     };

@@ -372,7 +372,6 @@ export const getMySubscription = () =>
   fetchApi<import('@/types/api').Subscription | null>('/subscriptions/me');
 
 // Reference data
-<<<<<<< HEAD
 export const getMarketplaces = () => fetchApi<Marketplace[]>('/marketplaces');
 export const getCategories = (marketplaceId?: string) =>
   fetchApi<Category[]>(`/categories${marketplaceId ? `?marketplaceId=${marketplaceId}` : ''}`);
@@ -383,11 +382,6 @@ export const createBrand = (data: CreateBrandPayload) =>
     method: 'POST',
     body: JSON.stringify(data),
   });
-=======
-export const getMarketplaces = () => fetchApi<import('@/types/api').Marketplace[]>('/marketplaces');
-export const getCategories = () => fetchApi<Category[]>('/categories');
-export const getBrands = () => fetchApi<Brand[]>('/brands');
->>>>>>> feat-add
 export const getCountries = () => fetchApi<Country[]>('/countries');
 export const getCities = (countryId?: string) =>
   fetchApi<PaginatedResponse<City>>(`/cities${countryId ? `?countryId=${countryId}` : ''}`);

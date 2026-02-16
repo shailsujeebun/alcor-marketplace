@@ -632,14 +632,6 @@ export function useDeleteSavedSearch() {
 
 // ─── Plans & Subscriptions ─────────────────────────
 
-export function useMarketplaces() {
-  return useQuery({
-    queryKey: ['marketplaces'],
-    queryFn: api.getMarketplaces,
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
 export function usePlans() {
   return useQuery({
     queryKey: ['plans'],

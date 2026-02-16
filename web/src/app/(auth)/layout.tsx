@@ -10,22 +10,9 @@ export default function AuthLayout({
     <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--bg-primary)]">
       <div className="w-full max-w-4xl">
         <div className="text-center mb-8">
-<<<<<<< HEAD
-          <Link href="/" className="logo-link inline-flex items-center gap-3">
-            <Image
-              src="/alcor-logo.png"
-              alt="АЛЬКОР Logo"
-              width={50}
-              height={50}
-              className="logo-image h-11 w-auto"
-              priority
-            />
-            <span className="logo-text font-heading font-bold text-2xl">
-=======
           <Link href="/" className="inline-flex items-center gap-3">
 
             <span className="font-heading font-bold text-2xl gradient-text">
->>>>>>> feat-add
               АЛЬКОР
             </span>
           </Link>

@@ -70,6 +70,24 @@ export class AdminController {
     return this.adminService.createTemplate(body);
   }
 
+  @Get('templates')
+  getTemplates() {
+    return this.adminService.getTemplates();
+  }
+
+  @Delete('templates/:id')
+  deleteTemplate(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.deleteTemplate(id);
+  }
+
+  @Patch('templates/:id/status')
+  toggleStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('isActive') isActive: boolean,
+  ) {
+    return this.adminService.toggleTemplateStatus(id, isActive);
+  }
+
   @Get('templates/:id')
   getTemplate(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.getTemplate(id);

@@ -401,6 +401,7 @@ export const getSearchFacets = (params?: URLSearchParams) =>
 export interface FormTemplate {
   id: string;
   categoryId: string;
+  version: number;
   fields: FormField[];
 }
 
@@ -542,6 +543,9 @@ export const updateAdminCategory = (id: number, data: {
 export const deleteAdminCategory = (id: number) =>
   fetchApi<void>(`/admin/categories/${id}`, { method: 'DELETE' });
 
+export const getAdminTemplates = () =>
+  fetchApi<import('@/types/api').AdminTemplate[]>('/admin/templates');
+
 export const createAdminTemplate = (data: { categoryId: number; name?: string; fields: any[] }) =>
   fetchApi<FormTemplate>('/admin/templates', {
     method: 'POST',
@@ -556,6 +560,15 @@ export const updateAdminTemplate = (id: number, data: { fields: any[] }) =>
 
 export const getAdminTemplate = (id: number) =>
   fetchApi<FormTemplate>(`/admin/templates/${id}`);
+
+export const deleteAdminTemplate = (id: number) =>
+  fetchApi<void>(`/admin/templates/${id}`, { method: 'DELETE' });
+
+export const updateAdminTemplateStatus = (id: number, isActive: boolean) =>
+  fetchApi<import('@/types/api').AdminTemplate>(`/admin/templates/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isActive }),
+  });
 
 export const getCategoryTemplateByCategory = (categoryId: number) =>
   fetchApi<FormTemplate | null>(`/categories/${categoryId}/template`).catch(() => null);

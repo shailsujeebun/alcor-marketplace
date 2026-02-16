@@ -11,7 +11,7 @@ const sidebarLinks = [
   { href: '/admin', label: 'Огляд', icon: LayoutDashboard },
   { href: '/admin/marketplaces', label: 'Маркетплейси', icon: Globe },
   { href: '/admin/categories', label: 'Категорії', icon: Layers },
-  { href: '/admin/templates/builder', label: 'Конструктор форм', icon: FileEdit },
+  { href: '/admin/templates', label: 'Шаблони форм', icon: FileEdit },
   { href: '/admin/listings/new', label: 'Додати оголошення', icon: PlusCircle },
   { href: '/admin/users', label: 'Користувачі', icon: Users },
   { href: '/admin/moderation', label: 'Модерація', icon: ListChecks },

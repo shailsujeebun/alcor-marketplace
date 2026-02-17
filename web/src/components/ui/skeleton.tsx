@@ -31,7 +31,7 @@ export function ListingCardSkeleton() {
 
 export function CompanyCardSkeleton() {
   return (
-    <div className="glass-card p-6 space-y-4">
+    <div className="glass-card p-6 space-y-4 h-full min-h-[260px]">
       <div className="flex items-center gap-4">
         <Skeleton className="w-14 h-14 !rounded-full" />
         <div className="space-y-2 flex-1">

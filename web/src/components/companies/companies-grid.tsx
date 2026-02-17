@@ -22,7 +22,7 @@ export function CompaniesGrid({ data, isLoading, page, onPageChange }: Companies
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-fr">
         {isLoading
           ? Array.from({ length: 9 }).map((_, i) => <CompanyCardSkeleton key={i} />)
           : data?.data.map((company) => (

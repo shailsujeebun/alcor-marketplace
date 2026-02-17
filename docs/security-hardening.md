@@ -20,7 +20,7 @@ This document turns the current security review into an implementation backlog w
 | ID | Priority | Area | Owner | Status |
 |---|---|---|---|---|
 | SH-01 | P0 | Listing authorization (BOLA/IDOR) | Backend | DONE |
-| SH-02 | P0 | Company authorization (BOLA/IDOR) | Backend | TODO |
+| SH-02 | P0 | Company authorization (BOLA/IDOR) | Backend | DONE |
 | SH-03 | P0 | Lock public reference-data writes | Backend | TODO |
 | SH-04 | P0 | Upload abuse hardening | Backend + DevOps | TODO |
 | SH-05 | P0 | Remove sensitive token/code logs | Backend | TODO |
@@ -282,6 +282,21 @@ This document turns the current security review into an implementation backlog w
 - **Updated files**:
   - `api/src/listings/listings.controller.ts`
   - `api/src/listings/listings.service.ts`
+  - `docs/security-hardening.md`
+- **Verification**:
+  - `pnpm -C api build` passes after authorization changes.
+  - `pnpm -C api test` passes after authorization changes.
+
+### 2026-02-17 - SH-02 Completed
+
+- **Implemented by**: Backend
+- **Scope delivered**:
+  - Enforced company update authorization on `PATCH /companies/:id`.
+  - Only company `OWNER` or platform `ADMIN`/`MANAGER` can update company details.
+  - Controller now passes authenticated actor (`id`, `role`) into update service.
+- **Updated files**:
+  - `api/src/companies/companies.controller.ts`
+  - `api/src/companies/companies.service.ts`
   - `docs/security-hardening.md`
 - **Verification**:
   - `pnpm -C api build` passes after authorization changes.

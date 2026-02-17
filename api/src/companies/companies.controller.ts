@@ -19,6 +19,7 @@ import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('companies')
 export class CompaniesController {
@@ -41,8 +42,12 @@ export class CompaniesController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
-  update(@Param('id') id: string, @Body() dto: UpdateCompanyDto) {
-    return this.companiesService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateCompanyDto,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.companiesService.update(id, dto, user.id, user.role);
   }
 
   @Post(':companyId/reviews')

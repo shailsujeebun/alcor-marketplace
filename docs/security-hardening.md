@@ -26,7 +26,7 @@ This document turns the current security review into an implementation backlog w
 | SH-05 | P0 | Remove sensitive token/code logs | Backend | DONE |
 | SH-06 | P0 | Refresh token transport hardening | Backend + Frontend | DONE |
 | SH-07 | P0 | Global throttling + endpoint rate limits | Backend | DONE |
-| SH-08 | P1 | Secret management / fail-fast config | DevOps + Backend | TODO |
+| SH-08 | P1 | Secret management / fail-fast config | DevOps + Backend | DONE |
 | SH-09 | P1 | Password + verification anti-bruteforce policy | Backend | TODO |
 | SH-10 | P1 | HTTP security headers / CSP | Backend + Frontend | TODO |
 | SH-11 | P1 | Dependency vulnerability remediation | DevOps + Backend | TODO |
@@ -416,6 +416,29 @@ This document turns the current security review into an implementation backlog w
   - `rg "@Throttle|APP_GUARD|ThrottlerGuard" api/src/app.module.ts api/src/auth/auth.controller.ts api/src/dealer-leads/dealer-leads.controller.ts api/src/upload/upload.controller.ts` shows expected guard/decorators.
   - `pnpm -C api build` passes after throttling hardening.
   - `pnpm -C api test` passes after throttling hardening.
+
+### 2026-02-17 - SH-08 Completed
+
+- **Implemented by**: Backend + DevOps docs
+- **Scope delivered**:
+  - Removed insecure production fallback secrets for JWT and S3 credentials.
+  - Added fail-fast startup validation for production secret strength/uniqueness.
+  - Added explicit production validation for:
+    - `JWT_SECRET`
+    - `UPLOAD_GUEST_TOKEN_SECRET`
+    - `S3_ACCESS_KEY_ID`
+    - `S3_SECRET_ACCESS_KEY`
+  - Added unit tests for missing/weak secret scenarios and strong-secret success path.
+  - Added a rotation runbook for operational secret rollover.
+- **Updated files**:
+  - `api/src/config/configuration.ts`
+  - `api/src/config/configuration.spec.ts`
+  - `docs/secret-rotation-runbook.md`
+  - `docs/security-hardening.md`
+- **Verification**:
+  - `pnpm -C api build` passes after config hardening.
+  - `pnpm -C api test` passes including configuration validation tests.
+  - `pnpm -C api test -- configuration.spec.ts` validates fail-fast env behavior directly.
 
 ## Milestone Plan
 

@@ -19,7 +19,7 @@ This document turns the current security review into an implementation backlog w
 
 | ID | Priority | Area | Owner | Status |
 |---|---|---|---|---|
-| SH-01 | P0 | Listing authorization (BOLA/IDOR) | Backend | TODO |
+| SH-01 | P0 | Listing authorization (BOLA/IDOR) | Backend | DONE |
 | SH-02 | P0 | Company authorization (BOLA/IDOR) | Backend | TODO |
 | SH-03 | P0 | Lock public reference-data writes | Backend | TODO |
 | SH-04 | P0 | Upload abuse hardening | Backend + DevOps | TODO |
@@ -269,6 +269,23 @@ This document turns the current security review into an implementation backlog w
   - Core security scenarios are automated and required in CI.
 - **Verification tests**:
   - New test suite stats and CI checks visible in pipeline.
+
+## Progress Log
+
+### 2026-02-17 - SH-01 Completed
+
+- **Implemented by**: Backend
+- **Scope delivered**:
+  - Enforced ownership/admin checks for all user-level listing mutation endpoints.
+  - Controller now passes authenticated actor (`id`, `role`) to mutation service methods.
+  - Service now blocks non-owner, non-admin/non-manager mutation attempts with `403`.
+- **Updated files**:
+  - `api/src/listings/listings.controller.ts`
+  - `api/src/listings/listings.service.ts`
+  - `docs/security-hardening.md`
+- **Verification**:
+  - `pnpm -C api build` passes after authorization changes.
+  - `pnpm -C api test` passes after authorization changes.
 
 ## Milestone Plan
 

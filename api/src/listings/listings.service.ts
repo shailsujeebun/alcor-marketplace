@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ListingStatus, NotificationType, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -43,6 +44,26 @@ export class ListingsService {
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
   ) {}
+
+  private isPrivilegedRole(role?: string) {
+    return role === UserRole.ADMIN || role === UserRole.MANAGER;
+  }
+
+  private ensureListingMutationAccess(
+    listing: { ownerUserId?: string | null },
+    actorUserId: string,
+    actorRole?: string,
+  ) {
+    if (this.isPrivilegedRole(actorRole)) {
+      return;
+    }
+
+    if (!listing.ownerUserId || listing.ownerUserId !== actorUserId) {
+      throw new ForbiddenException(
+        'You do not have permission to modify this listing',
+      );
+    }
+  }
 
   async create(
     dto: CreateListingDto,
@@ -320,10 +341,18 @@ export class ListingsService {
     return listing;
   }
 
-  async update(id: string, dto: UpdateListingDto) {
+  async update(
+    id: string,
+    dto: UpdateListingDto,
+    actorUserId: string,
+    actorRole?: string,
+  ) {
     console.log('=== UPDATE METHOD CALLED ===');
     console.log('ID:', id, 'Type:', typeof id);
     console.log('DTO keys:', Object.keys(dto));
+
+    const listing = await this.findById(id);
+    this.ensureListingMutationAccess(listing, actorUserId, actorRole);
 
     const {
       media,
@@ -415,7 +444,11 @@ export class ListingsService {
 
   // ─── Status State Machine ──────────────────────────
 
-  async submitForModeration(id: string) {
+  async submitForModeration(
+    id: string,
+    actorUserId: string,
+    actorRole?: string,
+  ) {
     const listing = await this.prisma.listing.findUnique({
       where: { id },
       include: {
@@ -429,6 +462,8 @@ export class ListingsService {
     if (!listing) {
       throw new NotFoundException(`Listing "${id}" not found`);
     }
+
+    this.ensureListingMutationAccess(listing, actorUserId, actorRole);
 
     this.validateTransition(listing.status, ListingStatus.SUBMITTED);
 
@@ -550,8 +585,9 @@ export class ListingsService {
     return updated;
   }
 
-  async pause(id: string) {
+  async pause(id: string, actorUserId: string, actorRole?: string) {
     const listing = await this.findById(id);
+    this.ensureListingMutationAccess(listing, actorUserId, actorRole);
     this.validateTransition(listing.status, ListingStatus.PAUSED);
 
     return this.prisma.listing.update({
@@ -561,8 +597,9 @@ export class ListingsService {
     });
   }
 
-  async resume(id: string) {
+  async resume(id: string, actorUserId: string, actorRole?: string) {
     const listing = await this.findById(id);
+    this.ensureListingMutationAccess(listing, actorUserId, actorRole);
     this.validateTransition(listing.status, ListingStatus.ACTIVE);
 
     return this.prisma.listing.update({
@@ -572,8 +609,9 @@ export class ListingsService {
     });
   }
 
-  async resubmit(id: string) {
+  async resubmit(id: string, actorUserId: string, actorRole?: string) {
     const listing = await this.findById(id);
+    this.ensureListingMutationAccess(listing, actorUserId, actorRole);
     if (
       listing.status !== ListingStatus.REJECTED &&
       listing.status !== ListingStatus.EXPIRED
@@ -698,7 +736,12 @@ export class ListingsService {
     };
   }
 
-  async updateAttributes(id: string, attributes: Record<string, any>) {
+  async updateAttributes(
+    id: string,
+    attributes: Record<string, any>,
+    actorUserId: string,
+    actorRole?: string,
+  ) {
     const listing = await this.prisma.listing.findUnique({
       where: { id },
       include: { category: true },
@@ -707,6 +750,8 @@ export class ListingsService {
     if (!listing) {
       throw new NotFoundException(`Listing "${id}" not found`);
     }
+
+    this.ensureListingMutationAccess(listing, actorUserId, actorRole);
 
     if (!listing.categoryId) {
       throw new BadRequestException(
@@ -739,7 +784,12 @@ export class ListingsService {
     });
   }
 
-  async updateContact(id: string, dto: UpdateListingContactDto) {
+  async updateContact(
+    id: string,
+    dto: UpdateListingContactDto,
+    actorUserId: string,
+    actorRole?: string,
+  ) {
     const listing = await this.prisma.listing.findUnique({
       where: { id },
       include: { seller: { include: { sellerContact: true } } },
@@ -748,6 +798,8 @@ export class ListingsService {
     if (!listing) {
       throw new NotFoundException(`Listing "${id}" not found`);
     }
+
+    this.ensureListingMutationAccess(listing, actorUserId, actorRole);
 
     // If listing already has a seller contact linked, update it
     if (listing.seller && listing.seller.sellerContact) {

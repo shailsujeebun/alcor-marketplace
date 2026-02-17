@@ -22,7 +22,7 @@ This document turns the current security review into an implementation backlog w
 | SH-01 | P0 | Listing authorization (BOLA/IDOR) | Backend | DONE |
 | SH-02 | P0 | Company authorization (BOLA/IDOR) | Backend | DONE |
 | SH-03 | P0 | Lock public reference-data writes | Backend | DONE |
-| SH-04 | P0 | Upload abuse hardening | Backend + DevOps | TODO |
+| SH-04 | P0 | Upload abuse hardening | Backend + DevOps | DONE |
 | SH-05 | P0 | Remove sensitive token/code logs | Backend | TODO |
 | SH-06 | P0 | Refresh token transport hardening | Backend + Frontend | TODO |
 | SH-07 | P0 | Global throttling + endpoint rate limits | Backend | TODO |
@@ -324,6 +324,32 @@ This document turns the current security review into an implementation backlog w
 - **Verification**:
   - `pnpm -C api build` passes after authorization changes.
   - `pnpm -C api test` passes after authorization changes.
+
+### 2026-02-17 - SH-04 Completed
+
+- **Implemented by**: Backend + Frontend
+- **Scope delivered**:
+  - Replaced fully-open direct uploads with authenticated upload access:
+    - `Bearer` access token for signed-in users.
+    - short-lived guest upload token for guest flows.
+  - Added guest token endpoint with per-client issuance rate limiting.
+  - Added per-actor upload quotas (requests/files/bytes per minute) for direct uploads.
+  - Added server-side magic-byte image signature validation (JPEG/PNG/WEBP/GIF).
+  - Enforced strict signature/content-type match checks to block MIME spoofing.
+  - Restricted upload folders and presigned upload content types server-side.
+  - Made bucket public-read policy configurable (`S3_PUBLIC_READ_ASSETS`) instead of always forcing public-read.
+  - Updated frontend upload client to request and reuse guest upload tokens automatically.
+- **Updated files**:
+  - `api/src/config/configuration.ts`
+  - `api/src/upload/upload.module.ts`
+  - `api/src/upload/upload.controller.ts`
+  - `api/src/upload/upload.service.ts`
+  - `web/src/lib/api.ts`
+  - `docs/security-hardening.md`
+- **Verification**:
+  - `pnpm -C api build` passes after upload hardening changes.
+  - `pnpm -C api test` passes after upload hardening changes.
+  - `pnpm -C web build` passes after guest-upload client updates.
 
 ## Milestone Plan
 

@@ -36,6 +36,8 @@ import { refreshTokens } from '@/lib/auth-api';
 import Cookies from 'js-cookie';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+type GuestUploadTokenResponse = { token: string; expiresIn: number };
+let guestUploadTokenCache: { token: string; expiresAt: number } | null = null;
 
 async function tryRefreshToken(): Promise<string | null> {
   try {
@@ -48,6 +50,38 @@ async function tryRefreshToken(): Promise<string | null> {
     useAuthStore.getState().logout();
     return null;
   }
+}
+
+async function getGuestUploadToken(): Promise<string> {
+  const now = Date.now();
+  if (guestUploadTokenCache && guestUploadTokenCache.expiresAt > now + 5000) {
+    return guestUploadTokenCache.token;
+  }
+
+  const res = await fetch(`${API_BASE}/upload/guest-token`, {
+    method: 'POST',
+  });
+
+  if (!res.ok) {
+    let detail = '';
+    try {
+      const body = await res.json();
+      detail = body.message || JSON.stringify(body);
+    } catch { /* empty */ }
+    throw new Error(detail || `Guest upload token error: ${res.status}`);
+  }
+
+  const body = (await res.json()) as Partial<GuestUploadTokenResponse>;
+  if (!body.token || typeof body.token !== 'string') {
+    throw new Error('Guest upload token response is invalid');
+  }
+
+  const expiresIn = typeof body.expiresIn === 'number' ? body.expiresIn : 900;
+  guestUploadTokenCache = {
+    token: body.token,
+    expiresAt: now + Math.max(60, expiresIn) * 1000,
+  };
+  return body.token;
 }
 
 async function fetchApi<T>(path: string, init?: RequestInit): Promise<T> {
@@ -173,10 +207,17 @@ export async function uploadImages(files: File[]): Promise<{ urls: string[] }> {
   let token = useAuthStore.getState().accessToken;
   const formData = new FormData();
   files.forEach((file) => formData.append('files', file));
+  const headers: Record<string, string> = {};
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  } else {
+    headers['x-upload-token'] = await getGuestUploadToken();
+  }
 
   let res = await fetch(`${API_BASE}/upload/images`, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers,
     body: formData,
   });
 
@@ -190,6 +231,15 @@ export async function uploadImages(files: File[]): Promise<{ urls: string[] }> {
       res = await fetch(`${API_BASE}/upload/images`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
+        body: retryFormData,
+      });
+    } else if (!token) {
+      guestUploadTokenCache = null;
+      const retryFormData = new FormData();
+      files.forEach((file) => retryFormData.append('files', file));
+      res = await fetch(`${API_BASE}/upload/images`, {
+        method: 'POST',
+        headers: { 'x-upload-token': await getGuestUploadToken() },
         body: retryFormData,
       });
     }

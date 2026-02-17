@@ -27,7 +27,7 @@ This document turns the current security review into an implementation backlog w
 | SH-06 | P0 | Refresh token transport hardening | Backend + Frontend | DONE |
 | SH-07 | P0 | Global throttling + endpoint rate limits | Backend | DONE |
 | SH-08 | P1 | Secret management / fail-fast config | DevOps + Backend | DONE |
-| SH-09 | P1 | Password + verification anti-bruteforce policy | Backend | TODO |
+| SH-09 | P1 | Password + verification anti-bruteforce policy | Backend | DONE |
 | SH-10 | P1 | HTTP security headers / CSP | Backend + Frontend | TODO |
 | SH-11 | P1 | Dependency vulnerability remediation | DevOps + Backend | TODO |
 | SH-12 | P1 | Translation data privacy controls | Frontend + Product + Security | TODO |
@@ -439,6 +439,28 @@ This document turns the current security review into an implementation backlog w
   - `pnpm -C api build` passes after config hardening.
   - `pnpm -C api test` passes including configuration validation tests.
   - `pnpm -C api test -- configuration.spec.ts` validates fail-fast env behavior directly.
+
+### 2026-02-17 - SH-09 Completed
+
+- **Implemented by**: Backend
+- **Scope delivered**:
+  - Strengthened registration password policy (length + uppercase + lowercase + number + special char).
+  - Added server-side password strength enforcement in auth service for both registration and password reset.
+  - Added Redis-backed verification-code attempt tracking with temporary lockout behavior.
+  - Added Redis-backed resend cooldown enforcement keyed by account and client IP.
+  - Wired client IP extraction in auth controller for verify/resend flows.
+  - Added auth service security-policy tests for weak password rejection, verification lockout, and resend cooldown.
+- **Updated files**:
+  - `api/src/auth/dto/register.dto.ts`
+  - `api/src/auth/auth.service.ts`
+  - `api/src/auth/auth.controller.ts`
+  - `api/src/auth/auth.service.spec.ts`
+  - `api/src/redis/redis.service.ts`
+  - `docs/security-hardening.md`
+- **Verification**:
+  - `pnpm -C api build` passes after auth hardening updates.
+  - `pnpm -C api test` passes with new auth security tests.
+  - `pnpm -C api test -- auth.service.spec.ts` validates lockout/cooldown and password policy behavior.
 
 ## Milestone Plan
 

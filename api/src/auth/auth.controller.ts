@@ -132,9 +132,14 @@ export class AuthController {
   @HttpCode(200)
   async verifyEmail(
     @Body() dto: VerifyEmailDto,
+    @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const authResult = await this.authService.verifyEmail(dto.email, dto.code);
+    const authResult = await this.authService.verifyEmail(
+      dto.email,
+      dto.code,
+      this.getClientKey(request),
+    );
     this.setSessionCookies(
       response,
       authResult.refreshToken,
@@ -150,8 +155,14 @@ export class AuthController {
   @Post('resend-verification')
   @Throttle({ default: { limit: 5, ttl: 15 * 60_000 } })
   @HttpCode(200)
-  async resendVerification(@Body() dto: ResendVerificationDto) {
-    return this.authService.resendVerificationCode(dto.email);
+  async resendVerification(
+    @Body() dto: ResendVerificationDto,
+    @Req() request: Request,
+  ) {
+    return this.authService.resendVerificationCode(
+      dto.email,
+      this.getClientKey(request),
+    );
   }
 
   @UseGuards(JwtAuthGuard)
@@ -234,5 +245,19 @@ export class AuthController {
     }
 
     return undefined;
+  }
+
+  private getClientKey(request: Request) {
+    const forwardedFor = request.headers['x-forwarded-for'];
+    if (typeof forwardedFor === 'string' && forwardedFor.trim().length > 0) {
+      return forwardedFor.split(',')[0].trim();
+    }
+
+    const realIp = request.headers['x-real-ip'];
+    if (typeof realIp === 'string' && realIp.trim().length > 0) {
+      return realIp.trim();
+    }
+
+    return request.ip;
   }
 }

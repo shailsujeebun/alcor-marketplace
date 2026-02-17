@@ -1,0 +1,67 @@
+# Task Checklist
+
+- [/] Phase 1 — Foundations (Week 1 Equivalent Scope)
+    - [ ] Create tables: `marketplace`, `category`, `listing`, `attributes`, `facts`, `media`, `seller_contact`
+    - [ ] Build endpoints:
+        - [ ] `POST /listings/draft` (Creates draft)
+        - [x] `GET /marketplaces`
+        - [x] `GET /categories?marketplaceId=...`
+- [ ] Phase 2 — Dynamic Forms (Core of Step 2)
+    - [ ] Build template tables: `form_template`, `form_field`, `field_option`
+    - [ ] Create admin seed scripts for templates
+    - [ ] Build endpoints:
+        - [ ] `GET /categories/:id/template` (Returns schema + options)
+        - [ ] `PUT /listings/:id/attributes` (Validates + stores)
+    - [ ] Implement Validator: Required, min/max, regex, conditional rules
+- [ ] Phase 3 — Media Pipeline (Step 3)
+    - [ ] Build Endpoint: Presigned upload
+    - [ ] Implement Features:
+        - [ ] Save media rows
+        - [ ] Background job: Thumbnails, metadata extraction
+- [ ] Phase 4 — Contacts + Publish (Step 4)
+    - [ ] Build Endpoints:
+        - [ ] `PUT /listings/:id/contact`
+        - [ ] `POST /listings/:id/publish` (Validate all steps, set status published, build slug, index to search)
+- [ ] Phase 5 — Search & Filters
+    - [ ] Build Search Index
+    - [ ] Implement Features:
+        - [ ] Facets per marketplace (Cars facets differ)
+        - [ ] Related listings logic
+    - [ ] Public Endpoints:
+        - [ ] `GET /search`
+        - [ ] `GET /listings/:id`
+
+## Test Status
+
+- 2026-02-12: `api` tests passed (`npm test`)
+- 2026-02-12: `api` lint failed with existing errors (`npm run lint`)
+- 2026-02-12: `web` lint failed with existing errors (`npm run lint`)
+- 2026-02-12: Fixed `react-hooks/set-state-in-effect` warnings in marketplace default selection (no tests rerun)
+- 2026-02-12: Re-ran `web` lint after fix; warnings gone, lint still failing due to existing errors
+- 2026-02-12: Ad placement wizard now scopes category list by `marketplaceId` from URL
+- 2026-02-12: Excluded `prisma/*.ts` seed files from API tsconfig to avoid dev-server compile errors
+- 2026-02-12: Admin categories now fetch marketplace-scoped tree for selected marketplace
+- 2026-02-12: Added Agroline/Autoline marketplace trees to seed data with Ukrainian names and URL slugs
+- 2026-02-12: Listing wizard contact step now lets users create a company if none exist
+- 2026-02-12: Listing media uploads now send `type=PHOTO` to satisfy backend validation
+- 2026-02-12: Company creation now generates valid slugs and listing submit requires a company; presigned uploads now use public URLs
+- 2026-02-12: Company selector now requests max 100 companies to satisfy backend limit validation
+- 2026-02-12: Listing attribute storage now maps key/value array into JSON attribute record
+- 2026-02-12: Strip media `key` before Prisma createMany to match schema
+- 2026-02-12: Upload service now sets MinIO bucket policy to public-read so images render
+- 2026-02-16: `web` i18n guard added (`npm run i18n:guard`) and passing
+- 2026-02-16: `web` lint passing (`npm run lint`)
+- 2026-02-16: `web` production build passing (`npm run build`)
+- 2026-02-16: `api` build passing (`npm run build`)
+- 2026-02-16: `api` unit tests passing (`npm test -- --runInBand`)
+- 2026-02-16: `api` e2e smoke passing (`npm run test:e2e -- --runInBand`)
+- 2026-02-16: Applied pending migration `20260213093000_add_brand_category_map` via `npx prisma migrate deploy`
+- 2026-02-16: Deterministic full seed passing (`npm run seed:all`)
+- 2026-02-16: Post-seed integrity checks passing (`npm run seed:verify`)
+
+## Update - 2026-02-17 (Fix_download)
+- Implemented Autoline-style template/runtime upgrades: configurable `dataSource`, `dependsOn`, `visibleIf`, `requiredIf`, `resetOnChange`, and template block attachments.
+- Added reusable `engine_block`, category-level `hasEngine`, and inheritance/fallback rules so new subcategories keep full details instead of losing engine-related fields.
+- Added persistent "create new option" flows and APIs for `brand`, `model`, `subcategory`, `country`, and `city`, so new values are saved once and reused by all users.
+- Added options/cascade runtime behavior: parent-change child reset, dependency-based option loading, and dependency-state caching.
+- Completed validation checks and build/test verification; local infrastructure (Postgres/Redis/MinIO) confirmed working for this flow.

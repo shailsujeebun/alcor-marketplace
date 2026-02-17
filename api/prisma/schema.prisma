@@ -1,0 +1,821 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Marketplace & Core ──────────────────────────────
+
+model Marketplace {
+  id       BigInt  @id @default(autoincrement()) @map("marketplace_id")
+  key      String  @unique // 'agriculture', 'commercial', 'industrial', 'cars'
+  name     String
+  isActive Boolean @default(true) @map("is_active")
+
+  categories Category[]
+  listings   Listing[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("marketplace")
+}
+
+// ─── Auth Enums ────────────────────────────────────────
+
+enum UserRole {
+  USER
+  PRO_SELLER
+  MANAGER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  RESTRICTED
+  BLOCKED
+}
+
+enum CompanyUserRole {
+  OWNER
+  ADMIN
+  EDITOR
+}
+
+// ─── Auth Models ───────────────────────────────────────
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  passwordHash  String?
+  firstName     String?
+  lastName      String?
+  phone         String?
+  role          UserRole   @default(USER)
+  status        UserStatus @default(ACTIVE)
+  locale        String     @default("uk")
+  emailVerified Boolean    @default(false)
+  avatarUrl     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  oauthAccounts       OAuthAccount[]
+  sessions            Session[]
+  passwordResets      PasswordResetToken[]
+  companyUsers        CompanyUser[]
+  listings            Listing[]
+  assignedDealerLeads DealerLead[]         @relation("AssignedDealerLeads")
+
+  favorites              Favorite[]
+  viewHistory            ViewHistory[]
+  buyerConversations     Conversation[]          @relation("BuyerConversations")
+  sellerConversations    Conversation[]          @relation("SellerConversations")
+  sentMessages           Message[]               @relation("SentMessages")
+  supportTickets         SupportTicket[]
+  assignedTickets        SupportTicket[]         @relation("AssignedTickets")
+  ticketMessages         TicketMessage[]         @relation("TicketSentMessages")
+  subscriptions          Subscription[]
+  emailVerificationCodes EmailVerificationCode[]
+  notifications          Notification[]
+  savedSearches          SavedSearch[]
+}
+
+model OAuthAccount {
+  id         String @id @default(uuid())
+  userId     String
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider   String
+  providerId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([provider, providerId])
+  @@index([userId])
+}
+
+model Session {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String    @unique
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  userAgent        String?
+  ipAddress        String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model EmailVerificationCode {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model CompanyUser {
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role      CompanyUserRole @default(EDITOR)
+
+  createdAt DateTime @default(now())
+
+  @@id([userId, companyId])
+}
+
+// ─── Enums ───────────────────────────────────────────
+
+enum ListingCondition {
+  NEW
+  USED
+  DEMO
+}
+
+enum ListingType {
+  SALE
+  RENT
+  FROM_MANUFACTURER
+}
+
+enum PriceType {
+  FIXED
+  NEGOTIABLE
+  ON_REQUEST
+}
+
+enum MediaKind {
+  LOGO
+  COVER
+  GALLERY
+  PHOTO
+  VIDEO
+  PDF
+}
+
+enum ListingStatus {
+  DRAFT
+  SUBMITTED
+  PENDING_MODERATION
+  ACTIVE
+  PAUSED
+  EXPIRED
+  REJECTED
+  REMOVED
+}
+
+enum DealerLeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PACKAGE_SELECTED
+  CONVERTED
+  REJECTED
+}
+
+// ─── Reference Data ──────────────────────────────────
+
+model Country {
+  id   String @id @default(uuid())
+  iso2 String @unique @db.VarChar(2)
+  name String
+
+  cities      City[]
+  companies   Company[]
+  listings    Listing[]
+  dealerLeads DealerLead[]
+}
+
+model City {
+  id        String  @id @default(uuid())
+  name      String
+  countryId String
+  country   Country @relation(fields: [countryId], references: [id])
+
+  companies   Company[]
+  listings    Listing[]
+  dealerLeads DealerLead[]
+
+  @@index([countryId])
+}
+
+model ActivityType {
+  id   String @id @default(uuid())
+  code String @unique
+  name String
+
+  companies CompanyActivityType[]
+}
+
+model Brand {
+  id   String @id @default(uuid())
+  name String @unique
+
+  companyBrands CompanyBrand[]
+  listings      Listing[]
+  categories    BrandCategory[]
+  models        Model[]
+}
+
+model Model {
+  id         String    @id @default(uuid())
+  name       String
+  brandId    String?   @map("brand_id")
+  brand      Brand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  categoryId BigInt?   @map("category_id")
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  @@unique([name, brandId, categoryId])
+  @@index([brandId])
+  @@index([categoryId])
+  @@map("model")
+}
+
+model Category {
+  id            BigInt      @id @default(autoincrement()) @map("category_id")
+  marketplaceId BigInt      @map("marketplace_id")
+  marketplace   Marketplace @relation(fields: [marketplaceId], references: [id])
+  parentId      BigInt?     @map("parent_id")
+  parent        Category?   @relation("CategoryTree", fields: [parentId], references: [id])
+  children      Category[]  @relation("CategoryTree")
+  name          String
+  slug          String
+  sortOrder     Int?        @map("sort_order")
+  hasEngine     Boolean     @default(false) @map("has_engine")
+
+  listings      Listing[]
+  formTemplates FormTemplate[]
+  brands        BrandCategory[]
+  models        Model[]
+
+  @@unique([marketplaceId, slug])
+  @@map("category")
+}
+
+model BrandCategory {
+  brandId    String
+  brand      Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  categoryId BigInt   @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@id([brandId, categoryId])
+  @@index([categoryId])
+  @@map("brand_category")
+}
+
+// ─── Form Templates ──────────────────────────────────
+
+model FormTemplate {
+  id         BigInt   @id @default(autoincrement()) @map("template_id")
+  categoryId BigInt   @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id])
+  version    Int      @default(1)
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  blockIds   Json     @default("[]") @map("block_ids")
+
+  fields FormField[]
+
+  @@unique([categoryId, version])
+  @@map("form_template")
+}
+
+model FormField {
+  id           BigInt       @id @default(autoincrement()) @map("field_id")
+  templateId   BigInt       @map("template_id")
+  template     FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  fieldKey     String       @map("field_key") // stable key like 'year', 'mileage_km', 'fuel'
+  label        String
+  fieldType    String       @map("field_type") // text, number, select, multiselect, bool, date, color, geo
+  required     Boolean      @default(false)
+  sortOrder    Int          @default(0) @map("sort_order")
+  helpText     String?      @map("help_text")
+  validations  Json         @default("{}") // min/max/regex/unit
+  visibilityIf Json         @default("{}") @map("visibility_if") // conditional rules
+  requiredIf   Json         @default("{}") @map("required_if")
+  config       Json         @default("{}")
+  section      String?      // Logic grouping like 'Engine', 'Dimensions'
+
+  options FieldOption[]
+
+  @@unique([templateId, fieldKey])
+  @@map("form_field")
+}
+
+model FieldOption {
+  id        BigInt    @id @default(autoincrement()) @map("option_id")
+  fieldId   BigInt    @map("field_id")
+  field     FormField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  value     String
+  label     String
+  sortOrder Int?      @map("sort_order")
+
+  @@unique([fieldId, value])
+  @@map("field_option")
+}
+
+model FormBlock {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  isSystem  Boolean  @default(false) @map("is_system")
+  fields    Json     @default("[]")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("form_block")
+}
+
+// ─── Company ─────────────────────────────────────────
+
+model Company {
+  id          String  @id @default(uuid())
+  slug        String  @unique
+  name        String
+  description String?
+
+  countryId    String?
+  country      Country? @relation(fields: [countryId], references: [id])
+  cityId       String?
+  city         City?    @relation(fields: [cityId], references: [id])
+  region       String?
+  addressLine  String?
+  timezone     String?
+  utcOffsetMin Int?
+
+  website         String?
+  contactPerson   String?
+  workingHours    String?
+  languages       String?
+  yearsOnPlatform Int?
+  yearsOnMarket   Int?
+
+  isVerified       Boolean @default(false)
+  isOfficialDealer Boolean @default(false)
+  isManufacturer   Boolean @default(false)
+
+  ratingAvg     Float   @default(0)
+  reviewsCount  Int     @default(0)
+  listingsCount Int     @default(0)
+  ratingSource  String?
+  photosCount   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  phones     CompanyPhone[]
+  media      CompanyMedia[]
+  activities CompanyActivityType[]
+  brands     CompanyBrand[]
+  reviews    CompanyReview[]
+  listings   Listing[]
+  users      CompanyUser[]
+
+  @@index([countryId])
+  @@index([cityId])
+}
+
+model CompanyPhone {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  label     String?
+  phoneE164 String
+  isPrimary Boolean @default(false)
+
+  @@index([companyId])
+}
+
+model CompanyMedia {
+  id        String    @id @default(uuid())
+  companyId String
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  kind      MediaKind
+  url       String
+  sortOrder Int       @default(0)
+
+  @@index([companyId])
+}
+
+model CompanyActivityType {
+  companyId      String
+  company        Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  activityTypeId String
+  activityType   ActivityType @relation(fields: [activityTypeId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, activityTypeId])
+}
+
+model CompanyBrand {
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  brandId   String
+  brand     Brand   @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, brandId])
+}
+
+model CompanyReview {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  authorName String
+  rating     Int
+  title      String?
+  body       String?
+  createdAt  DateTime @default(now())
+
+  @@index([companyId])
+}
+
+// ─── Listing ─────────────────────────────────────────
+
+model Listing {
+  id            BigInt        @id @default(autoincrement()) @map("listing_id")
+  marketplaceId BigInt        @map("marketplace_id")
+  marketplace   Marketplace   @relation(fields: [marketplaceId], references: [id])
+  categoryId    BigInt        @map("category_id")
+  category      Category      @relation(fields: [categoryId], references: [id])
+  status        ListingStatus @default(DRAFT)
+
+  // Legacy/Optional fields for backward compat or auth link
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ownerUserId String?
+  ownerUser   User?    @relation(fields: [ownerUserId], references: [id])
+
+  title           String?
+  description     String?
+  descriptionLang String? @map("description_lang")
+
+  // Removing these direct columns in favor of ListingFact or Attributes for new architecture
+  // Keeping them nullable if migration needed later, but plan says strict
+  // For now, I will comment them out to strictly follow the new plan, 
+  // but keep relations that might be needed by old code until full refactor.
+  // Actually, per plan, we have a clean break. I'll stick to the plan's schema for new fields.
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  publishedAt DateTime? @map("published_at")
+
+  // Relations
+  media       ListingMedia[]
+  attribute   ListingAttribute? // One-to-one for JSONB attributes
+  fact        ListingFact? // One-to-one for indexed facts
+  seller      ListingSeller? // One-to-one for contact info
+  wizardState ListingWizardState?
+
+  // Legacy relations to keep Prisma happy if other models reference Listing
+  favorites     Favorite[]
+  viewHistory   ViewHistory[]
+  conversations Conversation[]
+  country       Country?       @relation(fields: [countryId], references: [id])
+  countryId     String?
+  city          City?          @relation(fields: [cityId], references: [id])
+  cityId        String?
+  brand         Brand?         @relation(fields: [brandId], references: [id])
+  brandId       String?
+
+  @@map("listing")
+}
+
+model ListingAttribute {
+  listingId BigInt  @id @map("listing_id")
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  data      Json    @default("{}")
+
+  @@map("listing_attribute")
+}
+
+model ListingFact {
+  listingId BigInt  @id @map("listing_id")
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  priceAmount   Decimal? @map("price_amount") @db.Decimal(14, 2)
+  priceCurrency String?  @map("price_currency")
+  vatType       String?  @map("vat_type")
+
+  year      Int?
+  mileageKm Int?    @map("mileage_km")
+  condition String?
+
+  country String?
+  city    String?
+  lat     Decimal? @db.Decimal(9, 6)
+  lng     Decimal? @db.Decimal(9, 6)
+
+  @@map("listing_fact")
+}
+
+model ListingMedia {
+  id        BigInt    @id @default(autoincrement()) @map("media_id")
+  listingId BigInt    @map("listing_id")
+  listing   Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  type      MediaKind
+  url       String
+  sortOrder Int?      @map("sort_order")
+  meta      Json      @default("{}")
+
+  @@unique([listingId, url])
+  @@map("listing_media")
+}
+
+model SellerContact {
+  id             BigInt   @id @default(autoincrement()) @map("seller_contact_id")
+  email          String
+  name           String
+  phoneCountry   String   @map("phone_country") @db.Char(2)
+  phoneNumber    String   @map("phone_number")
+  partnerCode    String?  @map("partner_code")
+  privacyConsent Boolean  @map("privacy_consent")
+  termsConsent   Boolean  @map("terms_consent")
+  consentedAt    DateTime @default(now()) @map("consented_at")
+
+  listingSeller ListingSeller[]
+
+  @@map("seller_contact")
+}
+
+model ListingSeller {
+  listingId       BigInt        @id @map("listing_id")
+  listing         Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  sellerContactId BigInt        @map("seller_contact_id")
+  sellerContact   SellerContact @relation(fields: [sellerContactId], references: [id])
+
+  @@map("listing_seller")
+}
+
+model ListingWizardState {
+  listingId      BigInt   @id @map("listing_id")
+  listing        Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  step           Int      @default(1)
+  completedSteps Int[]    @default([]) @map("completed_steps")
+  lastSeenAt     DateTime @default(now()) @map("last_seen_at")
+
+  @@map("listing_wizard_state")
+}
+
+// ─── Ticket / Message Enums ─────────────────────────
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// ─── Favorites & View History ───────────────────────
+
+model Favorite {
+  id        String  @id @default(uuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId BigInt
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
+}
+
+model ViewHistory {
+  id        String  @id @default(uuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId BigInt
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  viewedAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
+}
+
+// ─── Conversations & Messages ───────────────────────
+
+model Conversation {
+  id        String  @id @default(uuid())
+  listingId BigInt
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerId   String
+  buyer     User    @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
+  sellerId  String
+  seller    User    @relation("SellerConversations", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  lastMessageAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages Message[]
+
+  @@unique([listingId, buyerId, sellerId])
+  @@index([buyerId])
+  @@index([sellerId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  body           String
+  readAt         DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+// ─── Support Tickets ────────────────────────────────
+
+model SupportTicket {
+  id           String         @id @default(uuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject      String
+  status       TicketStatus   @default(OPEN)
+  priority     TicketPriority @default(MEDIUM)
+  assignedToId String?
+  assignedTo   User?          @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  closedAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages TicketMessage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([assignedToId])
+}
+
+model TicketMessage {
+  id       String        @id @default(uuid())
+  ticketId String
+  ticket   SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId String
+  sender   User          @relation("TicketSentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  body     String
+  isStaff  Boolean       @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+// ─── Dealer Leads ───────────────────────────────────
+
+model DealerLead {
+  id               String           @id @default(uuid())
+  companyName      String
+  contactPerson    String
+  email            String
+  phone            String
+  website          String?
+  countryId        String?
+  country          Country?         @relation(fields: [countryId], references: [id])
+  cityId           String?
+  city             City?            @relation(fields: [cityId], references: [id])
+  activityTypes    String[]
+  brands           String[]
+  equipmentCount   Int?
+  message          String?
+  status           DealerLeadStatus @default(NEW)
+  assignedToUserId String?
+  assignedToUser   User?            @relation("AssignedDealerLeads", fields: [assignedToUserId], references: [id])
+  notes            String?
+  convertedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([assignedToUserId])
+}
+
+// ─── Plans & Billing ─────────────────────────────────
+
+enum PlanInterval {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+model Plan {
+  id            String       @id @default(uuid())
+  slug          String       @unique
+  name          String
+  description   String?
+  priceAmount   Decimal      @db.Decimal(10, 2)
+  priceCurrency String       @default("UAH") @db.VarChar(3)
+  interval      PlanInterval @default(MONTHLY)
+  features      Json
+  limits        Json
+  isActive      Boolean      @default(true)
+  sortOrder     Int          @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id        String             @id @default(uuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId    String
+  plan      Plan               @relation(fields: [planId], references: [id])
+  status    SubscriptionStatus @default(ACTIVE)
+  startDate DateTime
+  endDate   DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([planId])
+}
+
+// ─── Notifications ──────────────────────────────────
+
+enum NotificationType {
+  LISTING_APPROVED
+  LISTING_REJECTED
+  NEW_MESSAGE
+  TICKET_REPLY
+  REVIEW_RECEIVED
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String?
+  linkUrl   String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+}
+
+// ─── Saved Searches ─────────────────────────────────
+
+model SavedSearch {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  filters   Json
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

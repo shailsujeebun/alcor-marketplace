@@ -29,7 +29,7 @@ This document turns the current security review into an implementation backlog w
 | SH-08 | P1 | Secret management / fail-fast config | DevOps + Backend | DONE |
 | SH-09 | P1 | Password + verification anti-bruteforce policy | Backend | DONE |
 | SH-10 | P1 | HTTP security headers / CSP | Backend + Frontend | DONE |
-| SH-11 | P1 | Dependency vulnerability remediation | DevOps + Backend | TODO |
+| SH-11 | P1 | Dependency vulnerability remediation | DevOps + Backend | DONE |
 | SH-12 | P1 | Translation data privacy controls | Frontend + Product + Security | TODO |
 | SH-13 | P2 | Security CI gates (SAST/secret scan/audit) | DevOps | TODO |
 | SH-14 | P2 | Security-focused automated test suite | QA + Backend + Frontend | TODO |
@@ -485,6 +485,27 @@ This document turns the current security review into an implementation backlog w
   - `pnpm -C api build` passes after API header hardening.
   - `pnpm -C api test` passes after API header hardening.
   - `pnpm -C web build` passes after Next security-header configuration.
+
+### 2026-02-17 - SH-11 Completed
+
+- **Implemented by**: DevOps + Backend
+- **Scope delivered**:
+  - Added production dependency audit policy script with high/critical severity gate (`audit:prod`).
+  - Added transitive dependency overrides to pull patched versions for vulnerable packages.
+  - Added CI pipeline job (`api-security-audit`) that runs `pnpm` install + `audit:prod` gate.
+  - Re-ran dependency audits for API and web production dependencies after remediation.
+- **Updated files**:
+  - `api/package.json`
+  - `api/pnpm-lock.yaml`
+  - `.github/workflows/ci.yml`
+  - `docs/security-hardening.md`
+- **Verification**:
+  - `pnpm -C api audit --prod --json` reports zero vulnerabilities.
+  - `pnpm -C web audit --prod --json` reports zero vulnerabilities.
+  - `pnpm -C api audit:prod` passes (no high/critical vulnerabilities).
+  - `pnpm -C api build` passes after dependency updates.
+  - `pnpm -C api test` passes after dependency updates.
+  - `pnpm -C web build` passes after lockfile/dependency updates.
 
 ## Milestone Plan
 

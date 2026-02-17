@@ -41,6 +41,7 @@ The backend runs on `http://localhost:3000` and the frontend on `http://localhos
 - **[AD.MD](./AD.MD)** - Ad placement & listing wizard documentation
 - **[ADMIN.MD](./ADMIN.MD)** - Admin features documentation (marketplaces, categories, form templates)
 - **[security-hardening.md](./security-hardening.md)** - Prioritized security hardening backlog with owners, acceptance criteria, and verification tests
+- **[security-signoff-evidence.md](./security-signoff-evidence.md)** - Production security sign-off evidence matrix and verification runbook
 - **[DB_ER_DIAGRAM.MD](./DB_ER_DIAGRAM.MD)** - Database entity relationship diagram
 - **[plan.md](./plan.md)** - Marketplace ad-posting system implementation plan
 - **[task.md](./task.md)** - Development task checklist

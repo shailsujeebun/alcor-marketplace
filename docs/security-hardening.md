@@ -564,6 +564,23 @@ This document turns the current security review into an implementation backlog w
   - `pnpm -C api build` passes after test-suite additions.
   - CI workflow now contains a required `Security test suite` step in `api-quality`.
 
+### 2026-02-17 - Security Sign-Off Evidence Pack Added
+
+- **Implemented by**: Security + DevOps
+- **Scope delivered**:
+  - Added a dedicated production sign-off evidence document mapped to all required evidence items.
+  - Linked each sign-off requirement to concrete tests/config/docs and repeatable verification commands.
+  - Captured current verification status for security tests, dependency audit, headers, token handling, and incident runbook coverage.
+- **Updated files**:
+  - `docs/security-signoff-evidence.md`
+  - `docs/security-hardening.md`
+  - `docs/README.md`
+- **Verification**:
+  - `pnpm -C api test:security` passes.
+  - `pnpm -C api audit:prod` passes.
+  - `rg "Content-Security-Policy|Referrer-Policy|X-Content-Type-Options|X-Frame-Options|Permissions-Policy|poweredByHeader" web/next.config.ts` confirms web header configuration.
+  - `rg "httpOnly|sameSite|secure" api/src/auth/auth.controller.ts` confirms refresh-cookie transport protections.
+
 ## Milestone Plan
 
 ### Milestone 1 (Target: 2026-02-24)
@@ -580,9 +597,9 @@ This document turns the current security review into an implementation backlog w
 
 ## Required Evidence Before Production Sign-Off
 
-1. Authorization tests proving no cross-account mutation paths.
-2. Upload abuse tests (spoofed file, quota, unauthenticated abuse).
-3. Token handling evidence (refresh token inaccessible from JS).
-4. Dependency audit report attached to release.
-5. Security header validation report.
-6. Incident response notes for credential rotation and rollback procedure.
+1. Authorization tests proving no cross-account mutation paths. Status: DONE (`docs/security-signoff-evidence.md`).
+2. Upload abuse tests (spoofed file, quota, unauthenticated abuse). Status: DONE (`docs/security-signoff-evidence.md`).
+3. Token handling evidence (refresh token inaccessible from JS). Status: DONE (`docs/security-signoff-evidence.md`).
+4. Dependency audit report attached to release. Status: DONE (`docs/security-signoff-evidence.md`).
+5. Security header validation report. Status: DONE (`docs/security-signoff-evidence.md`).
+6. Incident response notes for credential rotation and rollback procedure. Status: DONE (`docs/security-signoff-evidence.md` and `docs/secret-rotation-runbook.md`).

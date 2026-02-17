@@ -11,6 +11,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Throttle } from '@nestjs/throttler';
 import type { CookieOptions, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import { AuthService } from './auth.service';
@@ -41,6 +42,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(200)
   async login(
     @Body() dto: LoginDto,
@@ -113,6 +115,7 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @Throttle({ default: { limit: 5, ttl: 15 * 60_000 } })
   @HttpCode(200)
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto.email);
@@ -125,6 +128,7 @@ export class AuthController {
   }
 
   @Post('verify-email')
+  @Throttle({ default: { limit: 8, ttl: 10 * 60_000 } })
   @HttpCode(200)
   async verifyEmail(
     @Body() dto: VerifyEmailDto,
@@ -144,6 +148,7 @@ export class AuthController {
   }
 
   @Post('resend-verification')
+  @Throttle({ default: { limit: 5, ttl: 15 * 60_000 } })
   @HttpCode(200)
   async resendVerification(@Body() dto: ResendVerificationDto) {
     return this.authService.resendVerificationCode(dto.email);

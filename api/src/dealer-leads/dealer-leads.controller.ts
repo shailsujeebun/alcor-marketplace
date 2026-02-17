@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('dealer-leads')
 export class DealerLeadsController {
@@ -23,6 +24,7 @@ export class DealerLeadsController {
 
   // Public — anyone can submit a dealer application
   @Post()
+  @Throttle({ default: { limit: 5, ttl: 10 * 60_000 } })
   create(@Body() dto: CreateDealerLeadDto) {
     return this.dealerLeadsService.create(dto);
   }

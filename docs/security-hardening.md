@@ -25,7 +25,7 @@ This document turns the current security review into an implementation backlog w
 | SH-04 | P0 | Upload abuse hardening | Backend + DevOps | DONE |
 | SH-05 | P0 | Remove sensitive token/code logs | Backend | DONE |
 | SH-06 | P0 | Refresh token transport hardening | Backend + Frontend | DONE |
-| SH-07 | P0 | Global throttling + endpoint rate limits | Backend | TODO |
+| SH-07 | P0 | Global throttling + endpoint rate limits | Backend | DONE |
 | SH-08 | P1 | Secret management / fail-fast config | DevOps + Backend | TODO |
 | SH-09 | P1 | Password + verification anti-bruteforce policy | Backend | TODO |
 | SH-10 | P1 | HTTP security headers / CSP | Backend + Frontend | TODO |
@@ -392,6 +392,30 @@ This document turns the current security review into an implementation backlog w
   - `pnpm -C api build` passes after cookie-based refresh hardening.
   - `pnpm -C api test` passes after cookie-based refresh hardening.
   - `pnpm -C web build` passes after frontend auth flow migration.
+
+### 2026-02-17 - SH-07 Completed
+
+- **Implemented by**: Backend
+- **Scope delivered**:
+  - Registered throttling globally by binding `ThrottlerGuard` as `APP_GUARD`.
+  - Added tighter route-level throttles for:
+    - `/auth/login`
+    - `/auth/verify-email`
+    - `/auth/forgot-password`
+    - `/auth/resend-verification`
+    - `/dealer-leads`
+    - `/upload/images`
+  - Kept module-wide default throttle in place as baseline protection.
+- **Updated files**:
+  - `api/src/app.module.ts`
+  - `api/src/auth/auth.controller.ts`
+  - `api/src/dealer-leads/dealer-leads.controller.ts`
+  - `api/src/upload/upload.controller.ts`
+  - `docs/security-hardening.md`
+- **Verification**:
+  - `rg "@Throttle|APP_GUARD|ThrottlerGuard" api/src/app.module.ts api/src/auth/auth.controller.ts api/src/dealer-leads/dealer-leads.controller.ts api/src/upload/upload.controller.ts` shows expected guard/decorators.
+  - `pnpm -C api build` passes after throttling hardening.
+  - `pnpm -C api test` passes after throttling hardening.
 
 ## Milestone Plan
 

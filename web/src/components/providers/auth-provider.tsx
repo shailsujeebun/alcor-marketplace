@@ -1,31 +1,24 @@
 'use client';
 
 import { useEffect } from 'react';
-import Cookies from 'js-cookie';
 import { useAuthStore } from '@/stores/auth-store';
 import { refreshTokens } from '@/lib/auth-api';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { setAuth, setLoading, logout } = useAuthStore();
+  const { setAuth, logout } = useAuthStore();
 
   useEffect(() => {
     const hydrate = async () => {
-      const refreshToken = Cookies.get('refreshToken');
-      if (!refreshToken) {
-        setLoading(false);
-        return;
-      }
-
       try {
-        const data = await refreshTokens(refreshToken);
-        setAuth(data.user, data.accessToken, data.refreshToken);
+        const data = await refreshTokens();
+        setAuth(data.user, data.accessToken);
       } catch {
         logout();
       }
     };
 
     hydrate();
-  }, [setAuth, setLoading, logout]);
+  }, [setAuth, logout]);
 
   return <>{children}</>;
 }

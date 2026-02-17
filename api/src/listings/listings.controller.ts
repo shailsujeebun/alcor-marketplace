@@ -61,8 +61,12 @@ export class ListingsController {
 
   @Patch('listings/:id')
   @UseGuards(JwtAuthGuard)
-  update(@Param('id') id: string, @Body() dto: UpdateListingDto) {
-    return this.listingsService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateListingDto,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.listingsService.update(id, dto, user.id, user.role);
   }
 
   // ─── Step 2: Attributes ─────────────────────────────
@@ -72,40 +76,62 @@ export class ListingsController {
   updateAttributes(
     @Param('id') id: string,
     @Body() body: { attributes: Record<string, any> },
+    @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.listingsService.updateAttributes(id, body.attributes);
+    return this.listingsService.updateAttributes(
+      id,
+      body.attributes,
+      user.id,
+      user.role,
+    );
   }
 
   @Put('listings/:id/contact')
   @UseGuards(JwtAuthGuard)
-  updateContact(@Param('id') id: string, @Body() dto: UpdateListingContactDto) {
-    return this.listingsService.updateContact(id, dto);
+  updateContact(
+    @Param('id') id: string,
+    @Body() dto: UpdateListingContactDto,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.listingsService.updateContact(id, dto, user.id, user.role);
   }
 
   // ─── Status Actions (authenticated user) ────────────
 
   @Post('listings/:id/submit')
   @UseGuards(JwtAuthGuard)
-  submit(@Param('id') id: string) {
-    return this.listingsService.submitForModeration(id);
+  submit(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.listingsService.submitForModeration(id, user.id, user.role);
   }
 
   @Post('listings/:id/pause')
   @UseGuards(JwtAuthGuard)
-  pause(@Param('id') id: string) {
-    return this.listingsService.pause(id);
+  pause(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.listingsService.pause(id, user.id, user.role);
   }
 
   @Post('listings/:id/resume')
   @UseGuards(JwtAuthGuard)
-  resume(@Param('id') id: string) {
-    return this.listingsService.resume(id);
+  resume(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.listingsService.resume(id, user.id, user.role);
   }
 
   @Post('listings/:id/resubmit')
   @UseGuards(JwtAuthGuard)
-  resubmit(@Param('id') id: string) {
-    return this.listingsService.resubmit(id);
+  resubmit(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.listingsService.resubmit(id, user.id, user.role);
   }
 
   // ─── Moderation (admin/manager only) ────────────────

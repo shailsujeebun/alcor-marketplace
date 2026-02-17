@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { PrismaExceptionFilter } from './common';
 
@@ -17,6 +18,15 @@ async function bootstrap() {
     origin: configService.get<string>('frontendUrl'),
     credentials: true,
   });
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      referrerPolicy: { policy: 'no-referrer' },
+    }),
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({

@@ -41,6 +41,8 @@ The backend runs on `http://localhost:3000` and the frontend on `http://localhos
 - **[AD.MD](./AD.MD)** - Ad placement & listing wizard documentation
 - **[ADMIN.MD](./ADMIN.MD)** - Admin features documentation (marketplaces, categories, form templates)
 - **[security-hardening.md](./security-hardening.md)** - Prioritized security hardening backlog with owners, acceptance criteria, and verification tests
+- **[security-signoff-evidence.md](./security-signoff-evidence.md)** - Production security sign-off evidence matrix and verification runbook
+- **[production-test.md](./production-test.md)** - Production readiness testing strategy, gates, and pass criteria
 - **[DB_ER_DIAGRAM.MD](./DB_ER_DIAGRAM.MD)** - Database entity relationship diagram
 - **[plan.md](./plan.md)** - Marketplace ad-posting system implementation plan
 - **[task.md](./task.md)** - Development task checklist
@@ -139,6 +141,10 @@ For more information, please refer to the detailed documentation files listed ab
   - Added timeout handling for upstream translation calls.
   - Added cache TTL and simple LRU-style eviction.
   - Added in-flight request de-duplication for repeated texts.
+  - Added privacy controls:
+    - `TRANSLATION_EXTERNAL_ENABLED` to fully disable external translation by environment.
+    - `TRANSLATION_ALLOW_PII` (default `false`) to block translation of likely sensitive text (email/phone/URL patterns).
+  - Added policy document: `docs/translation-privacy-policy.md`.
 - i18n guard:
   - Added `web/scripts/check-hardcoded-i18n.mjs`.
   - Added `npm run i18n:guard` in `web/package.json`.
@@ -152,4 +158,9 @@ For more information, please refer to the detailed documentation files listed ab
   - Added GitHub Actions workflow: `.github/workflows/ci.yml`.
   - Web gates: `i18n:guard`, `lint`, `build`.
   - API gates: `build`, `test`, `test:e2e`.
+  - Security test suite gate: `test:security` (auth abuse, listing authZ, upload abuse/rate-limit checks).
   - Seed smoke job: `prisma migrate deploy`, `seed:all`, `seed:verify`.
+  - Security gates:
+    - `api-security-audit` (`pnpm audit --prod --audit-level high`).
+    - `secret-scan` (Gitleaks with `.gitleaksignore` baseline).
+    - `sast-scan` (Semgrep `p/security-audit`, `ERROR` severity, optional baseline ref/commit).

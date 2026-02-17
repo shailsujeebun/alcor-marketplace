@@ -1,5 +1,8 @@
 import {
+  BadRequestException,
   ConflictException,
+  HttpException,
+  HttpStatus,
   Injectable,
   Logger,
   UnauthorizedException,
@@ -9,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { UsersService } from '../users/users.service';
 import { MailService } from '../mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
@@ -17,9 +21,14 @@ import { LoginDto } from './dto/login.dto';
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly verificationAttemptLimit = 5;
+  private readonly verificationAttemptWindowSeconds = 15 * 60;
+  private readonly verificationResendCooldownSeconds = 60;
+  private readonly verificationResendIpCooldownSeconds = 60;
 
   constructor(
     private prisma: PrismaService,
+    private redisService: RedisService,
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
@@ -32,6 +41,7 @@ export class AuthService {
       throw new ConflictException('Email already registered');
     }
 
+    this.ensurePasswordStrength(dto.password);
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = await this.usersService.create({
       email: dto.email,
@@ -132,7 +142,7 @@ export class AuthService {
       },
     });
 
-    this.logger.log(`Password reset token for ${email}: ${token}`);
+    this.logger.log(`Password reset token issued for userId=${user.id}`);
     await this.mailService.sendPasswordReset(email, token);
 
     return { ok: true };
@@ -148,6 +158,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired reset token');
     }
 
+    this.ensurePasswordStrength(newPassword);
     const passwordHash = await bcrypt.hash(newPassword, 10);
 
     await this.prisma.$transaction([
@@ -169,13 +180,32 @@ export class AuthService {
     return { ok: true };
   }
 
-  async verifyEmail(email: string, code: string) {
+  async verifyEmail(email: string, code: string, clientKey?: string) {
+    const normalizedEmail = this.normalizeEmail(email);
+    const normalizedClientKey = this.normalizeClientKey(clientKey);
+
+    await this.assertVerificationAttemptsAllowed(
+      normalizedEmail,
+      normalizedClientKey,
+    );
+
     const user = await this.usersService.findByEmail(email);
     if (!user) {
+      const counters = await this.recordVerificationFailure(
+        normalizedEmail,
+        normalizedClientKey,
+      );
+      if (this.isVerificationLimitExceeded(counters)) {
+        throw new HttpException(
+          'Too many verification attempts. Please try again later.',
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
       throw new UnauthorizedException('Invalid verification code');
     }
 
     if (user.emailVerified) {
+      await this.clearVerificationFailureState(normalizedEmail, normalizedClientKey);
       const tokens = await this.generateTokens(user.id, user.email, user.role);
       return { user: this.usersService.sanitize(user), ...tokens };
     }
@@ -192,6 +222,16 @@ export class AuthService {
     });
 
     if (!verificationCode) {
+      const counters = await this.recordVerificationFailure(
+        normalizedEmail,
+        normalizedClientKey,
+      );
+      if (this.isVerificationLimitExceeded(counters)) {
+        throw new HttpException(
+          'Too many verification attempts. Please try again later.',
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
       throw new UnauthorizedException('Invalid or expired verification code');
     }
 
@@ -207,6 +247,7 @@ export class AuthService {
     ]);
 
     const updatedUser = await this.usersService.findById(user.id);
+    await this.clearVerificationFailureState(normalizedEmail, normalizedClientKey);
     const tokens = await this.generateTokens(
       updatedUser.id,
       updatedUser.email,
@@ -215,13 +256,16 @@ export class AuthService {
     return { user: this.usersService.sanitize(updatedUser), ...tokens };
   }
 
-  async resendVerificationCode(email: string) {
+  async resendVerificationCode(email: string, clientKey?: string) {
+    const normalizedClientKey = this.normalizeClientKey(clientKey);
     const user = await this.usersService.findByEmail(email);
     if (!user || user.emailVerified) {
       return { ok: true };
     }
 
+    await this.assertResendVerificationAllowed(user.id, normalizedClientKey);
     await this.createAndLogVerificationCode(user.id, user.email);
+    await this.markVerificationResend(user.id, normalizedClientKey);
     return { ok: true };
   }
 
@@ -237,8 +281,169 @@ export class AuthService {
       data: { userId, codeHash, expiresAt },
     });
 
-    this.logger.log(`Email verification code for ${email}: ${code}`);
+    this.logger.log(`Email verification code issued for userId=${userId}`);
     await this.mailService.sendVerificationCode(email, code);
+  }
+
+  private ensurePasswordStrength(password: string) {
+    const checks = [
+      /[a-z]/.test(password),
+      /[A-Z]/.test(password),
+      /[0-9]/.test(password),
+      /[^A-Za-z0-9]/.test(password),
+      password.length >= 10,
+    ];
+
+    if (checks.some((check) => !check)) {
+      throw new BadRequestException(
+        'Password must be at least 10 characters and include uppercase, lowercase, number, and special character.',
+      );
+    }
+  }
+
+  private normalizeEmail(email: string) {
+    return email.trim().toLowerCase();
+  }
+
+  private normalizeClientKey(clientKey: string | undefined) {
+    if (!clientKey) return null;
+    const normalized = clientKey.trim().toLowerCase();
+    return normalized.length > 0 ? normalized : null;
+  }
+
+  private toRedisKeySegment(value: string) {
+    return value.replace(/[^a-z0-9]/g, '_');
+  }
+
+  private getVerificationAttemptUserKey(normalizedEmail: string) {
+    return `auth:verify:attempt:user:${this.toRedisKeySegment(normalizedEmail)}`;
+  }
+
+  private getVerificationAttemptIpKey(normalizedClientKey: string) {
+    return `auth:verify:attempt:ip:${this.toRedisKeySegment(normalizedClientKey)}`;
+  }
+
+  private getVerificationResendUserKey(userId: string) {
+    return `auth:verify:resend:user:${userId}`;
+  }
+
+  private getVerificationResendIpKey(normalizedClientKey: string) {
+    return `auth:verify:resend:ip:${this.toRedisKeySegment(normalizedClientKey)}`;
+  }
+
+  private async assertVerificationAttemptsAllowed(
+    normalizedEmail: string,
+    normalizedClientKey: string | null,
+  ) {
+    const keys = [this.getVerificationAttemptUserKey(normalizedEmail)];
+    if (normalizedClientKey) {
+      keys.push(this.getVerificationAttemptIpKey(normalizedClientKey));
+    }
+
+    const values = await Promise.all(keys.map((key) => this.redisService.get(key)));
+    const maxAttempts = values.reduce((currentMax, value) => {
+      const parsed = parseInt(value ?? '0', 10);
+      return Number.isFinite(parsed) ? Math.max(currentMax, parsed) : currentMax;
+    }, 0);
+
+    if (maxAttempts >= this.verificationAttemptLimit) {
+      throw new HttpException(
+        'Too many verification attempts. Please try again later.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
+
+  private async recordVerificationFailure(
+    normalizedEmail: string,
+    normalizedClientKey: string | null,
+  ) {
+    const userAttempts = await this.incrementCounter(
+      this.getVerificationAttemptUserKey(normalizedEmail),
+      this.verificationAttemptWindowSeconds,
+    );
+
+    let ipAttempts = 0;
+    if (normalizedClientKey) {
+      ipAttempts = await this.incrementCounter(
+        this.getVerificationAttemptIpKey(normalizedClientKey),
+        this.verificationAttemptWindowSeconds,
+      );
+    }
+
+    return { userAttempts, ipAttempts };
+  }
+
+  private async clearVerificationFailureState(
+    normalizedEmail: string,
+    normalizedClientKey: string | null,
+  ) {
+    const keys = [this.getVerificationAttemptUserKey(normalizedEmail)];
+    if (normalizedClientKey) {
+      keys.push(this.getVerificationAttemptIpKey(normalizedClientKey));
+    }
+
+    await Promise.all(keys.map((key) => this.redisService.del(key)));
+  }
+
+  private isVerificationLimitExceeded(counters: {
+    userAttempts: number;
+    ipAttempts: number;
+  }) {
+    return (
+      counters.userAttempts >= this.verificationAttemptLimit ||
+      counters.ipAttempts >= this.verificationAttemptLimit
+    );
+  }
+
+  private async assertResendVerificationAllowed(
+    userId: string,
+    normalizedClientKey: string | null,
+  ) {
+    const userCooldownKey = this.getVerificationResendUserKey(userId);
+    const userTtl = await this.redisService.ttl(userCooldownKey);
+
+    let ipTtl = -1;
+    if (normalizedClientKey) {
+      ipTtl = await this.redisService.ttl(
+        this.getVerificationResendIpKey(normalizedClientKey),
+      );
+    }
+
+    const retryAfterSeconds = Math.max(userTtl, ipTtl);
+    if (retryAfterSeconds > 0) {
+      throw new HttpException(
+        `Verification code resend is on cooldown. Try again in ${retryAfterSeconds} seconds.`,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
+
+  private async markVerificationResend(
+    userId: string,
+    normalizedClientKey: string | null,
+  ) {
+    await this.redisService.set(
+      this.getVerificationResendUserKey(userId),
+      '1',
+      this.verificationResendCooldownSeconds,
+    );
+
+    if (normalizedClientKey) {
+      await this.redisService.set(
+        this.getVerificationResendIpKey(normalizedClientKey),
+        '1',
+        this.verificationResendIpCooldownSeconds,
+      );
+    }
+  }
+
+  private async incrementCounter(key: string, ttlSeconds: number) {
+    const value = await this.redisService.incr(key);
+    if (value === 1) {
+      await this.redisService.expire(key, ttlSeconds);
+    }
+    return value;
   }
 
   private async generateTokens(userId: string, email: string, role: string) {
@@ -263,7 +468,7 @@ export class AuthService {
       },
     });
 
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, refreshTokenExpiresAt: expiresAt };
   }
 
   private async hashToken(token: string): Promise<string> {

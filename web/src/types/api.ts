@@ -210,7 +210,6 @@ export interface User {
 export interface AuthResponse {
   user: User;
   accessToken: string;
-  refreshToken: string;
 }
 
 // ─── Dealer Lead Types ──────────────────────────────

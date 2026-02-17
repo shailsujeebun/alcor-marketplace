@@ -15,7 +15,6 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
 import { logoutUser } from '@/lib/auth-api';
-import Cookies from 'js-cookie';
 import { MobileMenu } from './mobile-menu';
 import { NotificationBell } from './notification-bell';
 import { useTranslation } from '../providers/translation-provider';
@@ -50,13 +49,10 @@ export function Navbar() {
 
   const handleLogout = async () => {
     setDropdownOpen(false);
-    const refreshToken = Cookies.get('refreshToken');
-    if (accessToken && refreshToken) {
-      try {
-        await logoutUser(accessToken, refreshToken);
-      } catch {
-        // Ignore errors on logout
-      }
+    try {
+      await logoutUser(accessToken);
+    } catch {
+      // Ignore errors on logout
     }
     logout();
     router.push('/');

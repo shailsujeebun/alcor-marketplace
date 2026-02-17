@@ -83,7 +83,7 @@ export function VerifyEmailForm() {
     setLoading(true);
     try {
       const data = await verifyEmail({ email, code });
-      setAuth(data.user, data.accessToken, data.refreshToken);
+      setAuth(data.user, data.accessToken);
       router.push('/');
     } catch (err: unknown) {
       const message =

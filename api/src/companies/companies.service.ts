@@ -1,5 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { NotificationType } from '@prisma/client';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { CompanyUserRole, NotificationType, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaginatedResponseDto } from '../common';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -16,6 +20,36 @@ export class CompaniesService {
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
   ) {}
+
+  private isPrivilegedRole(role?: string) {
+    return role === UserRole.ADMIN || role === UserRole.MANAGER;
+  }
+
+  private async ensureCompanyUpdateAccess(
+    companyId: string,
+    actorUserId: string,
+    actorRole?: string,
+  ) {
+    if (this.isPrivilegedRole(actorRole)) {
+      return;
+    }
+
+    const membership = await this.prisma.companyUser.findUnique({
+      where: {
+        userId_companyId: {
+          userId: actorUserId,
+          companyId,
+        },
+      },
+      select: { role: true },
+    });
+
+    if (!membership || membership.role !== CompanyUserRole.OWNER) {
+      throw new ForbiddenException(
+        'You do not have permission to update this company',
+      );
+    }
+  }
 
   async create(dto: CreateCompanyDto) {
     const { phones, activityTypeIds, brandIds, ...companyData } = dto;
@@ -113,7 +147,14 @@ export class CompaniesService {
     return company;
   }
 
-  async update(id: string, dto: UpdateCompanyDto) {
+  async update(
+    id: string,
+    dto: UpdateCompanyDto,
+    actorUserId: string,
+    actorRole?: string,
+  ) {
+    await this.ensureCompanyUpdateAccess(id, actorUserId, actorRole);
+
     const { phones, activityTypeIds, brandIds, ...companyData } = dto;
 
     return this.prisma.$transaction(async (tx) => {

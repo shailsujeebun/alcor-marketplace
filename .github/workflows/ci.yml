@@ -49,8 +49,67 @@ jobs:
         run: npm run build
       - name: Unit tests
         run: npm test -- --runInBand
+      - name: Security test suite
+        run: npm run test:security
       - name: e2e smoke tests
         run: npm run test:e2e -- --runInBand
+
+  api-security-audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: api/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Prod dependency audit (high/critical gate)
+        run: pnpm run audit:prod
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: --redact --gitleaks-ignore-path=.gitleaksignore
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sast-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Semgrep
+        run: python -m pip install --upgrade semgrep
+      - name: Run Semgrep SAST (high severity gate)
+        env:
+          SEMGREP_BASELINE_COMMIT: ${{ github.event.pull_request.base.sha }}
+          SEMGREP_BASELINE_REF: ${{ vars.SAST_BASELINE_REF }}
+          SEMGREP_CONFIG: p/security-audit
+          SEMGREP_SEVERITY: ERROR
+        run: bash .github/scripts/run-semgrep.sh
 
   seed-smoke:
     runs-on: ubuntu-latest

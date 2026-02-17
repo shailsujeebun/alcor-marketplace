@@ -25,7 +25,7 @@ export function LoginForm() {
 
     try {
       const data = await loginUser({ email, password });
-      setAuth(data.user, data.accessToken, data.refreshToken);
+      setAuth(data.user, data.accessToken);
       router.push('/');
     } catch (err: unknown) {
       const message =

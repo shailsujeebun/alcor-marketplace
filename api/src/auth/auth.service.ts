@@ -132,7 +132,7 @@ export class AuthService {
       },
     });
 
-    this.logger.log(`Password reset token for ${email}: ${token}`);
+    this.logger.log(`Password reset token issued for userId=${user.id}`);
     await this.mailService.sendPasswordReset(email, token);
 
     return { ok: true };
@@ -237,7 +237,7 @@ export class AuthService {
       data: { userId, codeHash, expiresAt },
     });
 
-    this.logger.log(`Email verification code for ${email}: ${code}`);
+    this.logger.log(`Email verification code issued for userId=${userId}`);
     await this.mailService.sendVerificationCode(email, code);
   }
 

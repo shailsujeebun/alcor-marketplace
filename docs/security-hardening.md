@@ -23,7 +23,7 @@ This document turns the current security review into an implementation backlog w
 | SH-02 | P0 | Company authorization (BOLA/IDOR) | Backend | DONE |
 | SH-03 | P0 | Lock public reference-data writes | Backend | DONE |
 | SH-04 | P0 | Upload abuse hardening | Backend + DevOps | DONE |
-| SH-05 | P0 | Remove sensitive token/code logs | Backend | TODO |
+| SH-05 | P0 | Remove sensitive token/code logs | Backend | DONE |
 | SH-06 | P0 | Refresh token transport hardening | Backend + Frontend | TODO |
 | SH-07 | P0 | Global throttling + endpoint rate limits | Backend | TODO |
 | SH-08 | P1 | Secret management / fail-fast config | DevOps + Backend | TODO |
@@ -350,6 +350,21 @@ This document turns the current security review into an implementation backlog w
   - `pnpm -C api build` passes after upload hardening changes.
   - `pnpm -C api test` passes after upload hardening changes.
   - `pnpm -C web build` passes after guest-upload client updates.
+
+### 2026-02-17 - SH-05 Completed
+
+- **Implemented by**: Backend
+- **Scope delivered**:
+  - Removed plaintext logging of password-reset tokens.
+  - Removed plaintext logging of email-verification codes.
+  - Replaced with redacted operational logs containing only `userId`.
+- **Updated files**:
+  - `api/src/auth/auth.service.ts`
+  - `docs/security-hardening.md`
+- **Verification**:
+  - `rg "Password reset token for|Email verification code for" api/src/auth` returns no matches.
+  - `pnpm -C api build` passes after logging hardening changes.
+  - `pnpm -C api test` passes after logging hardening changes.
 
 ## Milestone Plan
 

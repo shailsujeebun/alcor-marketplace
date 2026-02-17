@@ -79,9 +79,10 @@ export class ListingsService {
       ...rest
     } = dto;
 
-    const attributesData = attributes && attributes.length > 0
-      ? Object.fromEntries(attributes.map((a) => [a.key, a.value]))
-      : undefined;
+    const attributesData =
+      attributes && attributes.length > 0
+        ? Object.fromEntries(attributes.map((a) => [a.key, a.value]))
+        : undefined;
 
     // Admin/Manager listings are auto-published; regular users start as DRAFT
     const isPrivileged =
@@ -335,9 +336,10 @@ export class ListingsService {
       ...rest
     } = dto;
 
-    const attributesData = attributes && attributes.length > 0
-      ? Object.fromEntries(attributes.map((a) => [a.key, a.value]))
-      : undefined;
+    const attributesData =
+      attributes && attributes.length > 0
+        ? Object.fromEntries(attributes.map((a) => [a.key, a.value]))
+        : undefined;
 
     return this.prisma.$transaction(async (tx) => {
       if (media !== undefined) {

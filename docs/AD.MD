@@ -145,3 +145,17 @@ web/src/components/listings/
   - Provider performs controlled pass-based translation without MutationObserver loops.
 - Listing wizard translations migrated to i18n keys:
   - Step labels, sidebar title, tip copy, and loading fallback now translate via `t(key)`.
+
+### Stability & Performance Follow-ups (2026-02-16)
+
+- Translation toggle behavior finalized for fast default load:
+  - App always starts in default language (`uk`).
+  - English translation is on-demand only when the `EN` button is clicked.
+  - No locale persistence across reloads.
+- Translation fallback API (`/api/translate`) hardening:
+  - Added payload guards, request throttling, translation timeout, and cache TTL/eviction.
+  - Added in-flight de-duplication to reduce repeated upstream translation requests.
+- Auth-related listing-entry routes are now key-based i18n:
+  - `auth-tabs`, login/register, verify-email, forgot/reset password forms now use dictionary keys.
+- Added i18n regression guard for migrated auth UI:
+  - `npm run i18n:guard` checks `web/src/components/auth` for new hardcoded localized text.

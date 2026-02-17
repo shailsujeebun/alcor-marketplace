@@ -49,3 +49,12 @@
 - 2026-02-12: Listing attribute storage now maps key/value array into JSON attribute record
 - 2026-02-12: Strip media `key` before Prisma createMany to match schema
 - 2026-02-12: Upload service now sets MinIO bucket policy to public-read so images render
+- 2026-02-16: `web` i18n guard added (`npm run i18n:guard`) and passing
+- 2026-02-16: `web` lint passing (`npm run lint`)
+- 2026-02-16: `web` production build passing (`npm run build`)
+- 2026-02-16: `api` build passing (`npm run build`)
+- 2026-02-16: `api` unit tests passing (`npm test -- --runInBand`)
+- 2026-02-16: `api` e2e smoke passing (`npm run test:e2e -- --runInBand`)
+- 2026-02-16: Applied pending migration `20260213093000_add_brand_category_map` via `npx prisma migrate deploy`
+- 2026-02-16: Deterministic full seed passing (`npm run seed:all`)
+- 2026-02-16: Post-seed integrity checks passing (`npm run seed:verify`)

@@ -126,3 +126,29 @@ For more information, please refer to the detailed documentation files listed ab
   - Listing wizard step labels and tip text.
 - Validation status:
   - `web`: lint/build passing after refactor.
+
+### Additional Hardening (2026-02-16)
+
+- Auth i18n migration:
+  - Migrated auth UI to key-based translations (`auth.tabs.*`, `auth.login.*`, `auth.register.*`, `auth.forgot.*`, `auth.reset.*`, `auth.verify.*`).
+  - Added matching keys in both `web/src/i18n/messages/en.ts` and `web/src/i18n/messages/uk.ts`.
+- Translation API hardening (`web/src/app/api/translate/route.ts`):
+  - Added request validation and payload limits.
+  - Added per-client rate limiting.
+  - Added timeout handling for upstream translation calls.
+  - Added cache TTL and simple LRU-style eviction.
+  - Added in-flight request de-duplication for repeated texts.
+- i18n guard:
+  - Added `web/scripts/check-hardcoded-i18n.mjs`.
+  - Added `npm run i18n:guard` in `web/package.json`.
+  - Guard currently enforces no hardcoded Cyrillic text in `web/src/components/auth`.
+- Seed system overhaul:
+  - Added deterministic full-schema seeding entrypoint: `api/prisma/seed-all.ts`.
+  - Modularized seed logic under `api/prisma/seed-all/` (`cleanup`, `core`, `companies-listings`, `engagement`).
+  - Added post-seed verification script: `api/prisma/seed-verify.ts`.
+  - Added API scripts: `seed:all`, `seed:verify`; default Prisma seed now points to `seed-all.ts`.
+- CI quality gates:
+  - Added GitHub Actions workflow: `.github/workflows/ci.yml`.
+  - Web gates: `i18n:guard`, `lint`, `build`.
+  - API gates: `build`, `test`, `test:e2e`.
+  - Seed smoke job: `prisma migrate deploy`, `seed:all`, `seed:verify`.

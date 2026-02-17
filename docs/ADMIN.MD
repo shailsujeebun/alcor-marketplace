@@ -137,3 +137,14 @@ Updated `web/src/app/admin/layout.tsx` to include sidebar links:
 - Translation implementation changed globally from DOM runtime translation to dictionary i18n:
   - Admin pages now switch language via `t(key)` lookups.
   - No runtime page parsing or auto-translation requests.
+
+### Operations & Quality (2026-02-16)
+
+- Admin categories page UX copy update:
+  - Main action label changed from "Add Root Category" to "Add Marketplace".
+- CI quality workflow added:
+  - `.github/workflows/ci.yml` now validates web and API build/test paths on push/PR.
+  - Includes DB-backed seed smoke verification (`migrate deploy` + `seed:all` + `seed:verify`).
+- Seed tooling for admin/template demos:
+  - Deterministic full-schema seed added as the default Prisma seed.
+  - Template coverage is verified by `api/prisma/seed-verify.ts` (leaf categories must have active templates).

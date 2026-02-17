@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { UserPlus, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, UserPlus } from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from '@/components/providers/translation-provider';
 import { registerUser } from '@/lib/auth-api';
 
 export function RegisterForm() {
+  const { t } = useTranslation();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -20,12 +22,12 @@ export function RegisterForm() {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Паролі не співпадають');
+      setError(t('auth.register.errorPasswordMismatch'));
       return;
     }
 
     if (password.length < 6) {
-      setError('Пароль повинен містити мінімум 6 символів');
+      setError(t('auth.register.errorPasswordLength'));
       return;
     }
 
@@ -39,8 +41,12 @@ export function RegisterForm() {
         lastName: lastName || undefined,
       });
       window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
-    } catch (err: any) {
-      setError(err.message || 'Помилка реєстрації');
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === 'object' && 'message' in err && typeof err.message === 'string'
+          ? err.message
+          : t('auth.register.errorDefault');
+      setError(message);
       setLoading(false);
     }
   };
@@ -49,7 +55,7 @@ export function RegisterForm() {
     <div>
       <form onSubmit={handleSubmit} className="space-y-5">
         <h1 className="text-2xl font-heading font-bold text-[var(--text-primary)] text-center">
-          Реєстрація
+          {t('auth.register.title')}
         </h1>
 
         {error && (
@@ -61,62 +67,63 @@ export function RegisterForm() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-              Ім&apos;я
+              {t('auth.register.firstName')}
             </label>
             <input
               type="text"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={(event) => setFirstName(event.target.value)}
               className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-blue-bright transition-colors"
-              placeholder="Іван"
+              placeholder={t('auth.register.firstNamePlaceholder')}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-              Прізвище
+              {t('auth.register.lastName')}
             </label>
             <input
               type="text"
               value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              onChange={(event) => setLastName(event.target.value)}
               className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-blue-bright transition-colors"
-              placeholder="Петренко"
+              placeholder={t('auth.register.lastNamePlaceholder')}
             />
           </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-            Email *
+            {t('auth.register.emailLabel')} *
           </label>
           <input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(event) => setEmail(event.target.value)}
             required
             className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-blue-bright transition-colors"
-            placeholder="your@email.com"
+            placeholder={t('auth.register.emailPlaceholder')}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-            Пароль *
+            {t('auth.register.passwordLabel')} *
           </label>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(event) => setPassword(event.target.value)}
               required
               minLength={6}
               className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-blue-bright transition-colors pr-11"
-              placeholder="Мінімум 6 символів"
+              placeholder={t('auth.register.passwordPlaceholder')}
             />
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
+              onClick={() => setShowPassword((prev) => !prev)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              aria-label={t('auth.register.passwordLabel')}
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
@@ -125,15 +132,15 @@ export function RegisterForm() {
 
         <div>
           <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-            Підтвердження паролю *
+            {t('auth.register.confirmPasswordLabel')} *
           </label>
           <input
             type="password"
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={(event) => setConfirmPassword(event.target.value)}
             required
             className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-blue-bright transition-colors"
-            placeholder="Повторіть пароль"
+            placeholder={t('auth.register.confirmPasswordPlaceholder')}
           />
         </div>
 
@@ -147,18 +154,18 @@ export function RegisterForm() {
           ) : (
             <>
               <UserPlus size={18} />
-              Зареєструватися
+              {t('auth.register.submit')}
             </>
           )}
         </button>
 
         <p className="text-center text-sm text-[var(--text-secondary)]">
-          Вже маєте акаунт?{' '}
+          {t('auth.register.hasAccount')}{' '}
           <Link
             href="/login"
             className="text-blue-bright hover:text-blue-light transition-colors font-medium"
           >
-            Увійти
+            {t('auth.register.loginLink')}
           </Link>
         </p>
       </form>

@@ -129,3 +129,24 @@ The API is failing to start due to two critical issues identified from the termi
 1.  **Layout Spacing:** Increased gap between sidebar and content to **40px** (`gap-10`) for better separation.
 2.  **Redundancy Removal:** Hidden "Quick Actions" bar when there are 0 ads, leaving only the main "Create your first ad" button.
 3.  **Typography:** Fixed trailing space in "Welcome, Admin!" greeting.
+
+---
+
+## 4. Translation + Seed + CI Hardening (2026-02-16)
+
+- **Translation reliability and speed**
+  - Default page load remains in `uk` (no EN persistence).
+  - English translation runs only on explicit toggle click.
+  - `/api/translate` hardened with payload limits, throttling, timeout, cache TTL/LRU behavior, and in-flight request de-duplication.
+- **Key-based i18n migration expansion**
+  - Auth entry flows (`auth-tabs`, login/register, forgot/reset, verify-email) migrated to dictionary keys (`web/src/i18n/messages/*`).
+  - Added i18n hardcoded-text regression guard: `web/scripts/check-hardcoded-i18n.mjs`.
+- **Deterministic full-schema seeding**
+  - Added modular seed pipeline under `api/prisma/seed-all/`.
+  - Added entrypoint `api/prisma/seed-all.ts` and set as default Prisma seed.
+  - Added integrity verifier `api/prisma/seed-verify.ts`.
+- **Quality gates and smoke checks**
+  - Added CI workflow `.github/workflows/ci.yml`:
+    - Web: `i18n:guard`, `lint`, `build`
+    - API: `build`, `test`, `test:e2e`
+    - Seed smoke: `prisma migrate deploy`, `seed:all`, `seed:verify`

@@ -157,3 +157,7 @@ For more information, please refer to the detailed documentation files listed ab
   - Web gates: `i18n:guard`, `lint`, `build`.
   - API gates: `build`, `test`, `test:e2e`.
   - Seed smoke job: `prisma migrate deploy`, `seed:all`, `seed:verify`.
+  - Security gates:
+    - `api-security-audit` (`pnpm audit --prod --audit-level high`).
+    - `secret-scan` (Gitleaks with `.gitleaksignore` baseline).
+    - `sast-scan` (Semgrep `p/security-audit`, `ERROR` severity, optional baseline ref/commit).

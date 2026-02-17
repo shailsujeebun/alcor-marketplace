@@ -31,7 +31,7 @@ This document turns the current security review into an implementation backlog w
 | SH-10 | P1 | HTTP security headers / CSP | Backend + Frontend | DONE |
 | SH-11 | P1 | Dependency vulnerability remediation | DevOps + Backend | DONE |
 | SH-12 | P1 | Translation data privacy controls | Frontend + Product + Security | DONE |
-| SH-13 | P2 | Security CI gates (SAST/secret scan/audit) | DevOps | TODO |
+| SH-13 | P2 | Security CI gates (SAST/secret scan/audit) | DevOps | DONE |
 | SH-14 | P2 | Security-focused automated test suite | QA + Backend + Frontend | TODO |
 
 ## Detailed Work Items
@@ -523,6 +523,25 @@ This document turns the current security review into an implementation backlog w
   - Route behavior check:
     - with `TRANSLATION_EXTERNAL_ENABLED=false`, `/api/translate` returns `503` with policy error.
     - with `TRANSLATION_ALLOW_PII=false`, text matching email/phone/URL patterns is excluded from external translation payload.
+
+### 2026-02-17 - SH-13 Completed
+
+- **Implemented by**: DevOps
+- **Scope delivered**:
+  - Added dedicated CI secret scanning gate using Gitleaks.
+  - Added dedicated CI SAST gate using Semgrep with high-severity blocking.
+  - Added Semgrep baseline support (`SEMGREP_BASELINE_COMMIT` / `SEMGREP_BASELINE_REF`) via reusable CI script.
+  - Kept dependency-audit gate active from SH-11.
+  - Added `.gitleaksignore` baseline for known false positives so new leaks still fail CI.
+- **Updated files**:
+  - `.github/workflows/ci.yml`
+  - `.github/scripts/run-semgrep.sh`
+  - `.gitleaksignore`
+  - `docs/security-hardening.md`
+- **Verification**:
+  - `docker run --rm -v \"${PWD}:/repo\" zricethezav/gitleaks:latest detect --source=/repo --no-banner --redact --gitleaks-ignore-path=/repo/.gitleaksignore --exit-code 1` passes with no leaks.
+  - `semgrep scan --config p/security-audit --severity ERROR --error --metrics=off --exclude node_modules --exclude .next --exclude dist .` passes with 0 blocking findings.
+  - `pnpm -C api audit:prod` remains active and passing for dependency audit gating.
 
 ## Milestone Plan
 

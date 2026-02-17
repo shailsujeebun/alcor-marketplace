@@ -33,7 +33,6 @@ import type {
 } from '@/types/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { refreshTokens } from '@/lib/auth-api';
-import Cookies from 'js-cookie';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 type GuestUploadTokenResponse = { token: string; expiresIn: number };
@@ -41,10 +40,8 @@ let guestUploadTokenCache: { token: string; expiresAt: number } | null = null;
 
 async function tryRefreshToken(): Promise<string | null> {
   try {
-    const refreshToken = Cookies.get('refreshToken');
-    if (!refreshToken) return null;
-    const result = await refreshTokens(refreshToken);
-    useAuthStore.getState().setAuth(result.user, result.accessToken, result.refreshToken);
+    const result = await refreshTokens();
+    useAuthStore.getState().setAuth(result.user, result.accessToken);
     return result.accessToken;
   } catch {
     useAuthStore.getState().logout();

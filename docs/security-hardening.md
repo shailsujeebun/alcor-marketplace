@@ -24,7 +24,7 @@ This document turns the current security review into an implementation backlog w
 | SH-03 | P0 | Lock public reference-data writes | Backend | DONE |
 | SH-04 | P0 | Upload abuse hardening | Backend + DevOps | DONE |
 | SH-05 | P0 | Remove sensitive token/code logs | Backend | DONE |
-| SH-06 | P0 | Refresh token transport hardening | Backend + Frontend | TODO |
+| SH-06 | P0 | Refresh token transport hardening | Backend + Frontend | DONE |
 | SH-07 | P0 | Global throttling + endpoint rate limits | Backend | TODO |
 | SH-08 | P1 | Secret management / fail-fast config | DevOps + Backend | TODO |
 | SH-09 | P1 | Password + verification anti-bruteforce policy | Backend | TODO |
@@ -365,6 +365,33 @@ This document turns the current security review into an implementation backlog w
   - `rg "Password reset token for|Email verification code for" api/src/auth` returns no matches.
   - `pnpm -C api build` passes after logging hardening changes.
   - `pnpm -C api test` passes after logging hardening changes.
+
+### 2026-02-17 - SH-06 Completed
+
+- **Implemented by**: Backend + Frontend
+- **Scope delivered**:
+  - Migrated refresh token transport from JSON body / JS-accessible cookie to backend-managed `HttpOnly` cookie.
+  - Added double-submit CSRF validation for cookie-based `/auth/refresh` and `/auth/logout`.
+  - Rotated refresh-token cookies on every refresh while keeping one-time session rotation/revocation.
+  - Removed refresh-token persistence from frontend JS state/cookies.
+  - Updated auth API/store flows to use `credentials: include` and cookie-driven refresh.
+- **Updated files**:
+  - `api/src/auth/auth.controller.ts`
+  - `api/src/auth/auth.service.ts`
+  - `web/src/stores/auth-store.ts`
+  - `web/src/lib/auth-api.ts`
+  - `web/src/lib/api.ts`
+  - `web/src/components/providers/auth-provider.tsx`
+  - `web/src/components/layout/navbar.tsx`
+  - `web/src/components/auth/login-form.tsx`
+  - `web/src/components/auth/verify-email-form.tsx`
+  - `web/src/types/api.ts`
+  - `docs/security-hardening.md`
+- **Verification**:
+  - `rg "Cookies.get\\('refreshToken'\\)|Cookies.set\\('refreshToken'\\)|Cookies.remove\\('refreshToken'\\)" web/src` returns no matches.
+  - `pnpm -C api build` passes after cookie-based refresh hardening.
+  - `pnpm -C api test` passes after cookie-based refresh hardening.
+  - `pnpm -C web build` passes after frontend auth flow migration.
 
 ## Milestone Plan
 

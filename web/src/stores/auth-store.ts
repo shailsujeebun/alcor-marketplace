@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import Cookies from 'js-cookie';
 import type { User } from '@/types/api';
 
 interface AuthState {
@@ -7,7 +6,7 @@ interface AuthState {
   accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  setAuth: (user: User, accessToken: string, refreshToken: string) => void;
+  setAuth: (user: User, accessToken: string) => void;
   setUser: (user: User) => void;
   setAccessToken: (token: string) => void;
   logout: () => void;
@@ -20,8 +19,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isLoading: true,
 
-  setAuth: (user, accessToken, refreshToken) => {
-    Cookies.set('refreshToken', refreshToken, { expires: 7, sameSite: 'lax' });
+  setAuth: (user, accessToken) => {
     set({ user, accessToken, isAuthenticated: true, isLoading: false });
   },
 
@@ -30,7 +28,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   setAccessToken: (token) => set({ accessToken: token }),
 
   logout: () => {
-    Cookies.remove('refreshToken');
     set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
   },
 

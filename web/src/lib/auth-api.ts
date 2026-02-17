@@ -1,10 +1,29 @@
 import type { AuthResponse, User } from '@/types/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const CSRF_COOKIE_NAME = 'alcor_csrf_token';
+
+function getCookieValue(name: string): string | null {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  const encodedName = `${name}=`;
+  const entries = document.cookie.split(';');
+  for (const entry of entries) {
+    const cookie = entry.trim();
+    if (cookie.startsWith(encodedName)) {
+      return decodeURIComponent(cookie.slice(encodedName.length));
+    }
+  }
+
+  return null;
+}
 
 async function authFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...init?.headers },
   });
   if (!res.ok) {
@@ -36,21 +55,30 @@ export async function loginUser(data: {
   });
 }
 
-export async function refreshTokens(refreshToken: string): Promise<AuthResponse> {
+export async function refreshTokens(): Promise<AuthResponse> {
+  const csrfToken = getCookieValue(CSRF_COOKIE_NAME);
+  if (!csrfToken) {
+    throw new Error('Missing CSRF token');
+  }
+
   return authFetch('/auth/refresh', {
     method: 'POST',
-    body: JSON.stringify({ refreshToken }),
+    headers: { 'x-csrf-token': csrfToken },
   });
 }
 
-export async function logoutUser(
-  accessToken: string,
-  refreshToken: string,
-): Promise<void> {
+export async function logoutUser(accessToken: string | null): Promise<void> {
+  const csrfToken = getCookieValue(CSRF_COOKIE_NAME);
+  if (!csrfToken) {
+    throw new Error('Missing CSRF token');
+  }
+
   await authFetch('/auth/logout', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}` },
-    body: JSON.stringify({ refreshToken }),
+    headers: {
+      'x-csrf-token': csrfToken,
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
   });
 }
 

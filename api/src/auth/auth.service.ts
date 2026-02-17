@@ -263,7 +263,7 @@ export class AuthService {
       },
     });
 
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, refreshTokenExpiresAt: expiresAt };
   }
 
   private async hashToken(token: string): Promise<string> {

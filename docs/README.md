@@ -121,7 +121,8 @@ For more information, please refer to the detailed documentation files listed ab
 - Kept `/api/translate` as a compatibility fallback for still-hardcoded pages:
   - Translation requests run only after the user clicks `EN`.
   - Provider runs controlled one/two-pass translation per route (no observer loop).
-  - Default load remains fast in `uk`.
+  - In `EN` mode, a debounced child-list observer now re-applies fallback translation for late async UI updates without reintroducing translation loops.
+- Default load remains fast in `uk`.
 - Migrated shared UI to key-based translations:
   - Top bar, navbar, mobile menu, footer.
   - Admin sidebar labels.

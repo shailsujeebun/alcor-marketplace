@@ -39,6 +39,7 @@ const BATCH_SIZE = 120;
 const REQUEST_PARALLELISM = 3;
 const FIRST_PASS_DELAY_MS = 60;
 const SECOND_PASS_DELAY_MS = 900;
+const OBSERVER_DEBOUNCE_MS = 180;
 
 function normalizeText(value: string): string {
   return value.replace(/\s+/g, ' ').trim();
@@ -76,6 +77,7 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
   const attrOriginalsRef = useRef<Map<HTMLElement, AttributeSnapshot>>(new Map());
   const translationCacheRef = useRef<Map<string, string>>(new Map());
   const isApplyingRef = useRef(false);
+  const observerDebounceRef = useRef<number | null>(null);
 
   const toggleLocale = useCallback(() => {
     setLocale((prev) => (prev === 'uk' ? 'en' : 'uk'));
@@ -315,6 +317,10 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (locale === 'uk') {
+      if (observerDebounceRef.current !== null) {
+        window.clearTimeout(observerDebounceRef.current);
+        observerDebounceRef.current = null;
+      }
       restoreOriginalLanguage();
       return;
     }
@@ -327,9 +333,41 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
       void applyFallbackEnglishToRoot(document.body);
     }, SECOND_PASS_DELAY_MS);
 
+    const observer = new MutationObserver((mutations) => {
+      if (localeRef.current !== 'en' || isApplyingRef.current) return;
+
+      const hasStructuralChanges = mutations.some(
+        (mutation) =>
+          mutation.type === 'childList' &&
+          (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0),
+      );
+
+      if (!hasStructuralChanges) return;
+
+      if (observerDebounceRef.current !== null) {
+        window.clearTimeout(observerDebounceRef.current);
+      }
+
+      observerDebounceRef.current = window.setTimeout(() => {
+        observerDebounceRef.current = null;
+        if (localeRef.current !== 'en') return;
+        void applyFallbackEnglishToRoot(document.body);
+      }, OBSERVER_DEBOUNCE_MS);
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
     return () => {
       window.clearTimeout(firstPass);
       window.clearTimeout(secondPass);
+      observer.disconnect();
+      if (observerDebounceRef.current !== null) {
+        window.clearTimeout(observerDebounceRef.current);
+        observerDebounceRef.current = null;
+      }
     };
   }, [locale, pathname, applyFallbackEnglishToRoot, restoreOriginalLanguage]);
 

@@ -28,7 +28,7 @@ This document turns the current security review into an implementation backlog w
 | SH-07 | P0 | Global throttling + endpoint rate limits | Backend | DONE |
 | SH-08 | P1 | Secret management / fail-fast config | DevOps + Backend | DONE |
 | SH-09 | P1 | Password + verification anti-bruteforce policy | Backend | DONE |
-| SH-10 | P1 | HTTP security headers / CSP | Backend + Frontend | TODO |
+| SH-10 | P1 | HTTP security headers / CSP | Backend + Frontend | DONE |
 | SH-11 | P1 | Dependency vulnerability remediation | DevOps + Backend | TODO |
 | SH-12 | P1 | Translation data privacy controls | Frontend + Product + Security | TODO |
 | SH-13 | P2 | Security CI gates (SAST/secret scan/audit) | DevOps | TODO |
@@ -461,6 +461,30 @@ This document turns the current security review into an implementation backlog w
   - `pnpm -C api build` passes after auth hardening updates.
   - `pnpm -C api test` passes with new auth security tests.
   - `pnpm -C api test -- auth.service.spec.ts` validates lockout/cooldown and password policy behavior.
+
+### 2026-02-17 - SH-10 Completed
+
+- **Implemented by**: Backend + Frontend
+- **Scope delivered**:
+  - Added `helmet` middleware to API bootstrap with tuned settings for API traffic.
+  - Added web security headers in Next config:
+    - `Content-Security-Policy` (including `frame-ancestors 'none'`)
+    - `Referrer-Policy`
+    - `X-Content-Type-Options`
+    - `X-Frame-Options`
+    - `Permissions-Policy`
+  - Disabled `X-Powered-By` header in Next (`poweredByHeader: false`).
+- **Updated files**:
+  - `api/src/main.ts`
+  - `api/package.json`
+  - `pnpm-lock.yaml`
+  - `web/next.config.ts`
+  - `docs/security-hardening.md`
+- **Verification**:
+  - `rg "helmet\\(|Content-Security-Policy|Referrer-Policy|X-Content-Type-Options|frame-ancestors" api/src/main.ts web/next.config.ts` confirms header/middleware wiring.
+  - `pnpm -C api build` passes after API header hardening.
+  - `pnpm -C api test` passes after API header hardening.
+  - `pnpm -C web build` passes after Next security-header configuration.
 
 ## Milestone Plan
 

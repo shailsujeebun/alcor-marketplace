@@ -139,6 +139,10 @@ For more information, please refer to the detailed documentation files listed ab
   - Added timeout handling for upstream translation calls.
   - Added cache TTL and simple LRU-style eviction.
   - Added in-flight request de-duplication for repeated texts.
+  - Added privacy controls:
+    - `TRANSLATION_EXTERNAL_ENABLED` to fully disable external translation by environment.
+    - `TRANSLATION_ALLOW_PII` (default `false`) to block translation of likely sensitive text (email/phone/URL patterns).
+  - Added policy document: `docs/translation-privacy-policy.md`.
 - i18n guard:
   - Added `web/scripts/check-hardcoded-i18n.mjs`.
   - Added `npm run i18n:guard` in `web/package.json`.

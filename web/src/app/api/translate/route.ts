@@ -21,8 +21,24 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 45;
 const CYRILLIC_REGEX = /[\u0400-\u04FF]/;
 const WHITESPACE_REGEX = /\s+/g;
+const EMAIL_REGEX = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
+const PHONE_REGEX = /(?:\+?\d[\d\s().-]{7,}\d)/;
+const URL_REGEX = /\bhttps?:\/\/\S+/i;
+const EXTERNAL_TRANSLATION_ENABLED = toBoolean(
+  process.env.TRANSLATION_EXTERNAL_ENABLED,
+  true,
+);
+const TRANSLATION_ALLOW_PII = toBoolean(
+  process.env.TRANSLATION_ALLOW_PII,
+  false,
+);
 
 export const runtime = 'nodejs';
+
+function toBoolean(value: string | undefined, fallback: boolean): boolean {
+  if (value === undefined) return fallback;
+  return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
+}
 
 function getCache(): TranslationCache {
   const globalRef = globalThis as typeof globalThis & {
@@ -62,6 +78,12 @@ function getRateLimitStore(): RateLimitStore {
 
 function normalizeText(value: string): string {
   return value.replace(WHITESPACE_REGEX, ' ').trim();
+}
+
+function containsPotentialSensitiveData(value: string): boolean {
+  return (
+    EMAIL_REGEX.test(value) || PHONE_REGEX.test(value) || URL_REGEX.test(value)
+  );
 }
 
 function getClientKey(request: NextRequest): string {
@@ -213,6 +235,17 @@ async function translateTexts(
 }
 
 export async function POST(request: NextRequest) {
+  if (!EXTERNAL_TRANSLATION_ENABLED) {
+    return NextResponse.json(
+      {
+        translations: {},
+        error:
+          'External translation is disabled by policy in this environment.',
+      },
+      { status: 503 },
+    );
+  }
+
   if (isRateLimited(getClientKey(request))) {
     return NextResponse.json(
       { translations: {}, error: 'Too many translation requests. Please try again shortly.' },
@@ -245,6 +278,12 @@ export async function POST(request: NextRequest) {
       const normalized = normalizeText(value).slice(0, MAX_TEXT_LENGTH);
       if (!normalized) continue;
       if (!CYRILLIC_REGEX.test(normalized)) continue;
+      if (
+        !TRANSLATION_ALLOW_PII &&
+        containsPotentialSensitiveData(normalized)
+      ) {
+        continue;
+      }
       if (seen.has(normalized)) continue;
       if (totalLength + normalized.length > MAX_TOTAL_TEXT_LENGTH) break;
       seen.add(normalized);

@@ -30,7 +30,7 @@ This document turns the current security review into an implementation backlog w
 | SH-09 | P1 | Password + verification anti-bruteforce policy | Backend | DONE |
 | SH-10 | P1 | HTTP security headers / CSP | Backend + Frontend | DONE |
 | SH-11 | P1 | Dependency vulnerability remediation | DevOps + Backend | DONE |
-| SH-12 | P1 | Translation data privacy controls | Frontend + Product + Security | TODO |
+| SH-12 | P1 | Translation data privacy controls | Frontend + Product + Security | DONE |
 | SH-13 | P2 | Security CI gates (SAST/secret scan/audit) | DevOps | TODO |
 | SH-14 | P2 | Security-focused automated test suite | QA + Backend + Frontend | TODO |
 
@@ -506,6 +506,23 @@ This document turns the current security review into an implementation backlog w
   - `pnpm -C api build` passes after dependency updates.
   - `pnpm -C api test` passes after dependency updates.
   - `pnpm -C web build` passes after lockfile/dependency updates.
+
+### 2026-02-17 - SH-12 Completed
+
+- **Implemented by**: Frontend + Product/Security docs
+- **Scope delivered**:
+  - Added environment switch to disable external translation route completely.
+  - Added default privacy guard to avoid sending likely sensitive text (email/phone/URL patterns) to external translator.
+  - Added documented policy defining allowed/disallowed translation content and ownership.
+- **Updated files**:
+  - `web/src/app/api/translate/route.ts`
+  - `docs/translation-privacy-policy.md`
+  - `docs/security-hardening.md`
+- **Verification**:
+  - `pnpm -C web build` passes after translation privacy hardening.
+  - Route behavior check:
+    - with `TRANSLATION_EXTERNAL_ENABLED=false`, `/api/translate` returns `503` with policy error.
+    - with `TRANSLATION_ALLOW_PII=false`, text matching email/phone/URL patterns is excluded from external translation payload.
 
 ## Milestone Plan
 

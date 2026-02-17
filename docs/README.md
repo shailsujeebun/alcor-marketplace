@@ -156,6 +156,7 @@ For more information, please refer to the detailed documentation files listed ab
   - Added GitHub Actions workflow: `.github/workflows/ci.yml`.
   - Web gates: `i18n:guard`, `lint`, `build`.
   - API gates: `build`, `test`, `test:e2e`.
+  - Security test suite gate: `test:security` (auth abuse, listing authZ, upload abuse/rate-limit checks).
   - Seed smoke job: `prisma migrate deploy`, `seed:all`, `seed:verify`.
   - Security gates:
     - `api-security-audit` (`pnpm audit --prod --audit-level high`).

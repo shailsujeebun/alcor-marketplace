@@ -32,7 +32,7 @@ This document turns the current security review into an implementation backlog w
 | SH-11 | P1 | Dependency vulnerability remediation | DevOps + Backend | DONE |
 | SH-12 | P1 | Translation data privacy controls | Frontend + Product + Security | DONE |
 | SH-13 | P2 | Security CI gates (SAST/secret scan/audit) | DevOps | DONE |
-| SH-14 | P2 | Security-focused automated test suite | QA + Backend + Frontend | TODO |
+| SH-14 | P2 | Security-focused automated test suite | QA + Backend + Frontend | DONE |
 
 ## Detailed Work Items
 
@@ -542,6 +542,27 @@ This document turns the current security review into an implementation backlog w
   - `docker run --rm -v \"${PWD}:/repo\" zricethezav/gitleaks:latest detect --source=/repo --no-banner --redact --gitleaks-ignore-path=/repo/.gitleaksignore --exit-code 1` passes with no leaks.
   - `semgrep scan --config p/security-audit --severity ERROR --error --metrics=off --exclude node_modules --exclude .next --exclude dist .` passes with 0 blocking findings.
   - `pnpm -C api audit:prod` remains active and passing for dependency audit gating.
+
+### 2026-02-17 - SH-14 Completed
+
+- **Implemented by**: QA + Backend
+- **Scope delivered**:
+  - Added dedicated API security test suite script (`test:security`).
+  - Added listing authorization security tests for cross-account mutation attempts.
+  - Added upload abuse/rate-limit security tests for token misuse and quota enforcement.
+  - Kept auth abuse and config hardening tests in the security suite to cover authN + fail-fast controls.
+  - Added `Security test suite` step in CI so these checks are required on PRs.
+- **Updated files**:
+  - `api/src/listings/listings.security.spec.ts`
+  - `api/src/upload/upload.security.spec.ts`
+  - `api/package.json`
+  - `.github/workflows/ci.yml`
+  - `docs/security-hardening.md`
+- **Verification**:
+  - `pnpm -C api test:security` passes.
+  - `pnpm -C api test` passes with expanded security specs.
+  - `pnpm -C api build` passes after test-suite additions.
+  - CI workflow now contains a required `Security test suite` step in `api-quality`.
 
 ## Milestone Plan
 

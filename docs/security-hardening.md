@@ -21,7 +21,7 @@ This document turns the current security review into an implementation backlog w
 |---|---|---|---|---|
 | SH-01 | P0 | Listing authorization (BOLA/IDOR) | Backend | DONE |
 | SH-02 | P0 | Company authorization (BOLA/IDOR) | Backend | DONE |
-| SH-03 | P0 | Lock public reference-data writes | Backend | TODO |
+| SH-03 | P0 | Lock public reference-data writes | Backend | DONE |
 | SH-04 | P0 | Upload abuse hardening | Backend + DevOps | TODO |
 | SH-05 | P0 | Remove sensitive token/code logs | Backend | TODO |
 | SH-06 | P0 | Refresh token transport hardening | Backend + Frontend | TODO |
@@ -297,6 +297,29 @@ This document turns the current security review into an implementation backlog w
 - **Updated files**:
   - `api/src/companies/companies.controller.ts`
   - `api/src/companies/companies.service.ts`
+  - `docs/security-hardening.md`
+- **Verification**:
+  - `pnpm -C api build` passes after authorization changes.
+  - `pnpm -C api test` passes after authorization changes.
+
+### 2026-02-17 - SH-03 Completed
+
+- **Implemented by**: Backend
+- **Scope delivered**:
+  - Locked reference-data create endpoints to `ADMIN`/`MANAGER` roles.
+  - Kept corresponding read endpoints public.
+- **Endpoints protected**:
+  - `POST /categories`
+  - `POST /brands`
+  - `POST /activity-types`
+  - `POST /countries`
+  - `POST /cities`
+- **Updated files**:
+  - `api/src/categories/categories.controller.ts`
+  - `api/src/brands/brands.controller.ts`
+  - `api/src/activity-types/activity-types.controller.ts`
+  - `api/src/countries/countries.controller.ts`
+  - `api/src/cities/cities.controller.ts`
   - `docs/security-hardening.md`
 - **Verification**:
   - `pnpm -C api build` passes after authorization changes.

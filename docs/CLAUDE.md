@@ -36,8 +36,11 @@ cd api && npx prisma migrate dev
 # Generate Prisma client
 cd api && npx prisma generate
 
-# Seed the database (Ukrainian data)
+# Seed the database (default deterministic dataset)
 cd api && npx prisma db seed
+
+# Optional integrity verification after seeding
+cd api && pnpm seed:verify
 
 # Start backend (runs on port 3000)
 cd api && pnpm start:dev
@@ -629,7 +632,7 @@ w-full px-4 py-2.5 rounded-lg bg-[var(--bg-primary)] border border-[var(--border
 16. **Hero gradient** - Uses inline `style={{ background: 'linear-gradient(...)' }}` with CSS variables (`--hero-from`, `--hero-via`, `--hero-to`) instead of Tailwind gradient classes, to support theme switching
 17. **SSR hydration safety** - Never use `Math.random()` in components rendered on server. Use client-only rendering pattern (`mounted` state + `useEffect`) or seeded PRNG for deterministic output
 18. **Global footer spacing** - Applied on `<main>` in `layout.tsx` (`pb-24 md:pb-32`). Do NOT add per-page bottom padding — the global wrapper handles it
-19. **Seed data language** - All seed data in `api/prisma/seed.ts` is in Ukrainian (countries, categories, activity types, company labels, listing titles). After changing seed data, run `npx prisma db seed` from `api/` folder
+19. **Seed entrypoint** - Default Prisma seed is `api/prisma/seed-all.ts` (modular data under `api/prisma/seed-all/*`; legacy `api/prisma/seed.ts` still exists). After changing seed data, run `npx prisma db seed` from `api/` and then `pnpm seed:verify`
 
 ### Listing Filters (Frontend)
 
@@ -889,8 +892,9 @@ cd api && npx nest build
 - Requires Docker Desktop to be installed and running
 
 ### Seed data not in Ukrainian
-- All seed data lives in `api/prisma/seed.ts` — countries, categories, activity types, company labels, listing titles
+- Default seed data lives in `api/prisma/seed-all/*` via `api/prisma/seed-all.ts` (legacy `api/prisma/seed.ts` also exists)
 - After changing seed data, re-run: `cd api && npx prisma db seed`
+- Validate seed integrity: `cd api && pnpm seed:verify`
 
 ### Reference Design
 - The Alcor Leasing reference site is at `/Users/rohan/Desktop/Alcor-Leasing 2/`

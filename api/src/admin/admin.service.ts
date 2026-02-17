@@ -97,7 +97,11 @@ export class AdminService {
     };
   }
 
-  private async createTemplateFields(tx: any, templateId: bigint, fields: any[] = []) {
+  private async createTemplateFields(
+    tx: any,
+    templateId: bigint,
+    fields: any[] = [],
+  ) {
     for (const field of fields) {
       const createdField = await tx.formField.create({
         data: {
@@ -126,7 +130,11 @@ export class AdminService {
     }
   }
 
-  async createTemplate(data: { categoryId: number; name?: string; fields: any[] }) {
+  async createTemplate(data: {
+    categoryId: number;
+    name?: string;
+    fields: any[];
+  }) {
     if (!Number.isInteger(data.categoryId)) {
       throw new BadRequestException('categoryId must be an integer');
     }

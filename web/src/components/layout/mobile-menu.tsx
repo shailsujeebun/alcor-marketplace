@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { X, LogIn, UserPlus, LogOut, Shield } from 'lucide-react';
+import { X, LogIn, LogOut, Shield } from 'lucide-react';
 import type { User } from '@/types/api';
 import { useTranslation } from '../providers/translation-provider';
 
@@ -97,18 +97,10 @@ export function MobileMenu({ open, onClose, links, isAuthenticated, user, onLogo
               <Link
                 href="/login"
                 onClick={onClose}
-                className="flex items-center justify-center gap-2 border border-[var(--border-color)] text-[var(--text-primary)] px-5 py-3 rounded-full font-semibold hover:border-blue-bright/40 transition-colors"
+                className="flex items-center justify-center gap-2 gradient-cta text-white px-5 py-3 rounded-full font-semibold hover:opacity-90 transition-all"
               >
                 <LogIn size={18} />
-                {t('nav.login')}
-              </Link>
-              <Link
-                href="/register"
-                onClick={onClose}
-                className="flex items-center justify-center gap-2 gradient-cta text-white px-5 py-3 rounded-full font-semibold"
-              >
-                <UserPlus size={18} />
-                {t('nav.register')}
+                {t('nav.authAccess')}
               </Link>
             </>
           )}

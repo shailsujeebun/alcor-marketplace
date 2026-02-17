@@ -12,8 +12,8 @@ export function CompanyCard({ company }: CompanyCardProps) {
   const logo = company.media?.find((m: CompanyMedia) => m.kind === 'LOGO');
 
   return (
-    <Link href={`/companies/${company.slug}`} className="block">
-      <div className="glass-card card-hover p-6">
+    <Link href={`/companies/${company.slug}`} className="block h-full">
+      <div className="glass-card card-hover p-6 h-full min-h-[260px] flex flex-col">
         <div className="flex items-center gap-4 mb-4">
           {logo ? (
             <img src={logo.url} alt={company.name} className="w-14 h-14 rounded-full object-cover" />
@@ -23,11 +23,11 @@ export function CompanyCard({ company }: CompanyCardProps) {
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h3 className="font-heading font-bold text-base text-[var(--text-primary)] truncate">
+            <h3 className="font-heading font-bold text-base text-[var(--text-primary)] leading-tight min-h-[40px] [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden break-words">
               {company.name}
             </h3>
             {(company.country || company.city) && (
-              <p className="flex items-center gap-1 text-xs text-[var(--text-secondary)] mt-1">
+              <p className="flex items-center gap-1 text-xs text-[var(--text-secondary)] mt-1 whitespace-normal break-words">
                 <MapPin size={12} />
                 {[company.city?.name, company.country?.name].filter(Boolean).join(', ')}
               </p>
@@ -48,7 +48,7 @@ export function CompanyCard({ company }: CompanyCardProps) {
           {company.isManufacturer && <Badge variant="warning">Виробник</Badge>}
         </div>
 
-        <div className="flex items-center gap-4 text-xs text-[var(--text-secondary)]">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-[var(--text-secondary)] mt-auto items-start">
           <span className="flex items-center gap-1">
             <Package size={12} />
             В продажу: {company.listingsCount} оголошень

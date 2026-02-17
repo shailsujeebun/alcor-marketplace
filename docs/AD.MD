@@ -146,15 +146,16 @@ web/src/components/listings/
 - Listing wizard translations migrated to i18n keys:
   - Step labels, sidebar title, tip copy, and loading fallback now translate via `t(key)`.
 
-### Seed Data Update (2026-02-16)
+### Stability & Performance Follow-ups (2026-02-16)
 
-- Added comprehensive seed script: `api/prisma/seed-all.ts`.
-- Ad/listing flow now has seeded end-to-end test data for:
-  - marketplaces and nested categories,
-  - dynamic form templates by leaf subcategory,
-  - companies and company-user links,
-  - listings with `ListingAttribute`, `ListingFact`, `ListingMedia`,
-  - `SellerContact`, `ListingSeller`, and `ListingWizardState`,
-  - favorites/view history, buyer-seller conversations, and support tickets.
-- Run with:
-  - `cd api && npm run seed:all`
+- Translation toggle behavior finalized for fast default load:
+  - App always starts in default language (`uk`).
+  - English translation is on-demand only when the `EN` button is clicked.
+  - No locale persistence across reloads.
+- Translation fallback API (`/api/translate`) hardening:
+  - Added payload guards, request throttling, translation timeout, and cache TTL/eviction.
+  - Added in-flight de-duplication to reduce repeated upstream translation requests.
+- Auth-related listing-entry routes are now key-based i18n:
+  - `auth-tabs`, login/register, verify-email, forgot/reset password forms now use dictionary keys.
+- Added i18n regression guard for migrated auth UI:
+  - `npm run i18n:guard` checks `web/src/components/auth` for new hardcoded localized text.

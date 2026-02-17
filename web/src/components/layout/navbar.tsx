@@ -6,7 +6,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import {
   Menu,
   LogIn,
-  UserPlus,
   LogOut,
   ChevronDown,
   LayoutDashboard,
@@ -69,19 +68,18 @@ export function Navbar() {
     <>
       <header className="site-navbar sticky top-0 z-50 border-b border-[var(--border-color)] bg-[color:var(--bg-secondary)]/90 backdrop-blur-xl">
         <div className="container-main flex items-center justify-between h-18 min-h-[72px]">
-          <Link href="/" className="logo-link flex items-center gap-3">
+          <Link href="/" className="logo-link flex items-center">
             <Image
               src="/alcor-logo.png"
               alt={t('brand.logoAlt')}
-              width={50}
-              height={50}
-              className="logo-image h-[42px] w-auto"
+              width={58}
+              height={58}
+              className="logo-image h-[48px] w-auto"
               priority
             />
-            <span className="logo-text font-heading font-bold text-2xl tracking-tight">АЛЬКОР</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8 mr-auto">
+          <nav className="hidden md:flex items-center gap-8 ml-12 mr-16">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -101,7 +99,7 @@ export function Navbar() {
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-4 ml-auto">
             {isLoading ? (
               <div className="w-8 h-8 rounded-full bg-[var(--border-color)] animate-pulse" />
             ) : isAuthenticated && user ? (
@@ -168,17 +166,10 @@ export function Navbar() {
               <div className="flex items-center gap-3">
                 <Link
                   href="/login"
-                  className="site-auth-link flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-blue-light transition-colors font-medium"
-                >
-                  <LogIn size={16} />
-                  {t('nav.login')}
-                </Link>
-                <Link
-                  href="/register"
                   className="site-auth-primary gradient-cta text-white px-5 py-2 rounded-full text-sm font-semibold hover:opacity-90 transition-all flex items-center gap-1.5"
                 >
-                  <UserPlus size={16} />
-                  {t('nav.register')}
+                  <LogIn size={16} />
+                  {t('nav.authAccess')}
                 </Link>
                 <Link
                   href="/ad-placement"

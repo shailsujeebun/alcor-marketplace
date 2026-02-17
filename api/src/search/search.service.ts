@@ -24,7 +24,7 @@ export interface SearchQuery {
 
 @Injectable()
 export class SearchService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async search(query: SearchQuery) {
     const {
@@ -120,7 +120,9 @@ export class SearchService {
     }
 
     // Dynamic Attribute Filtering
-    const attrFilters = Object.entries(attributes).filter(([k]) => k !== 'order');
+    const attrFilters = Object.entries(attributes).filter(
+      ([k]) => k !== 'order',
+    );
 
     // If listingType is provided, treat it as an attribute for now since it's not on Listing/ListingFact
     if (listingType) {
@@ -145,7 +147,6 @@ export class SearchService {
     else if (sort === 'yearAsc') orderBy = { fact: { year: 'asc' } };
     else if (sort === 'yearDesc') orderBy = { fact: { year: 'desc' } };
     else if (sort === 'publishedAt') orderBy = { publishedAt: 'desc' };
-
 
     // Execute Query
     const [items, total] = await Promise.all([
@@ -182,23 +183,27 @@ export class SearchService {
     // TODO: Context-aware facets based on current query
     const categories = await this.prisma.category.findMany({
       where: { parentId: null },
-      select: { id: true, slug: true, name: true }
+      select: { id: true, slug: true, name: true },
     });
 
     const brands = await this.prisma.brand.findMany({
-      select: { id: true, name: true }
+      select: { id: true, name: true },
     });
 
     const priceStats = await this.prisma.listingFact.aggregate({
       _min: { priceAmount: true },
       _max: { priceAmount: true },
-      where: { listing: { status: ListingStatus.ACTIVE } }
+      where: { listing: { status: ListingStatus.ACTIVE } },
     });
 
     return {
-      categories: JSON.parse(JSON.stringify(categories, (key, value) =>
-        typeof value === 'bigint' ? value.toString() : value // Handle BigInt
-      )),
+      categories: JSON.parse(
+        JSON.stringify(
+          categories,
+          (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value, // Handle BigInt
+        ),
+      ),
       brands,
       priceMin: priceStats._min.priceAmount,
       priceMax: priceStats._max.priceAmount,

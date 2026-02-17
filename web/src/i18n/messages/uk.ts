@@ -99,6 +99,7 @@ export const ukMessages = {
     logout: 'Вийти з акаунта',
     login: 'Увійти',
     register: 'Реєстрація',
+    authAccess: 'Увійти / Реєстрація',
     placeAd: 'Розмістити оголошення',
     userFallback: 'Користувач',
     openMenu: 'Відкрити меню',

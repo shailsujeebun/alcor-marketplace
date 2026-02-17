@@ -99,6 +99,7 @@ export const enMessages = {
     logout: 'Log out',
     login: 'Sign in',
     register: 'Register',
+    authAccess: 'Sign in / Register',
     placeAd: 'Post listing',
     userFallback: 'User',
     openMenu: 'Open menu',

@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+.nyc_output
+*.log
+.env*
+!.env.example
+.git
+.gitignore
+.idea
+.vscode
+*.md
+test
+verify-output.txt

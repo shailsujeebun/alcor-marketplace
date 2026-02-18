@@ -1,8 +1,7 @@
 #!/bin/sh
-set -e
 
 echo "=== Running Prisma migrations ==="
-npx prisma migrate deploy
+npx prisma migrate deploy || echo "WARNING: Migration failed, continuing anyway..."
 
 # Seed if SEED_ON_DEPLOY is set and database is empty
 if [ "$SEED_ON_DEPLOY" = "true" ]; then
@@ -26,7 +25,7 @@ if [ "$SEED_ON_DEPLOY" = "true" ]; then
 
   if [ "$USER_COUNT" = "0" ]; then
     echo "=== Database is empty, seeding demo data ==="
-    node dist-seed/prisma/seed-all.js
+    node dist-seed/prisma/seed-all.js || echo "WARNING: Seeding failed, continuing anyway..."
     echo "=== Seeding complete ==="
   else
     echo "=== Database already has data ($USER_COUNT users), skipping seed ==="

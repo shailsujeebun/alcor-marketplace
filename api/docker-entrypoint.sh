@@ -25,7 +25,7 @@ if [ "$SEED_ON_DEPLOY" = "true" ]; then
 
   if [ "$USER_COUNT" = "0" ]; then
     echo "=== Database is empty, seeding demo data ==="
-    node dist-seed/prisma/seed-all.js || echo "WARNING: Seeding failed, continuing anyway..."
+    node dist-seed/seed-all.js || echo "WARNING: Seeding failed, continuing anyway..."
     echo "=== Seeding complete ==="
   else
     echo "=== Database already has data ($USER_COUNT users), skipping seed ==="

@@ -10,12 +10,17 @@ export type CoreSeedData = {
 };
 
 export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
-  const passwordHash = await bcrypt.hash('test1234', 10);
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@alcor.com';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'test1234';
+  const demoPassword = 'test1234';
+
+  const adminPasswordHash = await bcrypt.hash(adminPassword, 10);
+  const passwordHash = await bcrypt.hash(demoPassword, 10);
 
   const admin = await prisma.user.create({
     data: {
-      email: 'admin@alcor.com',
-      passwordHash,
+      email: adminEmail,
+      passwordHash: adminPasswordHash,
       firstName: 'Admin',
       lastName: 'User',
       role: 'ADMIN',
@@ -24,6 +29,8 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
       emailVerified: true,
     },
   });
+
+  console.log(`  Admin user created: ${adminEmail}`);
 
   const manager = await prisma.user.create({
     data: {

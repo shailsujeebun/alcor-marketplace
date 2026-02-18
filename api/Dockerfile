@@ -13,13 +13,16 @@ WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY tsconfig.json tsconfig.build.json nest-cli.json ./
+COPY tsconfig.json tsconfig.build.json tsconfig.seed.json nest-cli.json ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./
+COPY docker-entrypoint.sh ./
 COPY src ./src
 
-# Generate Prisma client (dummy URL — only needed for client codegen, not connecting)
-RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate && pnpm build
+# Generate Prisma client + build NestJS + compile seed scripts
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate \
+    && pnpm build \
+    && npx tsc --project tsconfig.seed.json
 
 # Prune dev dependencies (keep Prisma client in place)
 RUN pnpm prune --prod && pnpm store prune
@@ -35,9 +38,13 @@ RUN addgroup -g 1001 -S appgroup && \
 # Copy everything needed from build stage (node_modules already pruned)
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/dist-seed ./dist-seed
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/prisma.config.ts ./
 COPY --from=build /app/package.json ./
+COPY --from=build /app/docker-entrypoint.sh ./
+
+RUN chmod +x docker-entrypoint.sh
 
 # Security: run as non-root
 USER appuser
@@ -49,5 +56,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -qO- http://localhost:3000/ || exit 1
 
-# Run migrations then start
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+CMD ["./docker-entrypoint.sh"]

@@ -1,4 +1,4 @@
-import 'dotenv/config';
+try { require('dotenv/config'); } catch { /* production: env vars injected by platform */ }
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';

@@ -79,7 +79,9 @@ export default () => {
     process.env.S3_SECRET_ACCESS_KEY ??
     (isProduction ? undefined : DEV_DEFAULT_S3_SECRET_ACCESS_KEY);
 
-  if (isProduction) {
+  const isDemo = toBoolean(process.env.DEMO_MODE, false);
+
+  if (isProduction && !isDemo) {
     assertStrongSecret('JWT_SECRET', jwtSecret, 32);
     assertStrongSecret('UPLOAD_GUEST_TOKEN_SECRET', uploadGuestTokenSecret, 32);
     assertNonDefaultCredential('S3_ACCESS_KEY_ID', s3AccessKeyId, ['minioadmin']);

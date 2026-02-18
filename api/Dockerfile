@@ -17,32 +17,25 @@ COPY tsconfig.json tsconfig.build.json nest-cli.json ./
 COPY prisma ./prisma
 COPY src ./src
 
-# Generate Prisma client
-RUN npx prisma generate
+# Generate Prisma client + build NestJS
+RUN npx prisma generate && pnpm build
 
-# Build NestJS
-RUN pnpm build
+# Prune dev dependencies (keep Prisma client in place)
+RUN pnpm prune --prod && pnpm store prune
 
 # ── Stage 3: Production image ────────────────────────
 FROM node:22-alpine AS production
-RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
 # Add non-root user
 RUN addgroup -g 1001 -S appgroup && \
     adduser -S appuser -u 1001 -G appgroup
 
-# Copy built app + production deps
-COPY --from=deps /app/node_modules ./node_modules
+# Copy everything needed from build stage (node_modules already pruned)
+COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /app/prisma ./prisma
-COPY package.json ./
-
-# Remove dev dependencies
-RUN pnpm prune --prod && \
-    # Clean pnpm cache
-    pnpm store prune
+COPY --from=build /app/package.json ./
 
 # Security: run as non-root
 USER appuser

@@ -1,4 +1,4 @@
-# Marketplace Clone (АЛЬКОР)
+# Marketplace  (АЛЬКОР)
 
 A B2B equipment marketplace platform with a NestJS backend API and Next.js frontend. This project features a multi-marketplace system supporting Agriculture, Commercial Vehicles, Industrial Machinery, and Cars.
 

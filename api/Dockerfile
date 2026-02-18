@@ -15,10 +15,11 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY tsconfig.json tsconfig.build.json nest-cli.json ./
 COPY prisma ./prisma
+COPY prisma.config.ts ./
 COPY src ./src
 
-# Generate Prisma client + build NestJS
-RUN npx prisma generate && pnpm build
+# Generate Prisma client (dummy URL — only needed for client codegen, not connecting)
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate && pnpm build
 
 # Prune dev dependencies (keep Prisma client in place)
 RUN pnpm prune --prod && pnpm store prune

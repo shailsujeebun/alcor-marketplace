@@ -370,15 +370,38 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
     'suv',
   ];
 
+  // Ensure the system engine block exists before templates reference it.
+  await prisma.formBlock.upsert({
+    where: { id: 'engine_block' },
+    create: {
+      id: 'engine_block',
+      name: 'Engine Block',
+      isSystem: true,
+      fields: [
+        { key: 'fuel_type', label: 'Fuel type', component: 'select', required: false, group: 'Engine', order: 1000, dataSource: 'static',
+          staticOptions: [{ value: 'diesel', label: 'Diesel' }, { value: 'petrol', label: 'Petrol' }, { value: 'electric', label: 'Electric' }, { value: 'hybrid', label: 'Hybrid' }, { value: 'lpg', label: 'LPG' }] },
+        { key: 'power_hp', label: 'Power (hp)', component: 'number', required: false, group: 'Engine', order: 1010, validationRules: { min: 1, max: 5000, unit: 'hp' } },
+        { key: 'engine_displacement_cm3', label: 'Engine displacement', component: 'number', required: false, group: 'Engine', order: 1020, validationRules: { min: 1, max: 100000, unit: 'cm³' } },
+        { key: 'engine_model', label: 'Engine model', component: 'text', required: false, group: 'Engine', order: 1030 },
+        { key: 'emission_class', label: 'Emission class', component: 'select', required: false, group: 'Engine', order: 1040, dataSource: 'static',
+          staticOptions: [{ value: 'euro_1', label: 'Euro 1' }, { value: 'euro_2', label: 'Euro 2' }, { value: 'euro_3', label: 'Euro 3' }, { value: 'euro_4', label: 'Euro 4' }, { value: 'euro_5', label: 'Euro 5' }, { value: 'euro_6', label: 'Euro 6' }, { value: 'tier_4', label: 'Tier 4' }, { value: 'stage_v', label: 'Stage V' }] },
+      ] as Prisma.InputJsonValue,
+    },
+    update: { name: 'Engine Block', isSystem: true },
+  });
+
   for (const slug of leafCategorySlugs) {
     const category = categoriesBySlug.get(slug);
     if (!category) continue;
+
+    const blockIds = isLikelyMotorizedSlug(slug) ? ['engine_block'] : [];
 
     await prisma.formTemplate.create({
       data: {
         categoryId: category.id,
         version: 1,
         isActive: true,
+        blockIds,
         fields: {
           create: [
             {

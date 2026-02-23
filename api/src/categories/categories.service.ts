@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { mergeTemplateFieldsWithBlocks } from '../templates/template-schema';
+import { mergeTemplateFieldsWithBlocks, getBuiltInEngineBlock } from '../templates/template-schema';
 
 export interface CategoryTreeNode {
   id: string;
@@ -158,23 +158,42 @@ export class CategoriesService {
   private async mapTemplate(template: any, category: any, requestedCategory?: any) {
     const runtimeCategory = requestedCategory ?? category;
     const blockIds = this.parseBlockIds(template.blockIds);
-    const blocks =
-      blockIds.length === 0
+
+    // For engine categories, always include engine_block even if not yet
+    // stored on the template — this ensures the posting form always shows
+    // the full set of engine-specific fields (Fuel type, Power, etc.).
+    const effectiveBlockIds =
+      runtimeCategory.hasEngine && !blockIds.includes('engine_block')
+        ? ['engine_block', ...blockIds]
+        : blockIds;
+
+    const dbBlocks =
+      effectiveBlockIds.length === 0
         ? []
         : await this.prisma.formBlock.findMany({
-            where: { id: { in: blockIds } },
+            where: { id: { in: effectiveBlockIds } },
             orderBy: { name: 'asc' },
           });
 
-    const mergedFields = mergeTemplateFieldsWithBlocks(
-      template.fields ?? [],
-      blocks.map((block) => ({
+    const dbBlockIdSet = new Set(dbBlocks.map((b: any) => b.id));
+
+    // If engine_block is needed but not yet in DB, use the built-in definition.
+    const extraBlocks: any[] =
+      effectiveBlockIds.includes('engine_block') && !dbBlockIdSet.has('engine_block')
+        ? [getBuiltInEngineBlock()]
+        : [];
+
+    const blocks = [
+      ...dbBlocks.map((block: any) => ({
         id: block.id,
         name: block.name,
         isSystem: block.isSystem,
         fields: (block.fields as any[]) ?? [],
       })),
-    );
+      ...extraBlocks,
+    ];
+
+    const mergedFields = mergeTemplateFieldsWithBlocks(template.fields ?? [], blocks);
 
     return {
       id: template.id.toString(),
@@ -182,11 +201,11 @@ export class CategoriesService {
       version: template.version,
       isActive: template.isActive,
       createdAt: template.createdAt,
-      blockIds,
+      blockIds: effectiveBlockIds,
       blocks: blocks.map((block) => ({
         id: block.id,
         name: block.name,
-        isSystem: block.isSystem,
+        isSystem: Boolean(block.isSystem),
       })),
       category: {
         id: runtimeCategory.id.toString(),

@@ -1,0 +1,2 @@
+ALTER TABLE form_template
+ADD COLUMN IF NOT EXISTS block_ids JSONB NOT NULL DEFAULT '[]'::jsonb;

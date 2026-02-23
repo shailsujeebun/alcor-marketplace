@@ -56,6 +56,7 @@ export class AdminController {
       slug: string;
       parentId?: number;
       sortOrder?: number;
+      hasEngine?: boolean;
     },
   ) {
     return this.adminService.createCategory(body);
@@ -70,6 +71,7 @@ export class AdminController {
       slug?: string;
       parentId?: number;
       sortOrder?: number;
+      hasEngine?: boolean;
     },
   ) {
     return this.adminService.updateCategory(id, body);
@@ -84,7 +86,13 @@ export class AdminController {
 
   @Post('templates')
   createTemplate(
-    @Body() body: { categoryId: number; name?: string; fields: any[] },
+    @Body()
+    body: {
+      categoryId: number;
+      name?: string;
+      fields: any[];
+      blockIds?: string[];
+    },
   ) {
     return this.adminService.createTemplate(body);
   }
@@ -115,8 +123,33 @@ export class AdminController {
   @Patch('templates/:id')
   updateTemplate(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { fields: any[] },
+    @Body() body: { fields: any[]; blockIds?: string[] },
   ) {
     return this.adminService.updateTemplate(id, body);
+  }
+
+  @Get('blocks')
+  getBlocks() {
+    return this.adminService.getBlocks();
+  }
+
+  @Post('blocks')
+  createBlock(
+    @Body() body: { name: string; fields: any[]; isSystem?: boolean },
+  ) {
+    return this.adminService.createBlock(body);
+  }
+
+  @Patch('blocks/:id')
+  updateBlock(
+    @Param('id') id: string,
+    @Body() body: { name?: string; fields?: any[] },
+  ) {
+    return this.adminService.updateBlock(id, body);
+  }
+
+  @Delete('blocks/:id')
+  deleteBlock(@Param('id') id: string) {
+    return this.adminService.deleteBlock(id);
   }
 }

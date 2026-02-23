@@ -563,6 +563,7 @@ export interface AdminCategory {
   slug: string;
   parentId?: number;
   sortOrder?: number;
+  hasEngine?: boolean;
   children?: AdminCategory[];
 }
 
@@ -587,6 +588,7 @@ export const createAdminCategory = (data: {
   slug: string;
   parentId?: number;
   sortOrder?: number;
+  hasEngine?: boolean;
 }) =>
   fetchApi<AdminCategory>('/admin/categories', {
     method: 'POST',
@@ -598,6 +600,7 @@ export const updateAdminCategory = (id: number, data: {
   slug?: string;
   parentId?: number;
   sortOrder?: number;
+  hasEngine?: boolean;
 }) =>
   fetchApi<AdminCategory>(`/admin/categories/${id}`, {
     method: 'PATCH',

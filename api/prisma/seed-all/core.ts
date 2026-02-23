@@ -10,6 +10,38 @@ export type CoreSeedData = {
 };
 
 export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
+  const isLikelyMotorizedSlug = (slug: string) => {
+    const value = slug.toLowerCase();
+    const excludedTokens = ['trailer', 'semi-trailer', 'parts', 'tires', 'wheels', 'service'];
+    if (excludedTokens.some((token) => value.includes(token))) {
+      return false;
+    }
+
+    const motorizedTokens = [
+      'tractor',
+      'harvester',
+      'combine',
+      'excavator',
+      'loader',
+      'forklift',
+      'telehandler',
+      'truck',
+      'bus',
+      'car',
+      'sedan',
+      'suv',
+      'hatchback',
+      'coupe',
+      'convertible',
+      'pickup',
+      'minivan',
+      'electric',
+      'hybrid',
+    ];
+
+    return motorizedTokens.some((token) => value.includes(token));
+  };
+
   const passwordHash = await bcrypt.hash('test1234', 10);
 
   const admin = await prisma.user.create({
@@ -166,6 +198,7 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
     name: string;
     parentSlug?: string;
     sortOrder: number;
+    hasEngine?: boolean;
   }) {
     const marketplaceId = marketplaceMap.get(params.marketplaceKey);
     if (!marketplaceId) {
@@ -180,6 +213,10 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
         name: params.name,
         parentId: parent?.id,
         sortOrder: params.sortOrder,
+        hasEngine:
+          params.hasEngine === undefined
+            ? isLikelyMotorizedSlug(params.slug)
+            : params.hasEngine,
       },
     });
 

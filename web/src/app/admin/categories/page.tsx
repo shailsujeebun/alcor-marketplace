@@ -153,7 +153,8 @@ export default function AdminCategoriesPage() {
     const [formData, setFormData] = useState({
         name: '',
         slug: '',
-        parentId: undefined as number | undefined
+        parentId: undefined as number | undefined,
+        hasEngine: false,
     });
     const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -186,6 +187,7 @@ export default function AdminCategoriesPage() {
                 name: formData.name,
                 slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-'),
                 parentId: formData.parentId,
+                hasEngine: formData.hasEngine,
             };
 
             if (editingId) {
@@ -214,13 +216,29 @@ export default function AdminCategoriesPage() {
     }
 
     function resetForm() {
-        setFormData({ name: '', slug: '', parentId: undefined });
+        setFormData({ name: '', slug: '', parentId: undefined, hasEngine: false });
         setEditingId(null);
+    }
+
+    function findCategoryById(tree: any[], id: number): any | null {
+        for (const node of tree) {
+            if (Number(node.id) === id) return node;
+            const child = findCategoryById(node.children || [], id);
+            if (child) return child;
+        }
+        return null;
     }
 
     function openCreate(parentId?: number) {
         resetForm();
-        setFormData(prev => ({ ...prev, parentId }));
+        const parentCategory = parentId && categories
+            ? findCategoryById(categories as any[], parentId)
+            : null;
+        setFormData(prev => ({
+            ...prev,
+            parentId,
+            hasEngine: Boolean(parentCategory?.hasEngine),
+        }));
         setIsDialogOpen(true);
     }
 
@@ -228,7 +246,8 @@ export default function AdminCategoriesPage() {
         setFormData({
             name: cat.name,
             slug: cat.slug,
-            parentId: Number(cat.parentId) || undefined
+            parentId: Number(cat.parentId) || undefined,
+            hasEngine: Boolean(cat.hasEngine),
         });
         setEditingId(Number(cat.id));
         setIsDialogOpen(true);
@@ -292,6 +311,19 @@ export default function AdminCategoriesPage() {
                                     placeholder="e.g., tractors"
                                 />
                                 <p className="text-xs text-muted-foreground mt-1">Leave empty to auto-generate from name.</p>
+                            </div>
+                            <div className="flex items-center gap-2 rounded-md border border-white/10 px-3 py-2">
+                                <input
+                                    id="hasEngine"
+                                    type="checkbox"
+                                    checked={formData.hasEngine}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, hasEngine: e.target.checked })
+                                    }
+                                />
+                                <Label htmlFor="hasEngine" className="cursor-pointer">
+                                    Has engine (uses motorized template fallback)
+                                </Label>
                             </div>
                             {formData.parentId && (
                                 <div className="text-sm text-muted-foreground">

@@ -254,8 +254,8 @@ export default function AdminTemplatesPage() {
                 dataSource: 'static',
                 staticOptions: [],
                 dependsOn: [],
-                visibleIf: undefined,
-                requiredIf: undefined,
+                visibleIf: {},
+                requiredIf: {},
                 resetOnChange: [],
             },
         ]);
@@ -834,7 +834,7 @@ export default function AdminTemplatesPage() {
                                                                 }}
                                                                 rows={3}
                                                                 className="w-full rounded-md bg-black/20 border border-white/10 p-2 text-xs"
-                                                                placeholder='{"all":[{"field":"context.category.hasEngine","op":"eq","value":true}]}'
+                                                                placeholder='{} = always visible'
                                                             />
                                                         </div>
                                                         <div className="space-y-2">
@@ -853,7 +853,7 @@ export default function AdminTemplatesPage() {
                                                                 }}
                                                                 rows={3}
                                                                 className="w-full rounded-md bg-black/20 border border-white/10 p-2 text-xs"
-                                                                placeholder='{"field":"brand","op":"exists"}'
+                                                                placeholder='{} = not conditionally required'
                                                             />
                                                         </div>
                                                     </div>

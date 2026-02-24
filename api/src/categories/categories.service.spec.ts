@@ -109,7 +109,9 @@ describe('CategoriesService.findTemplate', () => {
             visibilityIf: {},
             requiredIf: {},
             config: { component: 'select', dataSource: 'static' },
-            options: [{ id: 1n, value: 'diesel', label: 'Diesel', sortOrder: 1 }],
+            options: [
+              { id: 1n, value: 'diesel', label: 'Diesel', sortOrder: 1 },
+            ],
           },
         ],
         category: {

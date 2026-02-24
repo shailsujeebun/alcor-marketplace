@@ -1,4 +1,8 @@
-import { HttpException, HttpStatus, UnauthorizedException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UploadService } from './upload.service';
 
 describe('UploadService security controls', () => {
@@ -52,11 +56,7 @@ describe('UploadService security controls', () => {
     });
 
     expect(() =>
-      service.resolveUploadActor(
-        undefined,
-        'guest-token',
-        '198.51.100.20',
-      ),
+      service.resolveUploadActor(undefined, 'guest-token', '198.51.100.20'),
     ).toThrow(UnauthorizedException);
   });
 

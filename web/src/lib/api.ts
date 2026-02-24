@@ -118,15 +118,88 @@ async function fetchApi<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
+function normalizeListingAttributes(rawListing: any) {
+  const existing = Array.isArray(rawListing?.attributes) ? rawListing.attributes : [];
+  if (existing.length > 0) {
+    return existing.map((item: any, index: number) => ({
+      id: String(item?.id ?? `${rawListing?.id ?? 'listing'}:${index}`),
+      key: String(item?.key ?? ''),
+      value: String(item?.value ?? ''),
+    }));
+  }
+
+  const data = rawListing?.attribute?.data;
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return [];
+  }
+
+  return Object.entries(data)
+    .filter(([key, value]) => key && value !== undefined && value !== null && value !== '')
+    .map(([key, value], index) => ({
+      id: `${String(rawListing?.id ?? 'listing')}:${index}:${key}`,
+      key: String(key),
+      value: String(value),
+    }));
+}
+
+function normalizeMediaUrl(input: unknown): string {
+  const raw = typeof input === 'string' ? input.trim() : '';
+  if (!raw) return '';
+
+  if (raw.includes('/upload/files/')) {
+    return raw;
+  }
+
+  try {
+    const parsed = new URL(raw);
+    const match = parsed.pathname.match(
+      /^\/[^/]+\/(images|listings|companies)\/([A-Za-z0-9._-]+)$/,
+    );
+    if (match) {
+      const folder = match[1];
+      const filename = match[2];
+      return `${API_BASE}/upload/files/${folder}/${filename}`;
+    }
+  } catch {
+    return raw;
+  }
+
+  return raw;
+}
+
+function normalizeListingMedia(rawListing: any) {
+  const media = Array.isArray(rawListing?.media) ? rawListing.media : [];
+  return media.map((item: any, index: number) => ({
+    ...item,
+    id: String(item?.id ?? `${rawListing?.id ?? 'listing-media'}:${index}`),
+    url: normalizeMediaUrl(item?.url),
+  }));
+}
+
+function normalizeListing(rawListing: any) {
+  if (!rawListing || typeof rawListing !== 'object') return rawListing;
+  return {
+    ...rawListing,
+    media: normalizeListingMedia(rawListing),
+    attributes: normalizeListingAttributes(rawListing),
+  };
+}
+
 // Listings
 export const getListings = (params?: URLSearchParams) =>
-  fetchApi<PaginatedResponse<Listing>>(`/listings?${params?.toString() ?? ''}`);
+  fetchApi<PaginatedResponse<Listing>>(`/listings?${params?.toString() ?? ''}`).then((payload: any) => ({
+    ...payload,
+    data: Array.isArray(payload?.data) ? payload.data.map((item: any) => normalizeListing(item)) : [],
+  }));
 
 export const getListingById = (id: string) =>
-  fetchApi<Listing>(`/listings/${id}`);
+  fetchApi<Listing>(`/listings/${id}`).then((payload: any) => normalizeListing(payload));
 
 export const getCompanyListings = (companyId: string, params?: URLSearchParams) =>
-  fetchApi<PaginatedResponse<Listing>>(`/companies/${companyId}/listings?${params?.toString() ?? ''}`);
+  fetchApi<PaginatedResponse<Listing>>(`/companies/${companyId}/listings?${params?.toString() ?? ''}`).then((payload: any) => ({
+    ...payload,
+    data: Array.isArray(payload?.data) ? payload.data.map((item: any) => normalizeListing(item)) : [],
+  }));
 
 // Companies
 export const getCompanies = (params?: URLSearchParams) =>
@@ -196,13 +269,13 @@ export const createListing = (data: CreateListingPayload) =>
   fetchApi<Listing>('/listings', {
     method: 'POST',
     body: JSON.stringify(data),
-  });
+  }).then((payload: any) => normalizeListing(payload));
 
 export const updateListing = (id: string, data: UpdateListingPayload) =>
   fetchApi<Listing>(`/listings/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
-  });
+  }).then((payload: any) => normalizeListing(payload));
 
 // File Upload
 export async function uploadImages(files: File[]): Promise<{ urls: string[] }> {
@@ -474,6 +547,7 @@ export interface FormTemplate {
   blocks?: TemplateBlockSchema[];
   category?: { id: string; slug: string; hasEngine?: boolean };
   fields: FormField[];
+  resolvedFields?: FormField[];
 }
 
 export type FormField = TemplateFieldSchema;

@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { mergeTemplateFieldsWithBlocks, getBuiltInEngineBlock } from '../templates/template-schema';
+import {
+  mergeTemplateFieldsWithBlocks,
+  getBuiltInEngineBlock,
+} from '../templates/template-schema';
 
 export interface CategoryTreeNode {
   id: string;
@@ -155,7 +158,11 @@ export class CategoriesService {
     return this.mapTemplate(best, best.category, category);
   }
 
-  private async mapTemplate(template: any, category: any, requestedCategory?: any) {
+  private async mapTemplate(
+    template: any,
+    category: any,
+    requestedCategory?: any,
+  ) {
     const runtimeCategory = requestedCategory ?? category;
     const blockIds = this.parseBlockIds(template.blockIds);
 
@@ -179,7 +186,8 @@ export class CategoriesService {
 
     // If engine_block is needed but not yet in DB, use the built-in definition.
     const extraBlocks: any[] =
-      effectiveBlockIds.includes('engine_block') && !dbBlockIdSet.has('engine_block')
+      effectiveBlockIds.includes('engine_block') &&
+      !dbBlockIdSet.has('engine_block')
         ? [getBuiltInEngineBlock()]
         : [];
 
@@ -193,7 +201,10 @@ export class CategoriesService {
       ...extraBlocks,
     ];
 
-    const mergedFields = mergeTemplateFieldsWithBlocks(template.fields ?? [], blocks);
+    const mergedFields = mergeTemplateFieldsWithBlocks(
+      template.fields ?? [],
+      blocks,
+    );
 
     return {
       id: template.id.toString(),
@@ -329,7 +340,8 @@ export class CategoriesService {
 
     // Last fallback for motorized categories when no explicit/ancestor/sibling
     // template exists.
-    const motorizedTemplate = await this.findMotorizedFallbackTemplate(category);
+    const motorizedTemplate =
+      await this.findMotorizedFallbackTemplate(category);
     if (motorizedTemplate) {
       return motorizedTemplate;
     }

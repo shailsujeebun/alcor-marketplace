@@ -114,7 +114,11 @@ export class OptionsService {
     return { value: brand.id, label: brand.name };
   }
 
-  async createModel(name: string, brandId?: string, categoryId?: string): Promise<OptionItem> {
+  async createModel(
+    name: string,
+    brandId?: string,
+    categoryId?: string,
+  ): Promise<OptionItem> {
     const normalizedName = name.trim();
     if (!normalizedName) {
       throw new BadRequestException('Model name is required');
@@ -213,18 +217,17 @@ export class OptionsService {
           })
         : [];
 
-    const siblingTemplate = siblingTemplates
-      .slice()
-      .sort((a: any, b: any) => {
-        const aBlocks = Array.isArray(a.blockIds) ? a.blockIds : [];
-        const bBlocks = Array.isArray(b.blockIds) ? b.blockIds : [];
-        const aHasEngineBlock = aBlocks.includes('engine_block') ? 1 : 0;
-        const bHasEngineBlock = bBlocks.includes('engine_block') ? 1 : 0;
-        if (aHasEngineBlock !== bHasEngineBlock) return bHasEngineBlock - aHasEngineBlock;
-        return (b.fields?.length ?? 0) - (a.fields?.length ?? 0);
-      })[0];
+    const siblingTemplate = siblingTemplates.slice().sort((a: any, b: any) => {
+      const aBlocks = Array.isArray(a.blockIds) ? a.blockIds : [];
+      const bBlocks = Array.isArray(b.blockIds) ? b.blockIds : [];
+      const aHasEngineBlock = aBlocks.includes('engine_block') ? 1 : 0;
+      const bHasEngineBlock = bBlocks.includes('engine_block') ? 1 : 0;
+      if (aHasEngineBlock !== bHasEngineBlock)
+        return bHasEngineBlock - aHasEngineBlock;
+      return (b.fields?.length ?? 0) - (a.fields?.length ?? 0);
+    })[0];
 
-    let baseSlug = this.slugify(normalizedName);
+    const baseSlug = this.slugify(normalizedName);
     let slug = baseSlug;
     let attempt = 1;
     while (

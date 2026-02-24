@@ -137,7 +137,10 @@ export class AdminService {
     const localFields = (template.fields ?? []).map((field: any) =>
       mapFieldToResponse(field),
     );
-    const mergedFields = mergeTemplateFieldsWithBlocks(template.fields ?? [], blocks);
+    const mergedFields = mergeTemplateFieldsWithBlocks(
+      template.fields ?? [],
+      blocks,
+    );
 
     return {
       id: template.id.toString(),
@@ -426,7 +429,10 @@ export class AdminService {
     });
   }
 
-  async updateTemplate(id: number, data: { fields: any[]; blockIds?: string[] }) {
+  async updateTemplate(
+    id: number,
+    data: { fields: any[]; blockIds?: string[] },
+  ) {
     const templateId = BigInt(id);
 
     return this.prisma.$transaction(async (tx) => {

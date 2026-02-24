@@ -15,7 +15,7 @@ import {
   getChildDependencyMap,
 } from '@/lib/dependencyEngine';
 import type { FieldOption } from '@/lib/schemaTypes';
-import { MapPin } from 'lucide-react';
+import { ChevronDown, MapPin } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -112,6 +112,7 @@ export function DynamicForm({ categoryId, template, values, onChange }: DynamicF
   const [customInputMap, setCustomInputMap] = useState<Record<string, string>>({});
   const [customOpenMap, setCustomOpenMap] = useState<Record<string, boolean>>({});
   const [customSubmitting, setCustomSubmitting] = useState<Record<string, boolean>>({});
+  const [openSection, setOpenSection] = useState<string | null>(null);
 
   useEffect(() => {
     setFormValues(values);
@@ -228,7 +229,6 @@ export function DynamicForm({ categoryId, template, values, onChange }: DynamicF
       for (const field of visibleFields) {
         if (normalizeComponent(field) !== 'select') continue;
         if (canceled) return;
-        // eslint-disable-next-line no-await-in-loop
         await fetchFieldOptions(field, formValues);
       }
     }
@@ -237,7 +237,6 @@ export function DynamicForm({ categoryId, template, values, onChange }: DynamicF
     return () => {
       canceled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visibleFields, formValues]);
 
   const handleFieldChange = (key: string, value: string) => {
@@ -272,6 +271,15 @@ export function DynamicForm({ categoryId, template, values, onChange }: DynamicF
 
     return Array.from(grouped.entries());
   }, [visibleFields]);
+
+  useEffect(() => {
+    if (!sectionEntries.length) {
+      setOpenSection(null);
+      return;
+    }
+    const keys = sectionEntries.map(([name]) => name);
+    setOpenSection((prev) => (prev && keys.includes(prev) ? prev : keys[0]));
+  }, [sectionEntries]);
 
   if (!fields.length) {
     return (
@@ -518,41 +526,63 @@ export function DynamicForm({ categoryId, template, values, onChange }: DynamicF
       {sectionEntries.map(([sectionName, sectionFields]) => (
         <section
           key={sectionName}
-          className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)]/15 p-4 sm:p-5"
+          className={`rounded-xl border bg-[var(--bg-secondary)]/15 overflow-hidden transition-colors ${
+            openSection === sectionName
+              ? 'border-blue-bright/40'
+              : 'border-[var(--border-color)] hover:border-blue-bright/30'
+          }`}
         >
-          {sectionEntries.length > 1 && (
-            <div className="mb-4 flex items-center justify-between border-b border-[var(--border-color)] pb-3">
-              <h3 className="text-base font-semibold text-[var(--text-primary)]">{sectionName}</h3>
-              <span className="text-xs text-[var(--text-secondary)]">{sectionFields.length} fields</span>
+          <button
+            type="button"
+            onClick={() =>
+              setOpenSection((current) => (current === sectionName ? null : sectionName))
+            }
+            className="w-full px-5 py-4 flex items-center justify-between bg-white/5 hover:bg-white/10 transition-colors"
+          >
+            <span className="text-center w-full text-sm sm:text-base font-semibold text-[var(--text-primary)]">
+              {sectionName}
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 text-[var(--text-secondary)] shrink-0 transition-transform ${
+                openSection === sectionName ? 'rotate-180' : 'rotate-0'
+              }`}
+            />
+          </button>
+
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-out ${
+              openSection === sectionName ? 'max-h-[3200px] opacity-100' : 'max-h-0 opacity-0'
+            }`}
+          >
+            <div className="p-4 sm:p-5 border-t border-[var(--border-color)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                {sectionFields.map((field) => {
+                  const hint = formatFieldHint((field.validationRules ?? {}) as FieldValidation);
+                  const required = Boolean(
+                    field.required ||
+                      field.isRequired ||
+                      evaluateRuleTree(field.requiredIf, formValues, context),
+                  );
+                  return (
+                    <div key={field.key} className={`space-y-2 ${getFieldSpanClass(normalizeComponent(field))}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="text-sm font-medium text-[var(--text-primary)]">
+                          {field.label}
+                          {required && <span className="text-red-400 ml-1">*</span>}
+                        </label>
+                        <span className="text-[11px] uppercase tracking-wide text-[var(--text-secondary)]">
+                          {normalizeComponent(field)}
+                        </span>
+                      </div>
+
+                      {renderFieldControl(field)}
+
+                      {hint && <p className="text-xs text-[var(--text-secondary)]">{hint}</p>}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-            {sectionFields.map((field) => {
-              const hint = formatFieldHint((field.validationRules ?? {}) as FieldValidation);
-              const required = Boolean(
-                field.required ||
-                  field.isRequired ||
-                  evaluateRuleTree(field.requiredIf, formValues, context),
-              );
-              return (
-                <div key={field.key} className={`space-y-2 ${getFieldSpanClass(normalizeComponent(field))}`}>
-                  <div className="flex items-center justify-between gap-2">
-                    <label className="text-sm font-medium text-[var(--text-primary)]">
-                      {field.label}
-                      {required && <span className="text-red-400 ml-1">*</span>}
-                    </label>
-                    <span className="text-[11px] uppercase tracking-wide text-[var(--text-secondary)]">
-                      {normalizeComponent(field)}
-                    </span>
-                  </div>
-
-                  {renderFieldControl(field)}
-
-                  {hint && <p className="text-xs text-[var(--text-secondary)]">{hint}</p>}
-                </div>
-              );
-            })}
           </div>
         </section>
       ))}

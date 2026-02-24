@@ -24,7 +24,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Plus, Save, Trash } from 'lucide-react';
+import { ChevronDown, Plus, Save, Trash } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { TemplateBlockSchema } from '@/lib/schemaTypes';
 
@@ -48,6 +48,9 @@ export default function AdminTemplatesPage() {
     const [newBlockName, setNewBlockName] = useState('');
 
     const [isLoading, setIsLoading] = useState(false);
+    const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+    const [collapsedFields, setCollapsedFields] = useState<Record<number, boolean>>({});
+    const [collapsedAdvancedFields, setCollapsedAdvancedFields] = useState<Record<number, boolean>>({});
 
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -71,10 +74,18 @@ export default function AdminTemplatesPage() {
         setFields([]);
         setSections([DEFAULT_SECTION]);
         setSelectedBlockIds([]);
+        setCollapsedSections({});
+        setCollapsedFields({});
+        setCollapsedAdvancedFields({});
     };
 
     const applyTemplateToEditor = (template: FormTemplate) => {
-        const loadedFields: Partial<FormField>[] = (template.fields ?? []).map((field) => ({
+        const sourceFields =
+            template.fields && template.fields.length > 0
+                ? template.fields
+                : (template.resolvedFields ?? []);
+
+        const loadedFields: Partial<FormField>[] = sourceFields.map((field) => ({
             id: field.id,
             key: field.key,
             label: field.label,
@@ -103,8 +114,27 @@ export default function AdminTemplatesPage() {
         setTemplateName(`Template v${template.version}`);
         setSelectedCategory(template.categoryId.toString());
         setFields(loadedFields);
-        setSections(getSectionsFromFields(loadedFields));
+        const nextSections = getSectionsFromFields(loadedFields);
+        setSections(nextSections);
         setSelectedBlockIds(template.blockIds ?? []);
+        setCollapsedSections(
+            nextSections.reduce<Record<string, boolean>>((acc, section, index) => {
+                acc[section] = index > 0;
+                return acc;
+            }, {}),
+        );
+        setCollapsedFields(
+            loadedFields.reduce<Record<number, boolean>>((acc, _field, index) => {
+                acc[index] = false;
+                return acc;
+            }, {}),
+        );
+        setCollapsedAdvancedFields(
+            loadedFields.reduce<Record<number, boolean>>((acc, _field, index) => {
+                acc[index] = true;
+                return acc;
+            }, {}),
+        );
     };
 
     const findPath = (nodes: CategoryNode[], targetId: string): string[] | null => {
@@ -229,6 +259,7 @@ export default function AdminTemplatesPage() {
         const name = prompt('Enter section name (e.g., Engine Options, Dimensions):');
         if (name && !sections.includes(name)) {
             setSections([...sections, name]);
+            setCollapsedSections((prev) => ({ ...prev, [name]: false }));
         }
     }
 
@@ -236,10 +267,18 @@ export default function AdminTemplatesPage() {
         if (confirm(`Delete section "${sectionName}" and all its fields?`)) {
             setSections(sections.filter((section) => section !== sectionName));
             setFields(fields.filter((field) => field.section !== sectionName));
+            setCollapsedSections((prev) => {
+                const next = { ...prev };
+                delete next[sectionName];
+                return next;
+            });
         }
     }
 
     function addField(section: string) {
+        const nextIndex = fields.length;
+        setCollapsedFields((prev) => ({ ...prev, [nextIndex]: false }));
+        setCollapsedAdvancedFields((prev) => ({ ...prev, [nextIndex]: true }));
         setFields([
             ...fields,
             {
@@ -269,6 +308,45 @@ export default function AdminTemplatesPage() {
 
     function removeField(index: number) {
         setFields(fields.filter((_, fieldIndex) => fieldIndex !== index));
+        setCollapsedFields((prev) => {
+            const next: Record<number, boolean> = {};
+            Object.entries(prev).forEach(([rawKey, value]) => {
+                const key = Number(rawKey);
+                if (key < index) next[key] = value;
+                if (key > index) next[key - 1] = value;
+            });
+            return next;
+        });
+        setCollapsedAdvancedFields((prev) => {
+            const next: Record<number, boolean> = {};
+            Object.entries(prev).forEach(([rawKey, value]) => {
+                const key = Number(rawKey);
+                if (key < index) next[key] = value;
+                if (key > index) next[key - 1] = value;
+            });
+            return next;
+        });
+    }
+
+    function toggleSection(section: string) {
+        setCollapsedSections((prev) => ({
+            ...prev,
+            [section]: !prev[section],
+        }));
+    }
+
+    function toggleField(index: number) {
+        setCollapsedFields((prev) => ({
+            ...prev,
+            [index]: !prev[index],
+        }));
+    }
+
+    function toggleAdvancedField(index: number) {
+        setCollapsedAdvancedFields((prev) => ({
+            ...prev,
+            [index]: !prev[index],
+        }));
     }
 
     function addOption(fieldIndex: number) {
@@ -598,10 +676,26 @@ export default function AdminTemplatesPage() {
                         </div>
                     )}
 
-                    {sections.map((section) => (
+                    {sections.map((section) => {
+                        const sectionFields = fields.filter((field) => field.section === section);
+                        const isSectionCollapsed = Boolean(collapsedSections[section]);
+
+                        return (
                         <div key={section} className="glass-card rounded-xl border border-white/10 overflow-hidden">
                             <div className="bg-white/5 p-4 flex justify-between items-center border-b border-white/10">
-                                <h3 className="font-bold text-white">{section}</h3>
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSection(section)}
+                                    className="flex items-center gap-2 text-left text-white font-bold"
+                                >
+                                    <ChevronDown
+                                        className={`h-4 w-4 transition-transform ${isSectionCollapsed ? '-rotate-90' : 'rotate-0'}`}
+                                    />
+                                    <span>{section}</span>
+                                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-muted-foreground">
+                                        {sectionFields.length}
+                                    </span>
+                                </button>
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -612,18 +706,56 @@ export default function AdminTemplatesPage() {
                                 </Button>
                             </div>
 
-                            <div className="p-4 space-y-4 bg-black/20">
+                            <div
+                                className={`p-4 space-y-4 bg-black/20 overflow-hidden transition-all duration-300 ease-out ${
+                                    isSectionCollapsed ? 'max-h-0 opacity-0 py-0' : 'max-h-[5000px] opacity-100'
+                                }`}
+                            >
                                 {fields
                                     .map((field, index) => ({ ...field, originalIndex: index }))
                                     .filter((field) => field.section === section)
                                     .map((field) => {
                                         const index = field.originalIndex;
+                                        const isFieldCollapsed = Boolean(collapsedFields[index]);
+                                        const isAdvancedCollapsed = Boolean(collapsedAdvancedFields[index]);
                                         return (
                                             <div
                                                 key={index}
-                                                className="group relative bg-card/80 hover:bg-card border border-white/5 hover:border-blue-500/50 rounded-xl p-6 transition-all duration-200"
+                                                className="group relative bg-card/80 hover:bg-card border border-white/5 hover:border-blue-500/50 rounded-xl p-4 transition-all duration-200"
                                             >
-                                                <div className="pl-2 space-y-6">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleField(index)}
+                                                        className="flex items-center gap-2 text-left min-w-0"
+                                                    >
+                                                        <ChevronDown
+                                                            className={`h-4 w-4 transition-transform ${isFieldCollapsed ? '-rotate-90' : 'rotate-0'}`}
+                                                        />
+                                                        <span className="truncate text-sm font-semibold text-white">
+                                                            {field.label || 'Untitled field'}
+                                                        </span>
+                                                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase text-muted-foreground">
+                                                            {field.type || 'TEXT'}
+                                                        </span>
+                                                    </button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-muted-foreground hover:text-red-400 hover:bg-red-950/20"
+                                                        onClick={() => removeField(index)}
+                                                    >
+                                                        <Trash className="w-4 h-4 mr-2" />
+                                                        Remove
+                                                    </Button>
+                                                </div>
+
+                                                <div
+                                                    className={`pl-2 mt-4 overflow-hidden border-t border-white/5 transition-all duration-300 ease-out ${
+                                                        isFieldCollapsed ? 'max-h-0 opacity-0 pt-0' : 'max-h-[4200px] opacity-100 pt-4'
+                                                    }`}
+                                                >
+                                                    <div className="space-y-6">
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div className="space-y-2">
                                                             <Label className="text-xs uppercase text-muted-foreground">Field Label</Label>
@@ -714,147 +846,171 @@ export default function AdminTemplatesPage() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <div className="space-y-2">
-                                                            <Label className="text-xs uppercase text-muted-foreground">Depends On</Label>
-                                                            <div className="rounded-lg border border-white/10 p-2 max-h-28 overflow-y-auto">
-                                                                {fields
-                                                                    .map((candidate, candidateIndex) => ({
-                                                                        key: candidate.key,
-                                                                        label: candidate.label,
-                                                                        candidateIndex,
-                                                                    }))
-                                                                    .filter((candidate) => candidate.candidateIndex !== index && candidate.key)
-                                                                    .map((candidate) => {
-                                                                        const dependsOn = (field.dependsOn as string[]) || [];
-                                                                        const checked = dependsOn.includes(candidate.key as string);
-                                                                        return (
-                                                                            <label
-                                                                                key={`${index}-${candidate.key}`}
-                                                                                className="flex items-center gap-2 text-xs text-white/90 py-0.5"
-                                                                            >
-                                                                                <input
-                                                                                    type="checkbox"
-                                                                                    checked={checked}
-                                                                                    onChange={(event) => {
-                                                                                        const next = new Set(dependsOn);
-                                                                                        if (event.target.checked) next.add(candidate.key as string);
-                                                                                        else next.delete(candidate.key as string);
-                                                                                        updateField(index, { dependsOn: Array.from(next) });
-                                                                                    }}
-                                                                                />
-                                                                                <span>{candidate.label || candidate.key}</span>
-                                                                            </label>
-                                                                        );
-                                                                    })}
-                                                            </div>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label className="text-xs uppercase text-muted-foreground">Reset On Change</Label>
-                                                            <div className="rounded-lg border border-white/10 p-2 max-h-28 overflow-y-auto">
-                                                                {fields
-                                                                    .map((candidate, candidateIndex) => ({
-                                                                        key: candidate.key,
-                                                                        label: candidate.label,
-                                                                        candidateIndex,
-                                                                    }))
-                                                                    .filter((candidate) => candidate.candidateIndex !== index && candidate.key)
-                                                                    .map((candidate) => {
-                                                                        const resetOnChange = (field.resetOnChange as string[]) || [];
-                                                                        const checked = resetOnChange.includes(candidate.key as string);
-                                                                        return (
-                                                                            <label
-                                                                                key={`reset-${index}-${candidate.key}`}
-                                                                                className="flex items-center gap-2 text-xs text-white/90 py-0.5"
-                                                                            >
-                                                                                <input
-                                                                                    type="checkbox"
-                                                                                    checked={checked}
-                                                                                    onChange={(event) => {
-                                                                                        const next = new Set(resetOnChange);
-                                                                                        if (event.target.checked) next.add(candidate.key as string);
-                                                                                        else next.delete(candidate.key as string);
-                                                                                        updateField(index, { resetOnChange: Array.from(next) });
-                                                                                    }}
-                                                                                />
-                                                                                <span>{candidate.label || candidate.key}</span>
-                                                                            </label>
-                                                                        );
-                                                                    })}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {(field.dataSource === 'api' || field.dataSource === 'db') ? (
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div className="space-y-2">
-                                                                <Label className="text-xs uppercase text-muted-foreground">Options Endpoint (API)</Label>
-                                                                <Input
-                                                                    value={(field.optionsEndpoint as string) || ''}
-                                                                    onChange={(event) => updateField(index, { optionsEndpoint: event.target.value })}
-                                                                    placeholder="/options/models"
-                                                                    className="bg-black/20 border-white/10"
-                                                                />
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <Label className="text-xs uppercase text-muted-foreground">Options Query (JSON)</Label>
-                                                                <Input
-                                                                    value={field.optionsQuery ? JSON.stringify(field.optionsQuery) : ''}
-                                                                    onChange={(event) => {
-                                                                        try {
-                                                                            const value = event.target.value.trim();
-                                                                            updateField(index, {
-                                                                                optionsQuery: value ? JSON.parse(value) : undefined,
-                                                                            });
-                                                                        } catch {
-                                                                            // keep current value if json is invalid during typing
-                                                                        }
-                                                                    }}
-                                                                    placeholder='{"type":"modelsByBrand"}'
-                                                                    className="bg-black/20 border-white/10"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    ) : null}
-
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <div className="space-y-2">
-                                                            <Label className="text-xs uppercase text-muted-foreground">VisibleIf (JSON RuleTree)</Label>
-                                                            <textarea
-                                                                value={field.visibleIf ? JSON.stringify(field.visibleIf) : ''}
-                                                                onChange={(event) => {
-                                                                    try {
-                                                                        const value = event.target.value.trim();
-                                                                        updateField(index, {
-                                                                            visibleIf: value ? JSON.parse(value) : undefined,
-                                                                        });
-                                                                    } catch {
-                                                                        // noop for invalid json while typing
-                                                                    }
-                                                                }}
-                                                                rows={3}
-                                                                className="w-full rounded-md bg-black/20 border border-white/10 p-2 text-xs"
-                                                                placeholder='{} = always visible'
+                                                    <div className="rounded-lg border border-white/10 bg-black/20">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleAdvancedField(index)}
+                                                            className="w-full flex items-center justify-between px-3 py-2 text-left"
+                                                        >
+                                                            <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                                Advanced Settings
+                                                            </span>
+                                                            <ChevronDown
+                                                                className={`h-4 w-4 text-muted-foreground transition-transform ${
+                                                                    isAdvancedCollapsed ? '-rotate-90' : 'rotate-0'
+                                                                }`}
                                                             />
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label className="text-xs uppercase text-muted-foreground">RequiredIf (JSON RuleTree)</Label>
-                                                            <textarea
-                                                                value={field.requiredIf ? JSON.stringify(field.requiredIf) : ''}
-                                                                onChange={(event) => {
-                                                                    try {
-                                                                        const value = event.target.value.trim();
-                                                                        updateField(index, {
-                                                                            requiredIf: value ? JSON.parse(value) : undefined,
-                                                                        });
-                                                                    } catch {
-                                                                        // noop for invalid json while typing
-                                                                    }
-                                                                }}
-                                                                rows={3}
-                                                                className="w-full rounded-md bg-black/20 border border-white/10 p-2 text-xs"
-                                                                placeholder='{} = not conditionally required'
-                                                            />
+                                                        </button>
+                                                        <div
+                                                            className={`overflow-hidden transition-all duration-300 ease-out ${
+                                                                isAdvancedCollapsed ? 'max-h-0 opacity-0' : 'max-h-[2200px] opacity-100'
+                                                            }`}
+                                                        >
+                                                            <div className="space-y-4 px-3 pb-3 border-t border-white/10 pt-3">
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                    <div className="space-y-2">
+                                                                        <Label className="text-xs uppercase text-muted-foreground">Depends On</Label>
+                                                                        <div className="rounded-lg border border-white/10 p-2 max-h-28 overflow-y-auto">
+                                                                            {fields
+                                                                                .map((candidate, candidateIndex) => ({
+                                                                                    key: candidate.key,
+                                                                                    label: candidate.label,
+                                                                                    candidateIndex,
+                                                                                }))
+                                                                                .filter((candidate) => candidate.candidateIndex !== index && candidate.key)
+                                                                                .map((candidate) => {
+                                                                                    const dependsOn = (field.dependsOn as string[]) || [];
+                                                                                    const checked = dependsOn.includes(candidate.key as string);
+                                                                                    return (
+                                                                                        <label
+                                                                                            key={`${index}-${candidate.key}`}
+                                                                                            className="flex items-center gap-2 text-xs text-white/90 py-0.5"
+                                                                                        >
+                                                                                            <input
+                                                                                                type="checkbox"
+                                                                                                checked={checked}
+                                                                                                onChange={(event) => {
+                                                                                                    const next = new Set(dependsOn);
+                                                                                                    if (event.target.checked) next.add(candidate.key as string);
+                                                                                                    else next.delete(candidate.key as string);
+                                                                                                    updateField(index, { dependsOn: Array.from(next) });
+                                                                                                }}
+                                                                                            />
+                                                                                            <span>{candidate.label || candidate.key}</span>
+                                                                                        </label>
+                                                                                    );
+                                                                                })}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="space-y-2">
+                                                                        <Label className="text-xs uppercase text-muted-foreground">Reset On Change</Label>
+                                                                        <div className="rounded-lg border border-white/10 p-2 max-h-28 overflow-y-auto">
+                                                                            {fields
+                                                                                .map((candidate, candidateIndex) => ({
+                                                                                    key: candidate.key,
+                                                                                    label: candidate.label,
+                                                                                    candidateIndex,
+                                                                                }))
+                                                                                .filter((candidate) => candidate.candidateIndex !== index && candidate.key)
+                                                                                .map((candidate) => {
+                                                                                    const resetOnChange = (field.resetOnChange as string[]) || [];
+                                                                                    const checked = resetOnChange.includes(candidate.key as string);
+                                                                                    return (
+                                                                                        <label
+                                                                                            key={`reset-${index}-${candidate.key}`}
+                                                                                            className="flex items-center gap-2 text-xs text-white/90 py-0.5"
+                                                                                        >
+                                                                                            <input
+                                                                                                type="checkbox"
+                                                                                                checked={checked}
+                                                                                                onChange={(event) => {
+                                                                                                    const next = new Set(resetOnChange);
+                                                                                                    if (event.target.checked) next.add(candidate.key as string);
+                                                                                                    else next.delete(candidate.key as string);
+                                                                                                    updateField(index, { resetOnChange: Array.from(next) });
+                                                                                                }}
+                                                                                            />
+                                                                                            <span>{candidate.label || candidate.key}</span>
+                                                                                        </label>
+                                                                                    );
+                                                                                })}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {(field.dataSource === 'api' || field.dataSource === 'db') ? (
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                        <div className="space-y-2">
+                                                                            <Label className="text-xs uppercase text-muted-foreground">Options Endpoint (API)</Label>
+                                                                            <Input
+                                                                                value={(field.optionsEndpoint as string) || ''}
+                                                                                onChange={(event) => updateField(index, { optionsEndpoint: event.target.value })}
+                                                                                placeholder="/options/models"
+                                                                                className="bg-black/20 border-white/10"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label className="text-xs uppercase text-muted-foreground">Options Query (JSON)</Label>
+                                                                            <Input
+                                                                                value={field.optionsQuery ? JSON.stringify(field.optionsQuery) : ''}
+                                                                                onChange={(event) => {
+                                                                                    try {
+                                                                                        const value = event.target.value.trim();
+                                                                                        updateField(index, {
+                                                                                            optionsQuery: value ? JSON.parse(value) : undefined,
+                                                                                        });
+                                                                                    } catch {
+                                                                                        // keep current value if json is invalid during typing
+                                                                                    }
+                                                                                }}
+                                                                                placeholder='{"type":"modelsByBrand"}'
+                                                                                className="bg-black/20 border-white/10"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                ) : null}
+
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                    <div className="space-y-2">
+                                                                        <Label className="text-xs uppercase text-muted-foreground">VisibleIf (JSON RuleTree)</Label>
+                                                                        <textarea
+                                                                            value={field.visibleIf ? JSON.stringify(field.visibleIf) : ''}
+                                                                            onChange={(event) => {
+                                                                                try {
+                                                                                    const value = event.target.value.trim();
+                                                                                    updateField(index, {
+                                                                                        visibleIf: value ? JSON.parse(value) : undefined,
+                                                                                    });
+                                                                                } catch {
+                                                                                    // noop for invalid json while typing
+                                                                                }
+                                                                            }}
+                                                                            rows={3}
+                                                                            className="w-full rounded-md bg-black/20 border border-white/10 p-2 text-xs"
+                                                                            placeholder='{} = always visible'
+                                                                        />
+                                                                    </div>
+                                                                    <div className="space-y-2">
+                                                                        <Label className="text-xs uppercase text-muted-foreground">RequiredIf (JSON RuleTree)</Label>
+                                                                        <textarea
+                                                                            value={field.requiredIf ? JSON.stringify(field.requiredIf) : ''}
+                                                                            onChange={(event) => {
+                                                                                try {
+                                                                                    const value = event.target.value.trim();
+                                                                                    updateField(index, {
+                                                                                        requiredIf: value ? JSON.parse(value) : undefined,
+                                                                                    });
+                                                                                } catch {
+                                                                                    // noop for invalid json while typing
+                                                                                }
+                                                                            }}
+                                                                            rows={3}
+                                                                            className="w-full rounded-md bg-black/20 border border-white/10 p-2 text-xs"
+                                                                            placeholder='{} = not conditionally required'
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
 
@@ -921,7 +1077,7 @@ export default function AdminTemplatesPage() {
                                                         </div>
                                                     )}
 
-                                                    <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                                                    <div className="flex items-center pt-2 border-t border-white/5">
                                                         <label className="flex items-center gap-2 text-sm cursor-pointer select-none text-muted-foreground hover:text-white transition-colors">
                                                             <input
                                                                 type="checkbox"
@@ -931,16 +1087,7 @@ export default function AdminTemplatesPage() {
                                                             />
                                                             Required Field
                                                         </label>
-
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="text-muted-foreground hover:text-red-400 hover:bg-red-950/20"
-                                                            onClick={() => removeField(index)}
-                                                        >
-                                                            <Trash className="w-4 h-4 mr-2" />
-                                                            Remove Field
-                                                        </Button>
+                                                    </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -957,7 +1104,8 @@ export default function AdminTemplatesPage() {
                                 </Button>
                             </div>
                         </div>
-                    ))}
+                    );
+                    })}
 
                     <div className="flex justify-center pt-8">
                         <div className="text-center">

@@ -153,7 +153,32 @@ The API is failing to start due to two critical issues identified from the termi
 
 ## Update - 2026-02-17 (Fix_download)
 - Implemented Autoline-style template/runtime upgrades: configurable `dataSource`, `dependsOn`, `visibleIf`, `requiredIf`, `resetOnChange`, and template block attachments.
+- Added full Autoline motorized template inventory (41 fields) as the shared system block for all motorized categories (cars, trucks, tractors, harvesters, excavators, loaders), synced seed and runtime schema, and updated checkbox-group API validation compatibility.
 - Added reusable `engine_block`, category-level `hasEngine`, and inheritance/fallback rules so new subcategories keep full details instead of losing engine-related fields.
 - Added persistent "create new option" flows and APIs for `brand`, `model`, `subcategory`, `country`, and `city`, so new values are saved once and reused by all users.
 - Added options/cascade runtime behavior: parent-change child reset, dependency-based option loading, and dependency-state caching.
 - Completed validation checks and build/test verification; local infrastructure (Postgres/Redis/MinIO) confirmed working for this flow.
+
+## 5. Update - 2026-02-23 (Listing UI + Attributes + Media Reliability)
+
+- Restored and stabilized Category Autoline listing details rendering so submitted dynamic form values are visible in the ad view.
+- Upgraded listing details page structure to a professional marketplace layout:
+  - 3-column hero area (summary/price, gallery, seller contacts)
+  - sectioned details cards
+  - accordion-based characteristics that mirror form sections
+  - improved motion/visual polish (animated expansion, staged reveal, hover states).
+- Fixed value-label mapping for template options so displayed characteristics match selected dropdown labels.
+- Improved summary behavior:
+  - shows meaningful listing data and top filled characteristics
+  - no placeholder-only rows where avoidable.
+- Fixed pricing display fallback behavior:
+  - `ON_REQUEST` and missing amount now consistently render as request-based pricing text instead of generic placeholders.
+- Cleaned details output by suppressing placeholder descriptions (`-`, `—`, `n/a`, `none`, `null`).
+- Hardened media pipeline end-to-end:
+  - added API-backed media serving route `GET /upload/files/:folder/:filename`
+  - upload endpoint now returns stable API URLs
+  - frontend normalizes legacy MinIO URLs to API file URLs
+  - added client-side upload validation (allowed mime types and 10MB/file limit).
+- Verification completed:
+  - `api`: `pnpm build` passing
+  - `web`: eslint passing for changed files (`listing-detail.tsx`, `price-display.tsx`, `media-uploader.tsx`, `lib/api.ts`).

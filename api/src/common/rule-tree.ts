@@ -61,7 +61,9 @@ function evaluateLeaf(
     case 'notIn':
       return Array.isArray(leaf.value) && !leaf.value.includes(actualValue);
     case 'exists':
-      return actualValue !== undefined && actualValue !== null && actualValue !== '';
+      return (
+        actualValue !== undefined && actualValue !== null && actualValue !== ''
+      );
     case 'gt':
       return Number(actualValue) > Number(leaf.value);
     case 'gte':
@@ -92,6 +94,5 @@ export function evaluateRuleTree(
     return !evaluateRuleTree(tree.not, state, context);
   }
 
-  return evaluateLeaf(tree as RuleLeaf, state, context);
+  return evaluateLeaf(tree, state, context);
 }
-

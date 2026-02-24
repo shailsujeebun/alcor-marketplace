@@ -342,7 +342,7 @@ model FieldOption {
 }
 
 model FormBlock {
-  id        String   @id @default(uuid())
+  id        String   @id
   name      String   @unique
   isSystem  Boolean  @default(false) @map("is_system")
   fields    Json     @default("[]")

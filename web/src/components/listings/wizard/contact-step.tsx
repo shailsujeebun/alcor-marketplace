@@ -118,8 +118,8 @@ export function ContactStep() {
             }));
 
             const attributesArray = Object.entries(form.dynamicAttributes)
-                .filter(([key, value]) => key && value)
-                .map(([key, value]) => ({ key, value }));
+                .filter(([key, value]) => key && value !== undefined && value !== null && String(value) !== '')
+                .map(([key, value]) => ({ key, value: String(value) }));
 
             if (form.categoryId) {
                 const validation = await validateListingDraft({

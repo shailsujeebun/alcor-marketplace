@@ -207,7 +207,11 @@ export class AuthController {
       maxAge,
     };
 
-    response.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, refreshCookieOptions);
+    response.cookie(
+      REFRESH_TOKEN_COOKIE_NAME,
+      refreshToken,
+      refreshCookieOptions,
+    );
     response.cookie(CSRF_TOKEN_COOKIE_NAME, randomUUID(), csrfCookieOptions);
   }
 

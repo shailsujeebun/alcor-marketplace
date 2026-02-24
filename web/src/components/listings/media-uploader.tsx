@@ -23,6 +23,8 @@ export function MediaUploader({ media, onChange, maxFiles = 10 }: MediaUploaderP
     const [uploading, setUploading] = useState(false);
     // Switch to server-side upload to avoid CORS/S3 configuration issues on client
     const { mutateAsync: uploadImages } = useUploadImages();
+    const allowedMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+    const maxFileBytes = 10 * 1024 * 1024;
 
     const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
@@ -30,10 +32,25 @@ export function MediaUploader({ media, onChange, maxFiles = 10 }: MediaUploaderP
 
         const remaining = maxFiles - media.length;
         const filesToUpload = files.slice(0, remaining);
+        const invalidType = filesToUpload.find((file) => !allowedMimeTypes.has(file.type));
+        if (invalidType) {
+            alert('Підтримуються лише JPG, PNG, WEBP, GIF.');
+            e.target.value = '';
+            return;
+        }
+        const oversized = filesToUpload.find((file) => file.size > maxFileBytes);
+        if (oversized) {
+            alert('Максимальний розмір одного файлу — 10MB.');
+            e.target.value = '';
+            return;
+        }
 
         setUploading(true);
         try {
             const { urls } = await uploadImages(filesToUpload);
+            if (!Array.isArray(urls) || urls.length === 0) {
+                throw new Error('Сервер не повернув URL завантажених зображень.');
+            }
 
             const newMediaItems: MediaItem[] = urls.map((url, index) => ({
                 url,
@@ -79,7 +96,7 @@ export function MediaUploader({ media, onChange, maxFiles = 10 }: MediaUploaderP
                     <label className="aspect-square rounded-lg border-2 border-dashed border-[var(--border-color)] hover:border-blue-bright cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 bg-[var(--bg-secondary)]/30">
                         <input
                             type="file"
-                            accept="image/*"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
                             multiple
                             onChange={handleFileSelect}
                             disabled={uploading}

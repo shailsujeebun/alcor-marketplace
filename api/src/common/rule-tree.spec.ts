@@ -51,4 +51,3 @@ describe('evaluateRuleTree', () => {
     ).toBe(true);
   });
 });
-

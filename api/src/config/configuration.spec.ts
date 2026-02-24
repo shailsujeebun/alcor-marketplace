@@ -34,7 +34,9 @@ describe('configuration security validation', () => {
     process.env.S3_ACCESS_KEY_ID = 'prod-access-key';
     process.env.S3_SECRET_ACCESS_KEY = STRONG_S3_SECRET;
 
-    expect(() => configuration()).toThrow('Missing required secret: JWT_SECRET');
+    expect(() => configuration()).toThrow(
+      'Missing required secret: JWT_SECRET',
+    );
   });
 
   it('fails in production when upload secret matches JWT secret', () => {

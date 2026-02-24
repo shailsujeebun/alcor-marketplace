@@ -61,7 +61,23 @@
 
 ## Update - 2026-02-17 (Fix_download)
 - Implemented Autoline-style template/runtime upgrades: configurable `dataSource`, `dependsOn`, `visibleIf`, `requiredIf`, `resetOnChange`, and template block attachments.
+- Added full Autoline motorized template inventory (41 fields) as the shared system block for all motorized categories (cars, trucks, tractors, harvesters, excavators, loaders), synced seed and runtime schema, and updated checkbox-group API validation compatibility.
 - Added reusable `engine_block`, category-level `hasEngine`, and inheritance/fallback rules so new subcategories keep full details instead of losing engine-related fields.
 - Added persistent "create new option" flows and APIs for `brand`, `model`, `subcategory`, `country`, and `city`, so new values are saved once and reused by all users.
 - Added options/cascade runtime behavior: parent-change child reset, dependency-based option loading, and dependency-state caching.
 - Completed validation checks and build/test verification; local infrastructure (Postgres/Redis/MinIO) confirmed working for this flow.
+
+## Update - 2026-02-23 (Listing Detail Delivery)
+- Listing detail now renders submitted dynamic attributes reliably (including section grouping + option label resolution).
+- Listing detail page redesigned into marketplace-style structure with animated accordion characteristics.
+- Price fallback logic updated to avoid placeholder dash output and align with request-price scenarios.
+- Description normalization added to suppress placeholder content values (`-`, `—`, `n/a`, `none`, `null`).
+- Upload reliability improvements delivered:
+  - API file proxy route for uploaded assets
+  - upload response now returns API-backed asset URLs
+  - frontend media URL normalization for existing listings
+  - stricter client-side image type/size validation before upload.
+
+## Test Status (Latest)
+- 2026-02-23: `api` build passing (`pnpm build`)
+- 2026-02-23: `web` eslint passing for changed listing/media files

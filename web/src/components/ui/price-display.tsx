@@ -14,6 +14,10 @@ export function PriceDisplay({ amount, currency, priceType, className }: PriceDi
     return <span className={`text-orange font-semibold ${className ?? ''}`}>Ціна за запитом</span>;
   }
 
+  if (amount == null) {
+    return <span className={`text-orange font-semibold ${className ?? ''}`}>Ціна за запитом</span>;
+  }
+
   return (
     <span className={`flex items-center gap-2 ${className ?? ''}`}>
       <span className="font-heading font-bold text-lg text-[var(--text-primary)]">

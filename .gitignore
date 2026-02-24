@@ -54,6 +54,9 @@
 !**/.vscode/launch.json
 !**/.vscode/extensions.json
 
+# Local Codex workspace artifacts
+.claude/
+
 # Vercel
 **/.vercel/
 

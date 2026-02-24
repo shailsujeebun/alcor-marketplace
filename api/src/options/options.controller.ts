@@ -25,7 +25,10 @@ export class OptionsController {
       depends?: Record<string, any>;
     },
   ) {
-    return this.optionsService.resolveDbOptions(body.optionsQuery, body.depends);
+    return this.optionsService.resolveDbOptions(
+      body.optionsQuery,
+      body.depends,
+    );
   }
 
   @Post('brands')

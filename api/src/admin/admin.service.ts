@@ -137,7 +137,10 @@ export class AdminService {
     const localFields = (template.fields ?? []).map((field: any) =>
       mapFieldToResponse(field),
     );
-    const mergedFields = mergeTemplateFieldsWithBlocks(template.fields ?? [], blocks);
+    const mergedFields = mergeTemplateFieldsWithBlocks(
+      template.fields ?? [],
+      blocks,
+    );
 
     return {
       id: template.id.toString(),
@@ -191,6 +194,85 @@ export class AdminService {
     }
   }
 
+  private async getDescendantCategoryIds(
+    tx: any,
+    rootCategoryId: bigint,
+  ): Promise<bigint[]> {
+    const descendants: bigint[] = [];
+    let frontier: bigint[] = [rootCategoryId];
+
+    while (frontier.length > 0) {
+      const children = await tx.category.findMany({
+        where: {
+          parentId: { in: frontier },
+        },
+        select: { id: true },
+      });
+
+      if (children.length === 0) break;
+      const childIds = children.map((row: { id: bigint }) => row.id);
+      descendants.push(...childIds);
+      frontier = childIds;
+    }
+
+    return descendants;
+  }
+
+  private async getPropagationCategoryIds(
+    tx: any,
+    rootCategoryId: bigint,
+  ): Promise<bigint[]> {
+    const rootCategory = await tx.category.findUnique({
+      where: { id: rootCategoryId },
+      select: { id: true, hasEngine: true },
+    });
+    if (!rootCategory) return [];
+
+    if (rootCategory.hasEngine) {
+      const motorized = await tx.category.findMany({
+        where: { hasEngine: true },
+        select: { id: true },
+      });
+      return motorized
+        .map((row: { id: bigint }) => row.id)
+        .filter((id: bigint) => id !== rootCategoryId);
+    }
+
+    return this.getDescendantCategoryIds(tx, rootCategoryId);
+  }
+
+  private async propagateTemplateToDescendants(
+    tx: any,
+    rootCategoryId: bigint,
+    fields: any[],
+    blockIds: string[],
+  ) {
+    const targets = await this.getPropagationCategoryIds(tx, rootCategoryId);
+    for (const categoryId of targets) {
+      const lastTemplate = await tx.formTemplate.findFirst({
+        where: { categoryId },
+        orderBy: { version: 'desc' },
+      });
+      const nextVersion = (lastTemplate?.version ?? 0) + 1;
+
+      await tx.formTemplate.updateMany({
+        where: { categoryId, isActive: true },
+        data: { isActive: false },
+      });
+
+      const created = await tx.formTemplate.create({
+        data: {
+          categoryId,
+          version: nextVersion,
+          isActive: true,
+          blockIds,
+        },
+      });
+
+      await this.createTemplateFields(tx, created.id, fields);
+    }
+  }
+
   async createTemplate(data: {
     categoryId: number;
     name?: string;
@@ -226,6 +308,12 @@ export class AdminService {
       });
 
       await this.createTemplateFields(tx, created.id, data.fields);
+      await this.propagateTemplateToDescendants(
+        tx,
+        categoryId,
+        data.fields,
+        data.blockIds ?? [],
+      );
 
       const template = await tx.formTemplate.findUnique({
         where: { id: created.id },
@@ -341,7 +429,10 @@ export class AdminService {
     });
   }
 
-  async updateTemplate(id: number, data: { fields: any[]; blockIds?: string[] }) {
+  async updateTemplate(
+    id: number,
+    data: { fields: any[]; blockIds?: string[] },
+  ) {
     const templateId = BigInt(id);
 
     return this.prisma.$transaction(async (tx) => {
@@ -362,6 +453,15 @@ export class AdminService {
           data: { blockIds: (data as any).blockIds },
         });
       }
+
+      await this.propagateTemplateToDescendants(
+        tx,
+        existing.categoryId,
+        data.fields,
+        Array.isArray((data as any).blockIds)
+          ? (data as any).blockIds
+          : this.parseBlockIds(existing.blockIds),
+      );
 
       const template = await tx.formTemplate.findUnique({
         where: { id: templateId },

@@ -725,13 +725,12 @@ export class ListingsService {
         attributes,
         context,
       );
-      const required = Boolean(field.required || field.isRequired || requiredByRule);
+      const required = Boolean(
+        field.required || field.isRequired || requiredByRule,
+      );
 
       // Check required
-      if (
-        required &&
-        (value === undefined || value === null || value === '')
-      ) {
+      if (required && (value === undefined || value === null || value === '')) {
         errors.push({
           field: field.key,
           message: 'This field is required',
@@ -749,16 +748,33 @@ export class ListingsService {
         }
         if (
           field.component === 'checkbox' &&
+          String(field.type ?? '').toUpperCase() !== 'CHECKBOX_GROUP' &&
           typeof value !== 'boolean' &&
           value !== 'true' &&
           value !== 'false'
         ) {
           errors.push({ field: field.key, message: 'Must be a boolean' });
         }
+        if (
+          field.component === 'checkbox' &&
+          String(field.type ?? '').toUpperCase() === 'CHECKBOX_GROUP'
+        ) {
+          const isValidGroupValue =
+            Array.isArray(value) ||
+            typeof value === 'string' ||
+            value === null ||
+            value === undefined;
+          if (!isValidGroupValue) {
+            errors.push({
+              field: field.key,
+              message: 'Must be a comma-separated list or array',
+            });
+          }
+        }
 
         // Custom validations (min/max)
         if (field.validationRules) {
-          const rules = field.validationRules as Record<string, any>;
+          const rules = field.validationRules;
           if (rules.min !== undefined && Number(value) < rules.min) {
             errors.push({
               field: field.key,

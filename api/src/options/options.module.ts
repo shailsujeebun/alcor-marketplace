@@ -8,4 +8,3 @@ import { OptionsService } from './options.service';
   exports: [OptionsService],
 })
 export class OptionsModule {}
-

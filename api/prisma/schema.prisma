@@ -250,6 +250,7 @@ model Category {
   name          String
   slug          String
   sortOrder     Int?        @map("sort_order")
+  hasEngine     Boolean     @default(false) @map("has_engine")
 
   listings      Listing[]
   formTemplates FormTemplate[]
@@ -280,6 +281,7 @@ model FormTemplate {
   version    Int      @default(1)
   isActive   Boolean  @default(true) @map("is_active")
   createdAt  DateTime @default(now()) @map("created_at")
+  blockIds   Json     @default("[]") @map("block_ids")
 
   fields FormField[]
 
@@ -299,6 +301,8 @@ model FormField {
   helpText     String?      @map("help_text")
   validations  Json         @default("{}") // min/max/regex/unit
   visibilityIf Json         @default("{}") @map("visibility_if") // conditional rules
+  requiredIf   Json         @default("{}") @map("required_if")
+  config       Json         @default("{}")
   section      String?      // Logic grouping like 'Engine', 'Dimensions'
 
   options FieldOption[]
@@ -319,6 +323,16 @@ model FieldOption {
   @@map("field_option")
 }
 
+model FormBlock {
+  id        String   @id
+  name      String   @unique
+  isSystem  Boolean  @default(false) @map("is_system")
+  fields    Json     @default("[]")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("form_block")
+}
 // ─── Company ─────────────────────────────────────────
 
 model Company {

@@ -303,7 +303,7 @@ model FormTemplate {
 }
 
 model FormBlock {
-  id        String   @id // stable identifier e.g. "engine_block"
+  id        String   @id
   name      String   @unique
   isSystem  Boolean  @default(false) @map("is_system")
   fields    Json     @default("[]")

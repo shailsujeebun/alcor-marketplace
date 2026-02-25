@@ -221,13 +221,13 @@ export const createListing = (data: CreateListingPayload) =>
   fetchApi<Listing>('/listings', {
     method: 'POST',
     body: JSON.stringify(data),
-  });
+  }).then((payload: any) => normalizeListing(payload));
 
 export const updateListing = (id: string, data: UpdateListingPayload) =>
   fetchApi<Listing>(`/listings/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
-  });
+  }).then((payload: any) => normalizeListing(payload));
 
 // File Upload
 export async function uploadImages(files: File[]): Promise<{ urls: string[] }> {
@@ -593,6 +593,7 @@ export interface AdminCategory {
   slug: string;
   parentId?: number;
   sortOrder?: number;
+  hasEngine?: boolean;
   children?: AdminCategory[];
 }
 
@@ -617,6 +618,7 @@ export const createAdminCategory = (data: {
   slug: string;
   parentId?: number;
   sortOrder?: number;
+  hasEngine?: boolean;
 }) =>
   fetchApi<AdminCategory>('/admin/categories', {
     method: 'POST',
@@ -628,6 +630,7 @@ export const updateAdminCategory = (id: number, data: {
   slug?: string;
   parentId?: number;
   sortOrder?: number;
+  hasEngine?: boolean;
 }) =>
   fetchApi<AdminCategory>(`/admin/categories/${id}`, {
     method: 'PATCH',

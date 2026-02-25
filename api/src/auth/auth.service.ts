@@ -205,7 +205,10 @@ export class AuthService {
     }
 
     if (user.emailVerified) {
-      await this.clearVerificationFailureState(normalizedEmail, normalizedClientKey);
+      await this.clearVerificationFailureState(
+        normalizedEmail,
+        normalizedClientKey,
+      );
       const tokens = await this.generateTokens(user.id, user.email, user.role);
       return { user: this.usersService.sanitize(user), ...tokens };
     }
@@ -247,7 +250,10 @@ export class AuthService {
     ]);
 
     const updatedUser = await this.usersService.findById(user.id);
-    await this.clearVerificationFailureState(normalizedEmail, normalizedClientKey);
+    await this.clearVerificationFailureState(
+      normalizedEmail,
+      normalizedClientKey,
+    );
     const tokens = await this.generateTokens(
       updatedUser.id,
       updatedUser.email,
@@ -340,10 +346,14 @@ export class AuthService {
       keys.push(this.getVerificationAttemptIpKey(normalizedClientKey));
     }
 
-    const values = await Promise.all(keys.map((key) => this.redisService.get(key)));
+    const values = await Promise.all(
+      keys.map((key) => this.redisService.get(key)),
+    );
     const maxAttempts = values.reduce((currentMax, value) => {
       const parsed = parseInt(value ?? '0', 10);
-      return Number.isFinite(parsed) ? Math.max(currentMax, parsed) : currentMax;
+      return Number.isFinite(parsed)
+        ? Math.max(currentMax, parsed)
+        : currentMax;
     }, 0);
 
     if (maxAttempts >= this.verificationAttemptLimit) {

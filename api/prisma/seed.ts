@@ -48,6 +48,44 @@ function makeUniqueSlug(base: string, used: Set<string>, parentSlug?: string): s
   return `${slug}-${i}`;
 }
 
+function isLikelyMotorizedSlug(slug: string): boolean {
+  const value = slug.toLowerCase();
+  const excludedTokens = ['trailer', 'semi-trailer', 'parts', 'tires', 'wheels', 'service'];
+  if (excludedTokens.some((token) => value.includes(token))) return false;
+
+  const motorizedTokens = [
+    'tractor',
+    'traktor',
+    'combine',
+    'kombain',
+    'harvester',
+    'excavator',
+    'ekskavator',
+    'loader',
+    'navantazhuvach',
+    'forklift',
+    'telehandler',
+    'truck',
+    'vantazh',
+    'tyahach',
+    'bus',
+    'avtobus',
+    'car',
+    'sedan',
+    'suv',
+    'hatchback',
+    'coupe',
+    'convertible',
+    'pickup',
+    'minivan',
+    'electric',
+    'hybrid',
+    'avto',
+  ];
+
+  return motorizedTokens.some((token) => value.includes(token));
+}
+
 async function main() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const adapter = new PrismaPg(pool);
@@ -607,6 +645,24 @@ async function main() {
 
   await insertTree(agrolineTree, 'agroline');
   await insertTree(autolineTree, 'autoline');
+
+  // Backfill motorized categories so all engine-powered categories can
+  // inherit motorized template behavior at runtime.
+  const motorizedIds = Object.entries(catMap)
+    .filter(([slug]) => isLikelyMotorizedSlug(slug))
+    .map(([, id]) => id);
+  if (motorizedIds.length > 0) {
+    await prisma.category.updateMany({
+      where: {
+        id: {
+          in: motorizedIds,
+        },
+      },
+      data: {
+        hasEngine: true,
+      },
+    });
+  }
 
   // ─── Form Templates ─────────────────────────────
   console.log('Seeding form templates...');

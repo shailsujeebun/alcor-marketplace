@@ -2,12 +2,14 @@ import {
   BadRequestException,
   Controller,
   Get,
+  Header,
   Headers,
   Param,
   Post,
   Query,
   Req,
   Res,
+  StreamableFile,
   UseGuards,
   UseInterceptors,
   UploadedFiles,
@@ -69,7 +71,11 @@ export class UploadController {
       clientKey,
     );
     const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
-    this.uploadService.enforceUploadQuota(actor.actorKey, files.length, totalBytes);
+    this.uploadService.enforceUploadQuota(
+      actor.actorKey,
+      files.length,
+      totalBytes,
+    );
 
     for (const file of files) {
       if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
@@ -79,7 +85,10 @@ export class UploadController {
       }
 
       const detectedMime = this.uploadService.detectImageMime(file.buffer);
-      if (!detectedMime || !this.uploadService.isAllowedImageMime(detectedMime)) {
+      if (
+        !detectedMime ||
+        !this.uploadService.isAllowedImageMime(detectedMime)
+      ) {
         throw new BadRequestException(
           'Invalid file signature. Only JPEG, PNG, WEBP, GIF are allowed.',
         );
@@ -92,13 +101,34 @@ export class UploadController {
       }
     }
 
-    const urls = await Promise.all(
+    const uploaded = await Promise.all(
       files.map((file) =>
         this.uploadService.uploadFile(file, 'listings', file.mimetype),
       ),
     );
 
+    const origin = `${req.protocol}://${req.get('host')}`;
+    const urls = uploaded.map(({ key }) => `${origin}/upload/files/${key}`);
+
     return { urls };
+  }
+
+  @Get('files/:folder/:filename')
+  @Header('Cache-Control', 'public, max-age=31536000, immutable')
+  async getFile(
+    @Param('folder') folder: string,
+    @Param('filename') filename: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { body, contentType, contentLength } =
+      await this.uploadService.getFileStream(folder, filename);
+
+    res.setHeader('Content-Type', contentType);
+    if (contentLength !== undefined) {
+      res.setHeader('Content-Length', String(contentLength));
+    }
+
+    return new StreamableFile(body);
   }
 
   @Get('presigned')
@@ -108,14 +138,5 @@ export class UploadController {
     @Query('contentType') contentType?: string,
   ) {
     return this.uploadService.getPresignedUrl(folder, contentType);
-  }
-
-  @Get('files/:folder/:filename')
-  async getFile(
-    @Param('folder') folder: string,
-    @Param('filename') filename: string,
-    @Res() res: Response,
-  ) {
-    await this.uploadService.streamFile(folder, filename, res);
   }
 }

@@ -28,7 +28,9 @@ export class AdminController {
   // ─── Blocks ──────────────────────────────────────────
 
   @Post('blocks')
-  createBlock(@Body() body: { id: string; name: string; isSystem?: boolean; fields: any }) {
+  createBlock(
+    @Body() body: { name: string; fields: any[]; isSystem?: boolean },
+  ) {
     return this.adminService.createBlock(body);
   }
 

@@ -220,9 +220,25 @@ export default function AdminCategoriesPage() {
         setEditingId(null);
     }
 
+    function findCategoryById(tree: any[], id: number): any | null {
+        for (const node of tree) {
+            if (Number(node.id) === id) return node;
+            const child = findCategoryById(node.children || [], id);
+            if (child) return child;
+        }
+        return null;
+    }
+
     function openCreate(parentId?: number) {
         resetForm();
-        setFormData(prev => ({ ...prev, parentId }));
+        const parentCategory = parentId && categories
+            ? findCategoryById(categories as any[], parentId)
+            : null;
+        setFormData(prev => ({
+            ...prev,
+            parentId,
+            hasEngine: Boolean(parentCategory?.hasEngine),
+        }));
         setIsDialogOpen(true);
     }
 
@@ -296,20 +312,24 @@ export default function AdminCategoriesPage() {
                                 />
                                 <p className="text-xs text-muted-foreground mt-1">Leave empty to auto-generate from name.</p>
                             </div>
+                            <div className="flex items-center gap-2 rounded-md border border-white/10 px-3 py-2">
+                                <input
+                                    id="hasEngine"
+                                    type="checkbox"
+                                    checked={formData.hasEngine}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, hasEngine: e.target.checked })
+                                    }
+                                />
+                                <Label htmlFor="hasEngine" className="cursor-pointer">
+                                    Has engine (uses motorized template fallback)
+                                </Label>
+                            </div>
                             {formData.parentId && (
                                 <div className="text-sm text-muted-foreground">
                                     Creating subcategory under ID: {formData.parentId}
                                 </div>
                             )}
-                            <label className="flex items-center gap-2 text-sm cursor-pointer select-none text-white transition-colors py-2">
-                                <input
-                                    type="checkbox"
-                                    checked={formData.hasEngine}
-                                    onChange={(e) => setFormData({ ...formData, hasEngine: e.target.checked })}
-                                    className="w-4 h-4 rounded border-white/20 bg-black/20 text-blue-500 focus:ring-blue-500/20"
-                                />
-                                Requires Engine Block (Motorized)
-                            </label>
                             <Button type="submit" className="w-full">
                                 {editingId ? 'Update' : 'Create'}
                             </Button>

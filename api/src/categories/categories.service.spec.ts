@@ -60,8 +60,11 @@ describe('CategoriesService', () => {
             mockPrismaService.category.findFirst.mockResolvedValue({
                 id: 2n,
                 parentId: 1n,
-                hasEngine: false,
-                slug: 'child'
+                hasEngine: true,
+                slug: 'child',
+                name: 'Child Category',
+                marketplaceId: 100n,
+                formTemplates: []
             });
 
             // 2. allCategories lookup for parent chain map

@@ -1,5 +1,25 @@
 # Marketplace Ad-Posting System Plan
 
+## Execution Update - 2026-02-23
+
+- Completed a production-focused pass on listing detail UX and data fidelity for Autoline-style categories.
+- Implemented full detail-page UI refinement:
+  - professional 3-column listing hero layout
+  - animated section cards
+  - accordion characteristics aligned to form-building groups.
+- Closed data display gaps between form submission and public listing view:
+  - normalized backend attribute payloads into display-ready attributes
+  - mapped dynamic option values to human-readable labels
+  - ensured summary card uses real listing data and filled characteristics.
+- Implemented pricing/details cleanup:
+  - consistent request-price rendering
+  - filtered placeholder description values from display output.
+- Stabilized media delivery for uploaded listing photos:
+  - added API proxy route for uploaded files (`/upload/files/:folder/:filename`)
+  - switched upload response URLs to API-served paths
+  - added frontend URL normalization for previously uploaded MinIO URLs
+  - added upload pre-validation (mime + max size).
+
 ## 1. Product Scope and UX Flow
 
 ### A. Entry

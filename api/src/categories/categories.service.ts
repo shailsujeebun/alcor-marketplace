@@ -19,6 +19,17 @@ export interface CategoryTreeNode {
 export class CategoriesService {
   constructor(private readonly prisma: PrismaService) { }
 
+  private readonly templateWithFieldsInclude = {
+    fields: {
+      orderBy: { sortOrder: 'asc' as const },
+      include: {
+        options: {
+          orderBy: { sortOrder: 'asc' as const },
+        },
+      },
+    },
+  };
+
   create(dto: CreateCategoryDto) {
     const parentId = dto.parentId ? BigInt(dto.parentId) : undefined;
     const { parentId: _, ...rest } = dto;
@@ -76,26 +87,171 @@ export class CategoriesService {
     return buildTree(null);
   }
 
-  private mapTemplate(template: any) {
+  private parseBlockIds(value: any): string[] {
+    if (!value) return [];
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return parsed.map((entry) => String(entry)).filter(Boolean);
+        }
+      } catch {
+        // ignore
+      }
+      return [];
+    }
+    if (Array.isArray(value)) {
+      return value.map((entry) => String(entry)).filter(Boolean);
+    }
+    return [];
+  }
+
+  private scoreMotorizedTemplate(
+    template: any,
+    requestedCategory: {
+      id: bigint;
+      marketplaceId: bigint;
+      parentId: bigint | null;
+    },
+  ) {
+    const blockIds = this.parseBlockIds(template.blockIds);
+    let score = 0;
+
+    if (template.category.marketplaceId === requestedCategory.marketplaceId) {
+      score += 1000;
+    }
+    if (
+      requestedCategory.parentId &&
+      template.category.parentId === requestedCategory.parentId
+    ) {
+      score += 250;
+    }
+    if (blockIds.includes('engine_block')) {
+      score += 500;
+    }
+    score += Math.min(template.fields?.length ?? 0, 200);
+    score += template.version ?? 0;
+
+    return score;
+  }
+
+  private async findMotorizedFallbackTemplate(category: any) {
+    if (!category.hasEngine) return null;
+
+    const candidates = await this.prisma.formTemplate.findMany({
+      where: {
+        isActive: true,
+        category: { hasEngine: true },
+      },
+      include: {
+        ...this.templateWithFieldsInclude,
+        category: {
+          select: {
+            id: true,
+            slug: true,
+            hasEngine: true,
+            marketplaceId: true,
+            parentId: true,
+          },
+        },
+      },
+    });
+
+    const best = candidates
+      .filter((template) => template.categoryId !== category.id)
+      .sort(
+        (a, b) =>
+          this.scoreMotorizedTemplate(b, category) -
+          this.scoreMotorizedTemplate(a, category),
+      )[0];
+
+    if (!best) return null;
+
+    return this.mapTemplate(best, best.category, category);
+  }
+
+  private async mapTemplate(
+    template: any,
+    category: any,
+    requestedCategory?: any,
+  ) {
+    const runtimeCategory = requestedCategory ?? category;
+    const blockIds = this.parseBlockIds(template.blockIds);
+
+    // For engine categories, always include engine_block even if not yet
+    // stored on the template — this ensures the posting form always shows
+    // the full set of engine-specific fields (Fuel type, Power, etc.).
+    const effectiveBlockIds =
+      runtimeCategory.hasEngine && !blockIds.includes('engine_block')
+        ? ['engine_block', ...blockIds]
+        : blockIds;
+
+    const dbBlocks =
+      effectiveBlockIds.length === 0
+        ? []
+        : await this.prisma.formBlock.findMany({
+          where: { id: { in: effectiveBlockIds } },
+          orderBy: { name: 'asc' },
+        });
+
+    const dbBlockIdSet = new Set(dbBlocks.map((b: any) => b.id));
+
+    // If engine_block is needed but not yet in DB, use the built-in definition.
+    const extraBlocks: any[] =
+      effectiveBlockIds.includes('engine_block') &&
+        !dbBlockIdSet.has('engine_block')
+        ? [getBuiltInEngineBlock()]
+        : [];
+
+    const blocks = [
+      ...dbBlocks.map((block: any) => ({
+        id: block.id,
+        name: block.name,
+        isSystem: block.isSystem,
+        fields: (block.fields as any[]) ?? [],
+      })),
+      ...extraBlocks,
+    ];
+
+    const mergedFields = mergeTemplateFieldsWithBlocks(
+      template.fields ?? [],
+      blocks,
+    );
+
     return {
       id: template.id.toString(),
       categoryId: template.categoryId.toString(),
       version: template.version,
       isActive: template.isActive,
       createdAt: template.createdAt,
-      fields: (template.fields ?? []).map((field: any) => ({
-        id: field.id.toString(),
-        key: field.fieldKey,
+      blockIds: effectiveBlockIds,
+      blocks: blocks.map((block) => ({
+        id: block.id,
+        name: block.name,
+        isSystem: Boolean(block.isSystem),
+      })),
+      category: {
+        id: runtimeCategory.id.toString(),
+        name: runtimeCategory.name,
+        slug: runtimeCategory.slug,
+        marketplaceId: runtimeCategory.marketplaceId.toString(),
+      },
+      fields: mergedFields.map((field: any) => ({
+        id: field.id?.toString() ?? `virtual-${field.fieldKey || field.key}`,
+        key: field.fieldKey || field.key,
         label: field.label,
-        type: field.fieldType,
-        isRequired: field.required,
+        type: field.fieldType || field.type,
+        isRequired: field.required ?? field.isRequired,
         section: field.section ?? undefined,
-        validationRules: field.validations ?? {},
+        validationRules: field.validations ?? field.validationRules ?? {},
         options: (field.options ?? []).map((option: any) => ({
-          id: option.id.toString(),
+          id: option.id?.toString() ?? 'virtual',
           value: option.value,
           label: option.label,
         })),
+        config: field.config || {},
+        requiredIf: field.requiredIf || {},
+        visibilityIf: field.visibilityIf || {},
       })),
     };
   }
@@ -109,116 +265,106 @@ export class CategoriesService {
       };
     }
 
-    // 1. Fetch category and its ancestors to determine the applicable template and `hasEngine` flag
-    const targetCategory = await this.prisma.category.findFirst({
+    const category = await this.prisma.category.findFirst({
       where: whereCondition,
-    });
-
-    if (!targetCategory) return null;
-
-    // Get all categories to build parent chain (in a real app, use recursive CTE, but this is fine for deep-shallow trees)
-    const allCategories = await this.prisma.category.findMany();
-    const catMap = new Map(allCategories.map(c => [c.id.toString(), c]));
-
-    let current: any = targetCategory;
-    let fallbackCategoryWithTemplate: any = null;
-    let resolvesEngine = false;
-
-    // Traverse upwards
-    while (current) {
-      if (current.hasEngine) {
-        resolvesEngine = true;
-      }
-
-      // Check if this category has an active template
-      if (!fallbackCategoryWithTemplate) {
-        const hasTemplate = await this.prisma.formTemplate.findFirst({
-          where: { categoryId: current.id, isActive: true },
-        });
-        if (hasTemplate) {
-          fallbackCategoryWithTemplate = current;
-        }
-      }
-
-      if (current.parentId) {
-        current = catMap.get(current.parentId.toString());
-      } else {
-        break;
-      }
-    }
-
-    if (!fallbackCategoryWithTemplate) {
-      return null; // No template found in hierarchy
-    }
-
-    // 2. Fetch the actual template from the discovered category
-    const categoryWithTemplates = await this.prisma.category.findUnique({
-      where: { id: fallbackCategoryWithTemplate.id },
       include: {
         formTemplates: {
           where: { isActive: true },
           orderBy: { version: 'desc' },
           take: 1,
-          include: {
-            fields: {
-              orderBy: { sortOrder: 'asc' },
-              include: {
-                options: { orderBy: { sortOrder: 'asc' } },
-              },
-            },
-          },
+          include: this.templateWithFieldsInclude,
         },
       },
     });
 
-    if (!categoryWithTemplates || categoryWithTemplates.formTemplates.length === 0) {
+    if (!category) {
       return null;
     }
 
-    const rawTemplate = categoryWithTemplates.formTemplates[0];
-    const mappedTemplate = this.mapTemplate(rawTemplate);
-
-    // 3. Resolve blocks
-    let blocks: any[] = [];
-    const blockIds = (rawTemplate.blockIds as string[]) || [];
-
-    // Inject engine block if the category's lineage requires it, and it's not already there
-    if (resolvesEngine && !blockIds.includes('engine_block')) {
-      blockIds.unshift('engine_block');
-    }
-
-    if (blockIds.length > 0) {
-      const dbBlocks = await this.prisma.formBlock.findMany({
-        where: { id: { in: blockIds } }
+    // Check nearest active ancestor template.
+    let nearestAncestorWithTemplate: { template: any; category: any } | null =
+      null;
+    let parentId = category.parentId;
+    while (parentId) {
+      const parent = await this.prisma.category.findUnique({
+        where: { id: parentId },
+        include: {
+          formTemplates: {
+            where: { isActive: true },
+            orderBy: { version: 'desc' },
+            take: 1,
+            include: this.templateWithFieldsInclude,
+          },
+        },
       });
 
-      // Order them as requested in blockIds array
-      blocks = blockIds.map((id) => {
-        if (id === 'engine_block') return getBuiltInEngineBlock(); // Saftey fallback if not in DB yet
-        return dbBlocks.find((b) => b.id === id);
-      }).filter(Boolean);
+      if (!parent) break;
+      if (parent.formTemplates.length > 0) {
+        nearestAncestorWithTemplate = {
+          template: parent.formTemplates[0],
+          category: parent,
+        };
+        break;
+      }
+      parentId = parent.parentId;
     }
 
-    // 4. Merge fields
-    const localFields = mappedTemplate.fields || [];
-    const mergedFields = mergeTemplateFieldsWithBlocks(localFields, blocks);
+    const directTemplate = category.formTemplates[0] ?? null;
 
-    // Convert back array to the format expected by the frontend
-    mappedTemplate.fields = mergedFields.map((f) => ({
-      id: f.id || `virtual-${f.fieldKey}`,
-      key: f.fieldKey || f.key, // Handle both our new internal representation and the legacy one
-      label: f.label,
-      type: f.fieldType || f.type,
-      isRequired: f.required ?? f.isRequired,
-      section: f.section || undefined,
-      validationRules: f.validations || f.validationRules || {},
-      options: f.options || [],
-      // Inject the newer config parameters not explicitly mapped in mapTemplate payload yet
-      config: f.config || {},
-      requiredIf: f.requiredIf || {},
-      visibilityIf: f.visibilityIf || {},
-    }));
+    // Always prefer the category's own active template.
+    // propagateTemplateToDescendants (in admin.service) keeps it in sync
+    // with the parent whenever the admin saves, so there is no need to
+    // compare timestamps or fall back to the ancestor when a direct
+    // template exists.
+    if (directTemplate) {
+      return this.mapTemplate(directTemplate, category);
+    }
 
-    return mappedTemplate;
+    if (nearestAncestorWithTemplate) {
+      return this.mapTemplate(
+        nearestAncestorWithTemplate.template,
+        nearestAncestorWithTemplate.category,
+        category,
+      );
+    }
+
+    // Fallback: use a sibling template when parent/ancestor do not have one.
+    if (category.parentId) {
+      const siblingTemplates = await this.prisma.formTemplate.findMany({
+        where: {
+          category: {
+            parentId: category.parentId,
+            id: { not: category.id },
+          },
+          isActive: true,
+        },
+        orderBy: [{ version: 'desc' }],
+        include: {
+          fields: this.templateWithFieldsInclude.fields,
+          category: true,
+        },
+      });
+
+      const sameHasEngine = siblingTemplates.filter(
+        (t) => t.category.hasEngine === category.hasEngine,
+      );
+
+      if (sameHasEngine.length > 0) {
+        return this.mapTemplate(sameHasEngine[0], sameHasEngine[0].category, category);
+      }
+      if (siblingTemplates.length > 0) {
+        return this.mapTemplate(siblingTemplates[0], siblingTemplates[0].category, category);
+      }
+    }
+
+    // Last fallback for motorized categories when no explicit/ancestor/sibling
+    // template exists.
+    const motorizedTemplate =
+      await this.findMotorizedFallbackTemplate(category);
+    if (motorizedTemplate) {
+      return motorizedTemplate;
+    }
+
+    return null;
   }
 }

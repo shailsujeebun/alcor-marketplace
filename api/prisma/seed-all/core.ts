@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { daysAgo, daysFromNow, type SeedCatalog, type SeedGeo, type SeedPlans, type SeedUsers } from './shared';
+import { DEFAULT_MOTORIZED_BLOCK_FIELDS } from '../../src/templates/template-schema';
 
 export type CoreSeedData = {
   users: SeedUsers;
@@ -10,6 +11,38 @@ export type CoreSeedData = {
 };
 
 export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
+  const isLikelyMotorizedSlug = (slug: string) => {
+    const value = slug.toLowerCase();
+    const excludedTokens = ['trailer', 'semi-trailer', 'parts', 'tires', 'wheels', 'service'];
+    if (excludedTokens.some((token) => value.includes(token))) {
+      return false;
+    }
+
+    const motorizedTokens = [
+      'tractor',
+      'harvester',
+      'combine',
+      'excavator',
+      'loader',
+      'forklift',
+      'telehandler',
+      'truck',
+      'bus',
+      'car',
+      'sedan',
+      'suv',
+      'hatchback',
+      'coupe',
+      'convertible',
+      'pickup',
+      'minivan',
+      'electric',
+      'hybrid',
+    ];
+
+    return motorizedTokens.some((token) => value.includes(token));
+  };
+
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@alcor.com';
   const adminPassword = process.env.ADMIN_PASSWORD || 'test1234';
   const demoPassword = 'test1234';
@@ -188,11 +221,14 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
         name: params.name,
         parentId: parent?.id,
         sortOrder: params.sortOrder,
-        hasEngine: params.hasEngine ?? false,
+        hasEngine:
+          params.hasEngine === undefined
+            ? isLikelyMotorizedSlug(params.slug)
+            : params.hasEngine,
       },
     });
 
-    categoriesBySlug.set(params.slug, { id: row.id, marketplaceId, hasEngine: params.hasEngine ?? false });
+    categoriesBySlug.set(params.slug, { id: row.id, marketplaceId, hasEngine: params.hasEngine === undefined ? isLikelyMotorizedSlug(params.slug) : params.hasEngine });
   }
 
   await createCategory({ marketplaceKey: 'agriculture', slug: 'tractors', name: 'Tractors', sortOrder: 1, hasEngine: true });
@@ -354,54 +390,75 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
     'suv',
   ];
 
+  // Ensure the system engine block exists before templates reference it.
+  await prisma.formBlock.upsert({
+    where: { id: 'engine_block' },
+    create: {
+      id: 'engine_block',
+      name: 'Motorized Vehicle Block',
+      isSystem: true,
+      fields: DEFAULT_MOTORIZED_BLOCK_FIELDS as unknown as Prisma.InputJsonValue,
+    },
+    update: {
+      name: 'Motorized Vehicle Block',
+      isSystem: true,
+      fields: DEFAULT_MOTORIZED_BLOCK_FIELDS as unknown as Prisma.InputJsonValue,
+    },
+  });
+
   for (const slug of leafCategorySlugs) {
     const category = categoriesBySlug.get(slug);
     if (!category) continue;
+
+    const isMotorizedCategory = isLikelyMotorizedSlug(slug);
+    const blockIds = isMotorizedCategory ? ['engine_block'] : [];
 
     await prisma.formTemplate.create({
       data: {
         categoryId: category.id,
         version: 1,
         isActive: true,
-        blockIds: category.hasEngine ? ['engine_block'] : [],
-        fields: {
-          create: [
-            {
-              fieldKey: 'year',
-              label: 'Year',
-              fieldType: 'NUMBER',
-              required: true,
-              sortOrder: 1,
-              section: 'General',
-              validations: { min: 1990, max: 2030 },
+        blockIds,
+        fields: isMotorizedCategory
+          ? undefined
+          : {
+              create: [
+                {
+                  fieldKey: 'year',
+                  label: 'Year',
+                  fieldType: 'NUMBER',
+                  required: true,
+                  sortOrder: 1,
+                  section: 'General',
+                  validations: { min: 1990, max: 2030 },
+                },
+                {
+                  fieldKey: 'condition',
+                  label: 'Condition',
+                  fieldType: 'SELECT',
+                  required: true,
+                  sortOrder: 2,
+                  section: 'General',
+                  validations: {},
+                  options: {
+                    create: [
+                      { value: 'NEW', label: 'New', sortOrder: 1 },
+                      { value: 'USED', label: 'Used', sortOrder: 2 },
+                      { value: 'DEMO', label: 'Demo', sortOrder: 3 },
+                    ],
+                  },
+                },
+                {
+                  fieldKey: 'hours',
+                  label: 'Engine hours',
+                  fieldType: 'NUMBER',
+                  required: false,
+                  sortOrder: 3,
+                  section: 'Technical',
+                  validations: { min: 0, max: 200000, unit: 'h' },
+                },
+              ],
             },
-            {
-              fieldKey: 'condition',
-              label: 'Condition',
-              fieldType: 'SELECT',
-              required: true,
-              sortOrder: 2,
-              section: 'General',
-              validations: {},
-              options: {
-                create: [
-                  { value: 'NEW', label: 'New', sortOrder: 1 },
-                  { value: 'USED', label: 'Used', sortOrder: 2 },
-                  { value: 'DEMO', label: 'Demo', sortOrder: 3 },
-                ],
-              },
-            },
-            {
-              fieldKey: 'hours',
-              label: 'Engine hours',
-              fieldType: 'NUMBER',
-              required: false,
-              sortOrder: 3,
-              section: 'Technical',
-              validations: { min: 0, max: 200000, unit: 'h' },
-            },
-          ],
-        },
       },
     });
   }

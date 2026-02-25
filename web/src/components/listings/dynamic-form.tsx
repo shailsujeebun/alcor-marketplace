@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FormFieldExtended } from '@/lib/schemaTypes';
 import { evaluateFieldVisibility, evaluateFieldRequired } from '@/lib/dependencyEngine';
-import { MapPin } from 'lucide-react';
+import { ChevronDown, MapPin } from 'lucide-react';
 
 interface DynamicFormProps {
   categoryId: string;
@@ -71,8 +71,8 @@ function OptionChip({
       type="button"
       onClick={onClick}
       className={`px-3 py-1.5 rounded-md border text-sm transition-colors ${active
-          ? 'bg-blue-bright/20 text-blue-bright border-blue-bright/50'
-          : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-blue-bright/40 hover:text-[var(--text-primary)]'
+        ? 'bg-blue-bright/20 text-blue-bright border-blue-bright/50'
+        : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-blue-bright/40 hover:text-[var(--text-primary)]'
         }`}
     >
       {label}
@@ -82,6 +82,7 @@ function OptionChip({
 
 export function DynamicForm({ categoryId, template, values, onChange }: DynamicFormProps) {
   const [formValues, setFormValues] = useState<Record<string, any>>(values);
+  const [openSection, setOpenSection] = useState<string | null>(null);
 
   useEffect(() => {
     setFormValues(values);
@@ -111,6 +112,15 @@ export function DynamicForm({ categoryId, template, values, onChange }: DynamicF
 
     return Array.from(grouped.entries());
   }, [template, formValues]);
+
+  useEffect(() => {
+    if (!sectionEntries.length) {
+      setOpenSection(null);
+      return;
+    }
+    const keys = sectionEntries.map(([name]) => name);
+    setOpenSection((prev) => (prev && keys.includes(prev) ? prev : keys[0]));
+  }, [sectionEntries]);
 
   if (!template?.fields?.length) {
     return (
@@ -317,8 +327,8 @@ export function DynamicForm({ categoryId, template, values, onChange }: DynamicF
                   type="button"
                   onClick={() => handleFieldChange(field.fieldKey, option.value)}
                   className={`inline-flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm transition-colors ${selected
-                      ? 'border-blue-bright/60 bg-blue-bright/20 text-[var(--text-primary)]'
-                      : 'border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-secondary)]'
+                    ? 'border-blue-bright/60 bg-blue-bright/20 text-[var(--text-primary)]'
+                    : 'border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-secondary)]'
                     }`}
                 >
                   <span
@@ -401,38 +411,57 @@ export function DynamicForm({ categoryId, template, values, onChange }: DynamicF
       {sectionEntries.map(([sectionName, fields]) => (
         <section
           key={sectionName}
-          className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)]/15 p-4 sm:p-5"
+          className={`rounded-xl border bg-[var(--bg-secondary)]/15 overflow-hidden transition-colors ${openSection === sectionName
+              ? 'border-blue-bright/40'
+              : 'border-[var(--border-color)] hover:border-blue-bright/30'
+            }`}
         >
-          {sectionEntries.length > 1 && (
-            <div className="mb-4 flex items-center justify-between border-b border-[var(--border-color)] pb-3">
-              <h3 className="text-base font-semibold text-[var(--text-primary)]">{sectionName}</h3>
-              <span className="text-xs text-[var(--text-secondary)]">{fields.length} fields</span>
+          <button
+            type="button"
+            onClick={() =>
+              setOpenSection((current) => (current === sectionName ? null : sectionName))
+            }
+            className="w-full px-5 py-4 flex items-center justify-between bg-white/5 hover:bg-white/10 transition-colors"
+          >
+            <span className="text-center w-full text-sm sm:text-base font-semibold text-[var(--text-primary)]">
+              {sectionName}
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 text-[var(--text-secondary)] shrink-0 transition-transform ${openSection === sectionName ? 'rotate-180' : 'rotate-0'
+                }`}
+            />
+          </button>
+
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-out ${openSection === sectionName ? 'max-h-[3200px] opacity-100' : 'max-h-0 opacity-0'
+              }`}
+          >
+            <div className="p-4 sm:p-5 border-t border-[var(--border-color)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                {fields.map((field) => {
+                  const hint = formatFieldHint((field.validations ?? {}) as FieldValidation);
+                  const isRequired = evaluateFieldRequired(field, formValues);
+
+                  return (
+                    <div key={field.fieldKey} className={`space-y-2 ${getFieldSpanClass(field.fieldType)} animation-fade-in`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="text-sm font-medium text-[var(--text-primary)]">
+                          {field.label}
+                          {isRequired && <span className="text-red-400 ml-1">*</span>}
+                        </label>
+                        <span className="text-[11px] uppercase tracking-wide text-[var(--text-secondary)]">
+                          {field.fieldType}
+                        </span>
+                      </div>
+
+                      {renderFieldControl(field, isRequired)}
+
+                      {hint && <p className="text-xs text-[var(--text-secondary)]">{hint}</p>}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-            {fields.map((field) => {
-              const hint = formatFieldHint((field.validations ?? {}) as FieldValidation);
-              const isRequired = evaluateFieldRequired(field, formValues);
-
-              return (
-                <div key={field.fieldKey} className={`space-y-2 ${getFieldSpanClass(field.fieldType)} animation-fade-in`}>
-                  <div className="flex items-center justify-between gap-2">
-                    <label className="text-sm font-medium text-[var(--text-primary)]">
-                      {field.label}
-                      {isRequired && <span className="text-red-400 ml-1">*</span>}
-                    </label>
-                    <span className="text-[11px] uppercase tracking-wide text-[var(--text-secondary)]">
-                      {field.fieldType}
-                    </span>
-                  </div>
-
-                  {renderFieldControl(field, isRequired)}
-
-                  {hint && <p className="text-xs text-[var(--text-secondary)]">{hint}</p>}
-                </div>
-              );
-            })}
           </div>
         </section>
       ))}

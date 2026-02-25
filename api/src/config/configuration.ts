@@ -69,7 +69,7 @@ export default () => {
     process.env.UPLOAD_GUEST_TOKEN_SECRET ??
     (isProduction
       ? undefined
-      : process.env.JWT_SECRET ?? DEV_DEFAULT_UPLOAD_GUEST_SECRET);
+      : (process.env.JWT_SECRET ?? DEV_DEFAULT_UPLOAD_GUEST_SECRET));
 
   const s3AccessKeyId =
     process.env.S3_ACCESS_KEY_ID ??
@@ -84,7 +84,9 @@ export default () => {
   if (isProduction && !isDemo) {
     assertStrongSecret('JWT_SECRET', jwtSecret, 32);
     assertStrongSecret('UPLOAD_GUEST_TOKEN_SECRET', uploadGuestTokenSecret, 32);
-    assertNonDefaultCredential('S3_ACCESS_KEY_ID', s3AccessKeyId, ['minioadmin']);
+    assertNonDefaultCredential('S3_ACCESS_KEY_ID', s3AccessKeyId, [
+      'minioadmin',
+    ]);
     assertStrongSecret('S3_SECRET_ACCESS_KEY', s3SecretAccessKey, 24);
 
     if (jwtSecret === uploadGuestTokenSecret) {

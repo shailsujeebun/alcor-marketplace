@@ -20,8 +20,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Plus, Save, Trash } from 'lucide-react';
+import { ChevronDown, Plus, Save, Trash } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import type { TemplateBlockSchema } from '@/lib/schemaTypes';
 
 interface CategoryNode {
     id: string;
@@ -40,6 +41,9 @@ export default function AdminTemplatesPage() {
     const [fields, setFields] = useState<Partial<FormField>[]>([]);
 
     const [isLoading, setIsLoading] = useState(false);
+    const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+    const [collapsedFields, setCollapsedFields] = useState<Record<number, boolean>>({});
+    const [collapsedAdvancedFields, setCollapsedAdvancedFields] = useState<Record<number, boolean>>({})
 
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -62,10 +66,18 @@ export default function AdminTemplatesPage() {
         setTemplateName('');
         setFields([]);
         setSections([DEFAULT_SECTION]);
+        setCollapsedSections({});
+        setCollapsedFields({});
+        setCollapsedAdvancedFields({});
     };
 
     const applyTemplateToEditor = (template: FormTemplate) => {
-        const loadedFields: Partial<FormField>[] = (template.fields ?? []).map((field) => ({
+        const sourceFields =
+            template.fields && template.fields.length > 0
+                ? template.fields
+                : (template.resolvedFields ?? []);
+
+        const loadedFields: Partial<FormField>[] = sourceFields.map((field) => ({
             id: field.id,
             key: field.key,
             label: field.label,
@@ -80,7 +92,27 @@ export default function AdminTemplatesPage() {
         setTemplateName(`Template v${template.version}`);
         setSelectedCategory(template.categoryId.toString());
         setFields(loadedFields);
-        setSections(getSectionsFromFields(loadedFields));
+        const nextSections = getSectionsFromFields(loadedFields);
+        setSections(nextSections);
+        setSelectedBlockIds(template.blockIds ?? []);
+        setCollapsedSections(
+            nextSections.reduce<Record<string, boolean>>((acc, section, index) => {
+                acc[section] = index > 0;
+                return acc;
+            }, {}),
+        );
+        setCollapsedFields(
+            loadedFields.reduce<Record<number, boolean>>((acc, _field, index) => {
+                acc[index] = false;
+                return acc;
+            }, {}),
+        );
+        setCollapsedAdvancedFields(
+            loadedFields.reduce<Record<number, boolean>>((acc, _field, index) => {
+                acc[index] = true;
+                return acc;
+            }, {}),
+        );
     };
 
     const findPath = (nodes: CategoryNode[], targetId: string): string[] | null => {
@@ -201,6 +233,7 @@ export default function AdminTemplatesPage() {
         const name = prompt('Enter section name (e.g., Engine Options, Dimensions):');
         if (name && !sections.includes(name)) {
             setSections([...sections, name]);
+            setCollapsedSections((prev) => ({ ...prev, [name]: false }));
         }
     }
 
@@ -208,10 +241,18 @@ export default function AdminTemplatesPage() {
         if (confirm(`Delete section "${sectionName}" and all its fields?`)) {
             setSections(sections.filter((section) => section !== sectionName));
             setFields(fields.filter((field) => field.section !== sectionName));
+            setCollapsedSections((prev) => {
+                const next = { ...prev };
+                delete next[sectionName];
+                return next;
+            });
         }
     }
 
     function addField(section: string) {
+        const nextIndex = fields.length;
+        setCollapsedFields((prev) => ({ ...prev, [nextIndex]: false }));
+        setCollapsedAdvancedFields((prev) => ({ ...prev, [nextIndex]: true }));
         setFields([
             ...fields,
             {
@@ -233,6 +274,45 @@ export default function AdminTemplatesPage() {
 
     function removeField(index: number) {
         setFields(fields.filter((_, fieldIndex) => fieldIndex !== index));
+        setCollapsedFields((prev) => {
+            const next: Record<number, boolean> = {};
+            Object.entries(prev).forEach(([rawKey, value]) => {
+                const key = Number(rawKey);
+                if (key < index) next[key] = value;
+                if (key > index) next[key - 1] = value;
+            });
+            return next;
+        });
+        setCollapsedAdvancedFields((prev) => {
+            const next: Record<number, boolean> = {};
+            Object.entries(prev).forEach(([rawKey, value]) => {
+                const key = Number(rawKey);
+                if (key < index) next[key] = value;
+                if (key > index) next[key - 1] = value;
+            });
+            return next;
+        });
+    }
+
+    function toggleSection(section: string) {
+        setCollapsedSections((prev) => ({
+            ...prev,
+            [section]: !prev[section],
+        }));
+    }
+
+    function toggleField(index: number) {
+        setCollapsedFields((prev) => ({
+            ...prev,
+            [index]: !prev[index],
+        }));
+    }
+
+    function toggleAdvancedField(index: number) {
+        setCollapsedAdvancedFields((prev) => ({
+            ...prev,
+            [index]: !prev[index],
+        }));
     }
 
     function addOption(fieldIndex: number) {

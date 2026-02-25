@@ -1,11 +1,15 @@
 import {
   BadRequestException,
   Controller,
+  Header,
   Get,
   Headers,
+  Param,
   Post,
   Query,
   Req,
+  Res,
+  StreamableFile,
   UseGuards,
   UseInterceptors,
   UploadedFiles,
@@ -13,6 +17,7 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UploadService } from './upload.service';
 
@@ -27,7 +32,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 @Controller('upload')
 export class UploadController {
-  constructor(private readonly uploadService: UploadService) {}
+  constructor(private readonly uploadService: UploadService) { }
 
   @Post('guest-token')
   createGuestUploadToken(@Req() req: Request) {
@@ -90,13 +95,34 @@ export class UploadController {
       }
     }
 
-    const urls = await Promise.all(
+    const uploaded = await Promise.all(
       files.map((file) =>
         this.uploadService.uploadFile(file, 'listings', file.mimetype),
       ),
     );
 
+    const origin = `${req.protocol}://${req.get('host')}`;
+    const urls = uploaded.map(({ key }) => `${origin}/upload/files/${key}`);
+
     return { urls };
+  }
+
+  @Get('files/:folder/:filename')
+  @Header('Cache-Control', 'public, max-age=31536000, immutable')
+  async getFile(
+    @Param('folder') folder: string,
+    @Param('filename') filename: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { body, contentType, contentLength } =
+      await this.uploadService.getFileStream(folder, filename);
+
+    res.setHeader('Content-Type', contentType);
+    if (contentLength !== undefined) {
+      res.setHeader('Content-Length', String(contentLength));
+    }
+
+    return new StreamableFile(body);
   }
 
   @Get('presigned')

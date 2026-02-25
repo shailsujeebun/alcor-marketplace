@@ -16,7 +16,9 @@ import {
   CreateBucketCommand,
   HeadBucketCommand,
   PutBucketPolicyCommand,
+  GetObjectCommand,
 } from '@aws-sdk/client-s3';
+import { Readable } from 'stream';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 
@@ -88,9 +90,8 @@ export class UploadService implements OnModuleInit {
     this.guestTokenTtlSeconds =
       this.configService.get<number>('upload.guestTokenTtlSeconds') ?? 900;
     this.guestTokenRateLimitPerMinute =
-      this.configService.get<number>(
-        'upload.guestTokenRateLimitPerMinute',
-      ) ?? 10;
+      this.configService.get<number>('upload.guestTokenRateLimitPerMinute') ??
+      10;
     this.requestLimitPerMinute =
       this.configService.get<number>('upload.requestLimitPerMinute') ?? 15;
     this.filesLimitPerMinute =
@@ -369,7 +370,7 @@ export class UploadService implements OnModuleInit {
     file: Express.Multer.File,
     folder: string = 'images',
     detectedMimeType?: string,
-  ): Promise<string> {
+  ): Promise<{ key: string; url: string }> {
     const safeFolder = this.sanitizeFolder(folder);
     const mimeType = detectedMimeType
       ? this.normalizeImageMime(detectedMimeType)
@@ -390,7 +391,37 @@ export class UploadService implements OnModuleInit {
       }),
     );
 
-    return `${this.publicUrl}/${key}`;
+    return {
+      key,
+      url: `${this.publicUrl}/${key}`,
+    };
+  }
+
+  async getFileStream(folder: string, filename: string) {
+    const safeFolder = this.sanitizeFolder(folder);
+    const safeFilename = filename.trim();
+
+    if (!/^[A-Za-z0-9._-]+$/.test(safeFilename)) {
+      throw new BadRequestException('Invalid file name');
+    }
+
+    const key = `${safeFolder}/${safeFilename}`;
+    const response = await this.s3.send(
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      }),
+    );
+
+    if (!response.Body) {
+      throw new BadRequestException('File not found');
+    }
+
+    return {
+      body: response.Body as Readable,
+      contentType: response.ContentType ?? 'application/octet-stream',
+      contentLength: response.ContentLength ?? undefined,
+    };
   }
 
   async deleteFile(url: string): Promise<void> {

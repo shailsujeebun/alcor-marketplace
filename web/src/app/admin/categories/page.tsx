@@ -153,7 +153,8 @@ export default function AdminCategoriesPage() {
     const [formData, setFormData] = useState({
         name: '',
         slug: '',
-        parentId: undefined as number | undefined
+        parentId: undefined as number | undefined,
+        hasEngine: false
     });
     const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -186,6 +187,7 @@ export default function AdminCategoriesPage() {
                 name: formData.name,
                 slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-'),
                 parentId: formData.parentId,
+                hasEngine: formData.hasEngine,
             };
 
             if (editingId) {
@@ -214,7 +216,7 @@ export default function AdminCategoriesPage() {
     }
 
     function resetForm() {
-        setFormData({ name: '', slug: '', parentId: undefined });
+        setFormData({ name: '', slug: '', parentId: undefined, hasEngine: false });
         setEditingId(null);
     }
 
@@ -228,7 +230,8 @@ export default function AdminCategoriesPage() {
         setFormData({
             name: cat.name,
             slug: cat.slug,
-            parentId: Number(cat.parentId) || undefined
+            parentId: Number(cat.parentId) || undefined,
+            hasEngine: Boolean(cat.hasEngine),
         });
         setEditingId(Number(cat.id));
         setIsDialogOpen(true);
@@ -298,6 +301,15 @@ export default function AdminCategoriesPage() {
                                     Creating subcategory under ID: {formData.parentId}
                                 </div>
                             )}
+                            <label className="flex items-center gap-2 text-sm cursor-pointer select-none text-white transition-colors py-2">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.hasEngine}
+                                    onChange={(e) => setFormData({ ...formData, hasEngine: e.target.checked })}
+                                    className="w-4 h-4 rounded border-white/20 bg-black/20 text-blue-500 focus:ring-blue-500/20"
+                                />
+                                Requires Engine Block (Motorized)
+                            </label>
                             <Button type="submit" className="w-full">
                                 {editingId ? 'Update' : 'Create'}
                             </Button>

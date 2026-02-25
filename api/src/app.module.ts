@@ -28,8 +28,8 @@ import { MailModule } from './mail/mail.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SavedSearchesModule } from './saved-searches/saved-searches.module';
 import { SearchModule } from './search/search.module';
-
 import { MarketplacesModule } from './marketplaces/marketplaces.module';
+import { OptionsModule } from './options/options.module';
 
 @Module({
   imports: [
@@ -59,6 +59,7 @@ import { MarketplacesModule } from './marketplaces/marketplaces.module';
     SavedSearchesModule,
     SearchModule,
     MarketplacesModule,
+    OptionsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -69,4 +70,4 @@ import { MarketplacesModule } from './marketplaces/marketplaces.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

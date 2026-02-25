@@ -3,16 +3,18 @@ import {
   Controller,
   Get,
   Headers,
+  Param,
   Post,
   Query,
   Req,
+  Res,
   UseGuards,
   UseInterceptors,
   UploadedFiles,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UploadService } from './upload.service';
 
@@ -27,7 +29,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 @Controller('upload')
 export class UploadController {
-  constructor(private readonly uploadService: UploadService) {}
+  constructor(private readonly uploadService: UploadService) { }
 
   @Post('guest-token')
   createGuestUploadToken(@Req() req: Request) {
@@ -106,5 +108,14 @@ export class UploadController {
     @Query('contentType') contentType?: string,
   ) {
     return this.uploadService.getPresignedUrl(folder, contentType);
+  }
+
+  @Get('files/:folder/:filename')
+  async getFile(
+    @Param('folder') folder: string,
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ) {
+    await this.uploadService.streamFile(folder, filename, res);
   }
 }

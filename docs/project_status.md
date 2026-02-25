@@ -82,18 +82,22 @@ The API is failing to start due to two critical issues identified from the termi
 ### Additional Tasks Executed
 
 #### 11. Debug Company Directory
+
 - **Issue:** "No companies found" logic.
 - **Fix:** Corrected `NEXT_PUBLIC_API_URL` port mismatch.
 
 #### 12. Fix Company Filters
+
 - **Issue:** Broken filters (runtime error) due to invalid `Select` usage.
 - **Fix:** Refactored `CompaniesFilters.tsx` to use `Select` primitives.
 
 #### 13. Fix Filter Design
+
 - **Issue:** Transparent dropdowns due to missing Tailwind v4 theme colors.
 - **Fix:** Added semantic color mappings to `globals.css`.
 
 #### 14. Fix Listing Filters Design
+
 - **Issue:** Invisible filters on Classifieds page.
 - **Fix:** Refactored `ListingsFilters.tsx` to use `Select` primitives.
 
@@ -104,31 +108,36 @@ The API is failing to start due to two critical issues identified from the termi
 ### Login Card Layout Overhaul
 
 **Key Changes:**
-1.  **Card Width:** Increased from `max-w-md` (448px) to `max-w-4xl` (896px).
-2.  **Heading:** Added "Login" heading.
-3.  **Spacing:** Increased form spacing (`space-y-5`) and padding (`p-10`).
-4.  **Constraint:** Removed parent container layout constraint.
+
+1. **Card Width:** Increased from `max-w-md` (448px) to `max-w-4xl` (896px).
+2. **Heading:** Added "Login" heading.
+3. **Spacing:** Increased form spacing (`space-y-5`) and padding (`p-10`).
+4. **Constraint:** Removed parent container layout constraint.
 
 **Result:** The login page now matches the registration form's wide, spacious design.
 
 ### Logo Removal & Navbar Fixes
+
 - Removed the "AND" logo icon from all locations.
 - Adjusted Navbar to place the text logo on the far left with proper spacing before the menu.
 
 ### Filters & Design Fixes
+
 - **Companies Page:** Filters are now functional and populated.
 - **Classifieds Page:** Filters are now visible and functional.
 - **Dropdown Design:** All dropdowns now have a solid dark blue background (fixed transparency issue).
 
 ### System Health
+
 - **API:** Running on port 3000 (no conflicts).
 - **Frontend:** Running on port 3001.
 - **Database:** Seeded with test data (Users, Companies, Categories).
 
 ### Dashboard UX Improvements (New)
-1.  **Layout Spacing:** Increased gap between sidebar and content to **40px** (`gap-10`) for better separation.
-2.  **Redundancy Removal:** Hidden "Quick Actions" bar when there are 0 ads, leaving only the main "Create your first ad" button.
-3.  **Typography:** Fixed trailing space in "Welcome, Admin!" greeting.
+
+1. **Layout Spacing:** Increased gap between sidebar and content to **40px** (`gap-10`) for better separation.
+2. **Redundancy Removal:** Hidden "Quick Actions" bar when there are 0 ads, leaving only the main "Create your first ad" button.
+3. **Typography:** Fixed trailing space in "Welcome, Admin!" greeting.
 
 ---
 
@@ -148,5 +157,10 @@ The API is failing to start due to two critical issues identified from the termi
 - **Quality gates and smoke checks**
   - Added CI workflow `.github/workflows/ci.yml`:
     - Web: `i18n:guard`, `lint`, `build`
-    - API: `build`, `test`, `test:e2e`
     - Seed smoke: `prisma migrate deploy`, `seed:all`, `seed:verify`
+
+## 5. System Rebuild (2026-02-24)
+
+- **Database Schemas & Syncing:** Added motorized category engine support. Created unified `FormBlock` schemas using semantic string IDs.
+- **Backend Resolving Pipelines:** Rewrote options handling and category form template resolution to prioritize hierarchical cascades. Overhauled `/upload/images` controllers to use new `/upload/files/` bypass proxy endpoints.
+- **Frontend Admin & Form Integration:** Upgraded the Admin Form template builder with nested collapsing panels. Overhauled `dynamic-form` rendering. Fixed Typescript typing issues across both API and web workspaces.

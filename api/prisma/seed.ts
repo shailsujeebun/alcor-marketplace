@@ -531,8 +531,8 @@ async function main() {
 
   // ─── Agroline / Autoline Trees ───────────────────
   const agrolineTree = [
-    { name: 'Трактори', children: ['Колісні трактори', 'Мінітрактори', 'Гусеничні трактори', 'Мототрактори', 'Садові трактори'] },
-    { name: 'Комбайни', children: ['Зернозбиральні комбайни', 'Кормозбиральні комбайни', 'Бурякозбиральні комбайни'] },
+    { name: 'Трактори', hasEngine: true, children: ['Колісні трактори', 'Мінітрактори', 'Гусеничні трактори', 'Мототрактори', 'Садові трактори'] },
+    { name: 'Комбайни', hasEngine: true, children: ['Зернозбиральні комбайни', 'Кормозбиральні комбайни', 'Бурякозбиральні комбайни'] },
     { name: 'Жниварки', children: ['Зернові жниварки', 'Кукурудзяні жниварки', 'Соняшникові жниварки'] },
     { name: 'Ґрунтообробна техніка', children: ['Плуги', 'Борони', 'Культиватори', 'Глибокорозпушувачі'] },
     { name: 'Посівна техніка', children: ['Сівалки', 'Саджалки', 'Розсадосадильні машини'] },
@@ -548,14 +548,14 @@ async function main() {
   ];
 
   const autolineTree = [
-    { name: 'Вантажівки', children: ['Бортові вантажівки', 'Тентовані вантажівки', 'Фургони', 'Рефрижератори', 'Самоскиди', 'Автовози', 'Контейнеровози', 'Лісовози'] },
-    { name: 'Тягачі' },
-    { name: 'Легкі комерційні авто', children: ['Вантажні фургони', 'Рефрижераторні фургони'] },
+    { name: 'Вантажівки', hasEngine: true, children: ['Бортові вантажівки', 'Тентовані вантажівки', 'Фургони', 'Рефрижератори', 'Самоскиди', 'Автовози', 'Контейнеровози', 'Лісовози'] },
+    { name: 'Тягачі', hasEngine: true },
+    { name: 'Легкі комерційні авто', hasEngine: true, children: ['Вантажні фургони', 'Рефрижераторні фургони'] },
     { name: 'Напівпричепи', children: ['Тентовані напівпричепи', 'Рефрижераторні напівпричепи', 'Контейнеровози', 'Самоскидні напівпричепи', 'Низькорамні платформи'] },
     { name: 'Причепи', children: ['Самоскидні причепи', 'Платформи', 'Контейнерні причепи'] },
     { name: 'Цистерни', children: ['Паливні цистерни', 'Харчові цистерни', 'Хімічні цистерни'] },
-    { name: 'Автобуси', children: ['Міські автобуси', 'Туристичні автобуси', 'Шкільні автобуси'] },
-    { name: 'Комунальна техніка', children: ['Сміттєвози', 'Асенізатори', 'Підмітальні машини', 'Снігоприбиральна техніка'] },
+    { name: 'Автобуси', hasEngine: true, children: ['Міські автобуси', 'Туристичні автобуси', 'Шкільні автобуси'] },
+    { name: 'Комунальна техніка', hasEngine: true, children: ['Сміттєвози', 'Асенізатори', 'Підмітальні машини', 'Снігоприбиральна техніка'] },
     { name: 'Контейнери' },
     { name: 'Обладнання' },
     { name: 'Шини та колеса' },
@@ -564,7 +564,7 @@ async function main() {
   ];
 
   async function insertTree(
-    nodes: Array<{ name: string; children?: string[] }>,
+    nodes: Array<{ name: string; children?: string[]; hasEngine?: boolean }>,
     marketplaceKey: string,
   ) {
     const mpId = mpMap[marketplaceKey];
@@ -580,6 +580,7 @@ async function main() {
           name: node.name,
           slug,
           marketplaceId: mpId,
+          hasEngine: node.hasEngine ?? false,
         },
       });
       catMap[slug] = createdParent.id;
@@ -595,6 +596,7 @@ async function main() {
             slug: childSlug,
             parentId: createdParent.id,
             marketplaceId: mpId,
+            hasEngine: node.hasEngine ?? false,
           },
         });
         catMap[childSlug] = createdChild.id;
@@ -617,6 +619,7 @@ async function main() {
         categoryId: tractorsId,
         version: 1,
         isActive: true,
+        blockIds: ['engine_block'],
         fields: {
           create: [
             {

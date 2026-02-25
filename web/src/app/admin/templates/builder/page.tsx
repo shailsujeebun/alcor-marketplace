@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { FormFieldExtended, RuleNode } from '@/lib/schemaTypes';
 import {
     createAdminTemplate,
-    FormField,
     FormTemplate,
     getAdminTemplate,
     getCategories,
@@ -20,7 +20,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Plus, Save, Trash } from 'lucide-react';
+import { Plus, Save, Trash, ChevronDown, ChevronUp, Settings2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface CategoryNode {
@@ -37,7 +37,9 @@ export default function AdminTemplatesPage() {
     const [existingTemplateId, setExistingTemplateId] = useState<number | null>(null);
 
     const [sections, setSections] = useState<string[]>([DEFAULT_SECTION]);
-    const [fields, setFields] = useState<Partial<FormField>[]>([]);
+    const [fields, setFields] = useState<Partial<FormFieldExtended>[]>([]);
+    const [blockIds, setBlockIds] = useState<string[]>([]);
+    const [expandedFields, setExpandedFields] = useState<Record<number, boolean>>({});
 
     const [isLoading, setIsLoading] = useState(false);
 
@@ -49,7 +51,7 @@ export default function AdminTemplatesPage() {
     const [categoryTree, setCategoryTree] = useState<CategoryNode[]>([]);
     const [selectionPath, setSelectionPath] = useState<string[]>([]);
 
-    const getSectionsFromFields = (nextFields: Partial<FormField>[]) => {
+    const getSectionsFromFields = (nextFields: Partial<FormFieldExtended>[]) => {
         const uniqueSections = Array.from(
             new Set(nextFields.map((field) => field.section).filter(Boolean)),
         ) as string[];
@@ -62,18 +64,22 @@ export default function AdminTemplatesPage() {
         setTemplateName('');
         setFields([]);
         setSections([DEFAULT_SECTION]);
+        setBlockIds([]);
+        setExpandedFields({});
     };
 
-    const applyTemplateToEditor = (template: FormTemplate) => {
-        const loadedFields: Partial<FormField>[] = (template.fields ?? []).map((field) => ({
+    const applyTemplateToEditor = (template: any) => {
+        const loadedFields: Partial<FormFieldExtended>[] = (template.fields ?? []).map((field: any) => ({
             id: field.id,
-            key: field.key,
+            fieldKey: field.fieldKey || field.key,
             label: field.label,
-            type: field.type,
-            isRequired: field.isRequired,
+            fieldType: field.fieldType || field.type,
+            required: field.required ?? field.isRequired,
             section: field.section ?? undefined,
-            validationRules: field.validationRules,
+            validations: field.validations || field.validationRules,
             options: field.options ?? [],
+            visibilityIf: field.visibilityIf,
+            requiredIf: field.requiredIf,
         }));
 
         setExistingTemplateId(Number(template.id));
@@ -81,6 +87,7 @@ export default function AdminTemplatesPage() {
         setSelectedCategory(template.categoryId.toString());
         setFields(loadedFields);
         setSections(getSectionsFromFields(loadedFields));
+        setBlockIds(template.blockIds || []);
     };
 
     const findPath = (nodes: CategoryNode[], targetId: string): string[] | null => {
@@ -212,20 +219,24 @@ export default function AdminTemplatesPage() {
     }
 
     function addField(section: string) {
+        const newIndex = fields.length;
         setFields([
             ...fields,
             {
-                key: `field_${Date.now()}`,
+                fieldKey: `field_${Date.now()}`,
                 label: 'New Field',
-                type: 'TEXT',
-                isRequired: false,
+                fieldType: 'text',
+                required: false,
                 section,
                 options: [],
+                visibilityIf: null,
+                requiredIf: null,
             },
         ]);
+        setExpandedFields((prev) => ({ ...prev, [newIndex]: true }));
     }
 
-    function updateField(index: number, updates: Partial<FormField>) {
+    function updateField(index: number, updates: Partial<FormFieldExtended>) {
         const nextFields = [...fields];
         nextFields[index] = { ...nextFields[index], ...updates };
         setFields(nextFields);
@@ -255,6 +266,19 @@ export default function AdminTemplatesPage() {
         updateField(fieldIndex, { options: newOptions });
     }
 
+    function toggleAdvanced(index: number) {
+        setExpandedFields((prev) => ({ ...prev, [index]: !prev[index] }));
+    }
+
+    function updateRuleText(index: number, ruleType: 'visibilityIf' | 'requiredIf', text: string) {
+        try {
+            const parsed = text ? JSON.parse(text) : null;
+            updateField(index, { [ruleType]: parsed });
+        } catch {
+            // Let the user type freely, maybe we can show an error or just keep the latest valid state
+        }
+    }
+
     async function handleSave(asNew = false) {
         if (!selectedCategory) return alert('Select a category');
         if (fields.length === 0) return alert('Add at least one field');
@@ -269,29 +293,32 @@ export default function AdminTemplatesPage() {
 
             const keyCount = new Map<string, number>();
             const cleanFields = fields.map((field, index) => {
-                const baseKey = sanitizeKey(field.key, `field_${index}`);
+                const baseKey = sanitizeKey(field.fieldKey, `field_${index}`);
                 const count = keyCount.get(baseKey) || 0;
                 keyCount.set(baseKey, count + 1);
                 const finalKey = count > 0 ? `${baseKey}_${count}` : baseKey;
 
                 return {
-                    key: finalKey,
+                    fieldKey: finalKey,
                     label: field.label || 'Unnamed Field',
-                    type: field.type || 'TEXT',
-                    required: field.isRequired || false,
+                    fieldType: field.fieldType || 'text',
+                    required: field.required || false,
                     section: field.section,
-                    order: index,
+                    sortOrder: index,
                     options: field.options?.map((option) => ({
                         label: option.label,
                         value: option.value,
                     })),
+                    visibilityIf: field.visibilityIf,
+                    requiredIf: field.requiredIf,
                 };
             });
 
             if (existingTemplateId && !asNew) {
                 await updateAdminTemplate(existingTemplateId, {
                     fields: cleanFields,
-                });
+                    blockIds: blockIds,
+                } as any);
                 alert('Template updated successfully!');
                 return;
             }
@@ -300,7 +327,8 @@ export default function AdminTemplatesPage() {
                 categoryId: Number(selectedCategory),
                 name: templateName || 'Default Template',
                 fields: cleanFields,
-            });
+                blockIds: blockIds,
+            } as any);
 
             setExistingTemplateId(Number(created.id));
             setTemplateName(`Template v${created.version}`);
@@ -319,7 +347,7 @@ export default function AdminTemplatesPage() {
             <div className="flex justify-between items-end mb-8">
                 <div>
                     <h1 className="text-3xl font-heading font-bold text-white mb-2">Form Template Builder</h1>
-                    <p className="text-muted-foreground">Define custom fields and sections for category listings.</p>
+                    <p className="text-muted-foreground">Define custom fields, rules, and sections for category listings.</p>
                 </div>
                 <div className="flex gap-2">
                     <Button
@@ -334,7 +362,7 @@ export default function AdminTemplatesPage() {
                     <Button
                         onClick={() => handleSave(false)}
                         disabled={isLoading}
-                        className="bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-900/20"
+                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/20"
                     >
                         <Save className="w-4 h-4 mr-2" />
                         Save Changes
@@ -383,15 +411,9 @@ export default function AdminTemplatesPage() {
                                         </div>
                                     );
                                 })}
-
-                                {selectedCategory && (
-                                    <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm text-blue-200">
-                                        Selected: <span className="font-semibold">{selectionPath.length} levels deep</span>
-                                    </div>
-                                )}
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-2 border-t border-white/10 pt-4">
                                 <Label className="text-muted-foreground">Template Name</Label>
                                 <Input
                                     value={templateName}
@@ -399,6 +421,25 @@ export default function AdminTemplatesPage() {
                                     placeholder="e.g. Tractors V1"
                                     className="bg-white/5 border-white/10 text-white placeholder:text-muted-foreground/50"
                                 />
+                            </div>
+
+                            <div className="space-y-2 border-t border-white/10 pt-4">
+                                <Label className="text-muted-foreground">Block Dependencies</Label>
+                                <p className="text-xs text-muted-foreground mb-2">Assign built-in template blocks.</p>
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-sm text-white">
+                                        <input
+                                            type="checkbox"
+                                            checked={blockIds.includes('engine_block')}
+                                            onChange={(e) => {
+                                                if (e.target.checked) setBlockIds([...blockIds, 'engine_block']);
+                                                else setBlockIds(blockIds.filter(id => id !== 'engine_block'));
+                                            }}
+                                            className="w-4 h-4 rounded border-white/20 bg-black/20 text-blue-500"
+                                        />
+                                        Engine Metadata Block
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -439,12 +480,14 @@ export default function AdminTemplatesPage() {
                                     .filter((field) => field.section === section)
                                     .map((field) => {
                                         const index = field.originalIndex;
+                                        const isExpanded = expandedFields[index] || false;
+
                                         return (
                                             <div
                                                 key={index}
-                                                className="group relative bg-card/80 hover:bg-card border border-white/5 hover:border-blue-500/50 rounded-xl p-6 transition-all duration-200"
+                                                className="group relative bg-card/80 hover:bg-card border border-white/5 hover:border-blue-500/50 rounded-xl p-4 transition-all duration-200"
                                             >
-                                                <div className="pl-2 space-y-6">
+                                                <div className="space-y-4">
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div className="space-y-2">
                                                             <Label className="text-xs uppercase text-muted-foreground">Field Label</Label>
@@ -453,7 +496,7 @@ export default function AdminTemplatesPage() {
                                                                 onChange={(event) =>
                                                                     updateField(index, {
                                                                         label: event.target.value,
-                                                                        key: event.target.value.toLowerCase().replace(/\s+/g, '_'),
+                                                                        fieldKey: event.target.value.toLowerCase().replace(/\s+/g, '_'),
                                                                     })
                                                                 }
                                                                 className="bg-black/20 border-white/10"
@@ -462,38 +505,36 @@ export default function AdminTemplatesPage() {
                                                         <div className="space-y-2">
                                                             <Label className="text-xs uppercase text-muted-foreground">Field Type</Label>
                                                             <Select
-                                                                value={field.type || 'TEXT'}
-                                                                onValueChange={(value: any) => updateField(index, { type: value })}
+                                                                value={field.fieldType || 'text'}
+                                                                onValueChange={(value: any) => updateField(index, { fieldType: value })}
                                                             >
                                                                 <SelectTrigger className="bg-black/20 border-white/10">
                                                                     <SelectValue />
                                                                 </SelectTrigger>
                                                                 <SelectContent>
-                                                                    <SelectItem value="TEXT">Text Input</SelectItem>
-                                                                    <SelectItem value="NUMBER">Number Input</SelectItem>
-                                                                    <SelectItem value="PRICE">Price (Currency)</SelectItem>
-                                                                    <SelectItem value="RICHTEXT">Rich Text / Description</SelectItem>
-                                                                    <SelectItem value="SELECT">Dropdown Select</SelectItem>
-                                                                    <SelectItem value="MULTISELECT">Multi-Select</SelectItem>
-                                                                    <SelectItem value="RADIO">Radio Buttons</SelectItem>
-                                                                    <SelectItem value="CHECKBOX_GROUP">Checkbox Group</SelectItem>
-                                                                    <SelectItem value="BOOLEAN">Single Switch/Checkbox</SelectItem>
-                                                                    <SelectItem value="DATE">Date Picker</SelectItem>
-                                                                    <SelectItem value="YEAR_RANGE">Year Range</SelectItem>
-                                                                    <SelectItem value="COLOR">Color Picker</SelectItem>
-                                                                    <SelectItem value="LOCATION">Map Location</SelectItem>
-                                                                    <SelectItem value="MEDIA">Image/Video Upload</SelectItem>
+                                                                    <SelectItem value="text">Text Input</SelectItem>
+                                                                    <SelectItem value="number">Number Input</SelectItem>
+                                                                    <SelectItem value="price">Price (Currency)</SelectItem>
+                                                                    <SelectItem value="richtext">Rich Text / Description</SelectItem>
+                                                                    <SelectItem value="select">Dropdown Select</SelectItem>
+                                                                    <SelectItem value="multiselect">Multi-Select</SelectItem>
+                                                                    <SelectItem value="radio">Radio Buttons</SelectItem>
+                                                                    <SelectItem value="checkbox-group">Checkbox Group</SelectItem>
+                                                                    <SelectItem value="boolean">Single Switch/Checkbox</SelectItem>
+                                                                    <SelectItem value="date">Date Picker</SelectItem>
+                                                                    <SelectItem value="year_range">Year Range</SelectItem>
+                                                                    <SelectItem value="color">Color Picker</SelectItem>
+                                                                    <SelectItem value="location">Map Location</SelectItem>
+                                                                    <SelectItem value="media">Image/Video Upload</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
                                                         </div>
                                                     </div>
 
-                                                    {['SELECT', 'MULTISELECT', 'RADIO', 'CHECKBOX_GROUP', 'COLOR'].includes(field.type || '') && (
-                                                        <div className="bg-black/20 p-4 rounded-lg space-y-3 border border-white/5">
+                                                    {['select', 'multiselect', 'radio', 'checkbox-group', 'color'].includes(field.fieldType || '') && (
+                                                        <div className="bg-black/20 p-3 rounded-lg space-y-3 border border-white/5">
                                                             <div className="flex justify-between items-center">
-                                                                <Label className="text-xs uppercase text-blue-400">
-                                                                    {field.type === 'COLOR' ? 'Color Options' : 'Options Configuration'}
-                                                                </Label>
+                                                                <Label className="text-xs uppercase text-blue-400">Options</Label>
                                                                 <Button
                                                                     size="sm"
                                                                     variant="ghost"
@@ -504,10 +545,10 @@ export default function AdminTemplatesPage() {
                                                                 </Button>
                                                             </div>
 
-                                                            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                                                            <div className="space-y-2 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar">
                                                                 {field.options?.map((option, optIndex) => (
                                                                     <div key={optIndex} className="flex gap-2 items-center">
-                                                                        {field.type === 'COLOR' ? (
+                                                                        {field.fieldType === 'color' ? (
                                                                             <input
                                                                                 type="color"
                                                                                 value={option.value}
@@ -515,7 +556,6 @@ export default function AdminTemplatesPage() {
                                                                                 className="h-8 w-12 bg-transparent border-none cursor-pointer"
                                                                             />
                                                                         ) : null}
-
                                                                         <Input
                                                                             value={option.label}
                                                                             onChange={(event) => updateOption(index, optIndex, 'label', event.target.value)}
@@ -543,23 +583,61 @@ export default function AdminTemplatesPage() {
                                                                     </div>
                                                                 ))}
                                                                 {(!field.options || field.options.length === 0) && (
-                                                                    <div className="text-xs text-muted-foreground text-center py-2">
-                                                                        No options defined.
-                                                                    </div>
+                                                                    <div className="text-xs text-muted-foreground py-1 text-center">No options defined.</div>
                                                                 )}
                                                             </div>
                                                         </div>
                                                     )}
 
-                                                    <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                                                    {/* Advanced Settings Toggle */}
+                                                    <div className="border border-white/5 rounded-lg overflow-hidden bg-black/10">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleAdvanced(index)}
+                                                            className="w-full flex justify-between items-center p-3 text-sm font-medium text-white hover:bg-white/5 transition-colors"
+                                                        >
+                                                            <div className="flex items-center gap-2 text-muted-foreground">
+                                                                <Settings2 className="w-4 h-4" />
+                                                                Advanced Engine Rules
+                                                            </div>
+                                                            {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                                                        </button>
+
+                                                        {isExpanded && (
+                                                            <div className="p-4 border-t border-white/5 space-y-4">
+                                                                <div className="space-y-2">
+                                                                    <Label className="text-xs uppercase text-muted-foreground">Visibility Rule (JSON)</Label>
+                                                                    <Input
+                                                                        placeholder='{"type": "condition", "field": "make", "op": "eq", "value": "BMW"}'
+                                                                        defaultValue={field.visibilityIf ? JSON.stringify(field.visibilityIf) : ''}
+                                                                        onBlur={(e) => updateRuleText(index, 'visibilityIf', e.target.value)}
+                                                                        className="bg-black/30 border-white/10 font-mono text-xs"
+                                                                    />
+                                                                    <p className="text-[10px] text-muted-foreground">Define conditional logic for rendering this field.</p>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <Label className="text-xs uppercase text-muted-foreground">Required Rule (JSON)</Label>
+                                                                    <Input
+                                                                        placeholder='{"type": "condition", "field": "condition", "op": "eq", "value": "USED"}'
+                                                                        defaultValue={field.requiredIf ? JSON.stringify(field.requiredIf) : ''}
+                                                                        onBlur={(e) => updateRuleText(index, 'requiredIf', e.target.value)}
+                                                                        className="bg-black/30 border-white/10 font-mono text-xs"
+                                                                    />
+                                                                    <p className="text-[10px] text-muted-foreground">Make field mandatory based on previous fields.</p>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex justify-between items-center pt-2">
                                                         <label className="flex items-center gap-2 text-sm cursor-pointer select-none text-muted-foreground hover:text-white transition-colors">
                                                             <input
                                                                 type="checkbox"
-                                                                checked={Boolean(field.isRequired)}
-                                                                onChange={(event) => updateField(index, { isRequired: event.target.checked })}
-                                                                className="w-4 h-4 rounded border-white/20 bg-black/20 text-blue-500 focus:ring-blue-500/20"
+                                                                checked={Boolean(field.required)}
+                                                                onChange={(event) => updateField(index, { required: event.target.checked })}
+                                                                className="w-4 h-4 rounded border-white/20 bg-black/20 text-blue-500"
                                                             />
-                                                            Required Field
+                                                            Required By Default
                                                         </label>
 
                                                         <Button
@@ -569,7 +647,7 @@ export default function AdminTemplatesPage() {
                                                             onClick={() => removeField(index)}
                                                         >
                                                             <Trash className="w-4 h-4 mr-2" />
-                                                            Remove Field
+                                                            Remove
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -591,7 +669,6 @@ export default function AdminTemplatesPage() {
 
                     <div className="flex justify-center pt-8">
                         <div className="text-center">
-                            <p className="text-muted-foreground mb-4">Need more organization?</p>
                             <Button onClick={addSection} variant="secondary">
                                 <Plus className="w-4 h-4 mr-2" /> Add Another Section
                             </Button>

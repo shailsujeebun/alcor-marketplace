@@ -1,0 +1,3 @@
+﻿src/categories/categories.service.spec.ts(102,20): error TS18047: 'result' is possibly 'null'.
+src/categories/categories.service.spec.ts(105,20): error TS18047: 'result' is possibly 'null'.
+src/categories/categories.service.spec.ts(106,20): error TS18047: 'result' is possibly 'null'.

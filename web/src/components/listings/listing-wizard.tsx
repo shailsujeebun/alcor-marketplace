@@ -64,6 +64,7 @@ function initFormData(listing?: Listing): FormData {
     sellerPhones: listing.sellerPhones?.join(', ') ?? '',
     companyId: listing.companyId,
     dynamicAttributes:
+      (listing as any).attributesData ??
       listing.attributes?.reduce((acc, attr) => ({ ...acc, [attr.key]: attr.value }), {}) ?? {},
   };
 }
@@ -164,12 +165,11 @@ function ListingWizardInner({ listing }: ListingWizardProps) {
                     <div
                       className={`
                         w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors z-10
-                        ${
-                          isActive
-                            ? 'bg-blue-bright border-blue-bright text-white'
-                            : isCompleted
-                              ? 'bg-green-500 border-green-500 text-white'
-                              : 'bg-[var(--bg-secondary)] border-[var(--border-color)] text-[var(--text-secondary)]'
+                        ${isActive
+                          ? 'bg-blue-bright border-blue-bright text-white'
+                          : isCompleted
+                            ? 'bg-green-500 border-green-500 text-white'
+                            : 'bg-[var(--bg-secondary)] border-[var(--border-color)] text-[var(--text-secondary)]'
                         }
                       `}
                     >

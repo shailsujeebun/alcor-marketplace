@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import {
+  mergeTemplateFieldsWithBlocks,
+  getBuiltInEngineBlock,
+} from '../templates/template-schema';
 
 export interface CategoryTreeNode {
   id: string;
@@ -13,7 +17,7 @@ export interface CategoryTreeNode {
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   create(dto: CreateCategoryDto) {
     const parentId = dto.parentId ? BigInt(dto.parentId) : undefined;
@@ -105,8 +109,51 @@ export class CategoriesService {
       };
     }
 
-    const category = await this.prisma.category.findFirst({
+    // 1. Fetch category and its ancestors to determine the applicable template and `hasEngine` flag
+    const targetCategory = await this.prisma.category.findFirst({
       where: whereCondition,
+    });
+
+    if (!targetCategory) return null;
+
+    // Get all categories to build parent chain (in a real app, use recursive CTE, but this is fine for deep-shallow trees)
+    const allCategories = await this.prisma.category.findMany();
+    const catMap = new Map(allCategories.map(c => [c.id.toString(), c]));
+
+    let current: any = targetCategory;
+    let fallbackCategoryWithTemplate: any = null;
+    let resolvesEngine = false;
+
+    // Traverse upwards
+    while (current) {
+      if (current.hasEngine) {
+        resolvesEngine = true;
+      }
+
+      // Check if this category has an active template
+      if (!fallbackCategoryWithTemplate) {
+        const hasTemplate = await this.prisma.formTemplate.findFirst({
+          where: { categoryId: current.id, isActive: true },
+        });
+        if (hasTemplate) {
+          fallbackCategoryWithTemplate = current;
+        }
+      }
+
+      if (current.parentId) {
+        current = catMap.get(current.parentId.toString());
+      } else {
+        break;
+      }
+    }
+
+    if (!fallbackCategoryWithTemplate) {
+      return null; // No template found in hierarchy
+    }
+
+    // 2. Fetch the actual template from the discovered category
+    const categoryWithTemplates = await this.prisma.category.findUnique({
+      where: { id: fallbackCategoryWithTemplate.id },
       include: {
         formTemplates: {
           where: { isActive: true },
@@ -116,9 +163,7 @@ export class CategoriesService {
             fields: {
               orderBy: { sortOrder: 'asc' },
               include: {
-                options: {
-                  orderBy: { sortOrder: 'asc' },
-                },
+                options: { orderBy: { sortOrder: 'asc' } },
               },
             },
           },
@@ -126,10 +171,54 @@ export class CategoriesService {
       },
     });
 
-    if (!category || category.formTemplates.length === 0) {
+    if (!categoryWithTemplates || categoryWithTemplates.formTemplates.length === 0) {
       return null;
     }
 
-    return this.mapTemplate(category.formTemplates[0]);
+    const rawTemplate = categoryWithTemplates.formTemplates[0];
+    const mappedTemplate = this.mapTemplate(rawTemplate);
+
+    // 3. Resolve blocks
+    let blocks: any[] = [];
+    const blockIds = (rawTemplate.blockIds as string[]) || [];
+
+    // Inject engine block if the category's lineage requires it, and it's not already there
+    if (resolvesEngine && !blockIds.includes('engine_block')) {
+      blockIds.unshift('engine_block');
+    }
+
+    if (blockIds.length > 0) {
+      const dbBlocks = await this.prisma.formBlock.findMany({
+        where: { id: { in: blockIds } }
+      });
+
+      // Order them as requested in blockIds array
+      blocks = blockIds.map((id) => {
+        if (id === 'engine_block') return getBuiltInEngineBlock(); // Saftey fallback if not in DB yet
+        return dbBlocks.find((b) => b.id === id);
+      }).filter(Boolean);
+    }
+
+    // 4. Merge fields
+    const localFields = mappedTemplate.fields || [];
+    const mergedFields = mergeTemplateFieldsWithBlocks(localFields, blocks);
+
+    // Convert back array to the format expected by the frontend
+    mappedTemplate.fields = mergedFields.map((f) => ({
+      id: f.id || `virtual-${f.fieldKey}`,
+      key: f.fieldKey || f.key, // Handle both our new internal representation and the legacy one
+      label: f.label,
+      type: f.fieldType || f.type,
+      isRequired: f.required ?? f.isRequired,
+      section: f.section || undefined,
+      validationRules: f.validations || f.validationRules || {},
+      options: f.options || [],
+      // Inject the newer config parameters not explicitly mapped in mapTemplate payload yet
+      config: f.config || {},
+      requiredIf: f.requiredIf || {},
+      visibilityIf: f.visibilityIf || {},
+    }));
+
+    return mappedTemplate;
   }
 }

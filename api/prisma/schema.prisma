@@ -249,6 +249,7 @@ model Category {
   children      Category[]  @relation("CategoryTree")
   name          String
   slug          String
+  hasEngine     Boolean     @default(false) @map("has_engine")
   sortOrder     Int?        @map("sort_order")
 
   listings      Listing[]
@@ -257,6 +258,19 @@ model Category {
 
   @@unique([marketplaceId, slug])
   @@map("category")
+}
+
+model Model {
+  id         String   @id @default(uuid())
+  name       String
+  brandId    String?  @map("brand_id")
+  categoryId BigInt?  @map("category_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([name, brandId, categoryId])
+  @@index([brandId])
+  @@index([categoryId])
+  @@map("model")
 }
 
 model BrandCategory {
@@ -279,12 +293,24 @@ model FormTemplate {
   category   Category @relation(fields: [categoryId], references: [id])
   version    Int      @default(1)
   isActive   Boolean  @default(true) @map("is_active")
+  blockIds   Json     @default("[]") @map("block_ids")
   createdAt  DateTime @default(now()) @map("created_at")
 
   fields FormField[]
 
   @@unique([categoryId, version])
   @@map("form_template")
+}
+
+model FormBlock {
+  id        String   @id // stable identifier e.g. "engine_block"
+  name      String   @unique
+  isSystem  Boolean  @default(false) @map("is_system")
+  fields    Json     @default("[]")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("form_block")
 }
 
 model FormField {
@@ -299,6 +325,8 @@ model FormField {
   helpText     String?      @map("help_text")
   validations  Json         @default("{}") // min/max/regex/unit
   visibilityIf Json         @default("{}") @map("visibility_if") // conditional rules
+  config       Json         @default("{}") // additional UI config e.g. reset rules
+  requiredIf   Json         @default("{}") @map("required_if") // conditional required
   section      String?      // Logic grouping like 'Engine', 'Dimensions'
 
   options FieldOption[]

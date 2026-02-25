@@ -84,7 +84,7 @@ export function ListingDetail({ id }: { id: string }) {
         )}
         {listing.media && listing.media.length > 1 && (
           <div className="flex gap-2 p-4 overflow-x-auto">
-            {listing.media.map((m) => (
+            {listing.media.map((m: any) => (
               <img key={m.id} src={m.url} alt="" className="w-20 h-20 rounded-xl object-cover flex-shrink-0 border-2 border-transparent hover:border-blue-bright transition-colors cursor-pointer" />
             ))}
           </div>
@@ -184,7 +184,7 @@ export function ListingDetail({ id }: { id: string }) {
             <div className="glass-card p-6">
               <h3 className="font-heading font-bold text-base text-[var(--text-primary)] mb-4">Характеристики</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {listing.attributes.map((attr) => (
+                {listing.attributes.map((attr: any) => (
                   <div key={attr.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--bg-primary)]">
                     <span className="text-sm text-[var(--text-secondary)]">{attr.key}</span>
                     <span className="text-sm font-medium text-[var(--text-primary)]">{attr.value}</span>

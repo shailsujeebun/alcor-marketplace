@@ -114,14 +114,44 @@ async function fetchApi<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 // Listings
+export function normalizeListing(listing: any): any {
+  if (!listing) return null;
+
+  let attributesData: Record<string, any> = {};
+  if (listing.attribute?.data) {
+    attributesData = typeof listing.attribute.data === 'string'
+      ? JSON.parse(listing.attribute.data)
+      : listing.attribute.data;
+  } else if (Array.isArray(listing.attributes)) {
+    listing.attributes.forEach((attr: any) => {
+      attributesData[attr.key] = attr.value;
+    });
+  }
+
+  const media = Array.isArray(listing.media)
+    ? listing.media.map((m: any) => ({
+      ...m,
+      url: m.url?.startsWith('http') ? m.url : `${API_BASE}${m.url}`
+    }))
+    : [];
+
+  return {
+    ...listing,
+    attributesData,
+    media,
+  };
+}
+
 export const getListings = (params?: URLSearchParams) =>
-  fetchApi<PaginatedResponse<Listing>>(`/listings?${params?.toString() ?? ''}`);
+  fetchApi<PaginatedResponse<Listing>>(`/listings?${params?.toString() ?? ''}`)
+    .then(res => ({ ...res, data: res.data.map(normalizeListing) }));
 
 export const getListingById = (id: string) =>
-  fetchApi<Listing>(`/listings/${id}`);
+  fetchApi<Listing>(`/listings/${id}`).then(normalizeListing);
 
 export const getCompanyListings = (companyId: string, params?: URLSearchParams) =>
-  fetchApi<PaginatedResponse<Listing>>(`/companies/${companyId}/listings?${params?.toString() ?? ''}`);
+  fetchApi<PaginatedResponse<Listing>>(`/companies/${companyId}/listings?${params?.toString() ?? ''}`)
+    .then(res => ({ ...res, data: res.data.map(normalizeListing) }));
 
 // Companies
 export const getCompanies = (params?: URLSearchParams) =>

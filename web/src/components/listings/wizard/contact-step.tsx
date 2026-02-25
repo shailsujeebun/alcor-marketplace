@@ -117,8 +117,11 @@ export function ContactStep() {
             }));
 
             const attributesArray = Object.entries(form.dynamicAttributes)
-                .filter(([key, value]) => key && value)
-                .map(([key, value]) => ({ key, value }));
+                .filter(([key, value]) => key && value !== undefined && value !== null && value !== '')
+                .map(([key, value]) => ({
+                    key,
+                    value: Array.isArray(value) ? value.join(',') : String(value)
+                }));
 
             const payload: CreateListingPayload = {
                 companyId: form.companyId,

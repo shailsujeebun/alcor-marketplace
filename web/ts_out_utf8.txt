@@ -1,0 +1,6 @@
+﻿src/components/listings/listing-detail.tsx(87,33): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/components/listings/listing-detail.tsx(187,42): error TS7006: Parameter 'attr' implicitly has an 'any' type.
+src/components/listings/wizard/description-step.tsx(261,15): error TS2322: Type 'FormTemplate' is not assignable to type '{ fields: FormFieldExtended[]; }'.
+  Types of property 'fields' are incompatible.
+    Type 'FormField[]' is not assignable to type 'FormFieldExtended[]'.
+      Type 'FormField' is missing the following properties from type 'FormFieldExtended': fieldKey, fieldType, required

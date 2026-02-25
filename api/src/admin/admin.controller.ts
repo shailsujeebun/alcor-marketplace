@@ -18,11 +18,33 @@ import { Roles } from '../auth/decorators/roles.decorator';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'MANAGER')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(private readonly adminService: AdminService) { }
 
   @Get('stats')
   getStats() {
     return this.adminService.getStats();
+  }
+
+  // ─── Blocks ──────────────────────────────────────────
+
+  @Post('blocks')
+  createBlock(@Body() body: { id: string; name: string; isSystem?: boolean; fields: any }) {
+    return this.adminService.createBlock(body);
+  }
+
+  @Get('blocks')
+  getBlocks() {
+    return this.adminService.getBlocks();
+  }
+
+  @Patch('blocks/:id')
+  updateBlock(@Param('id') id: string, @Body() body: { name?: string; fields?: any }) {
+    return this.adminService.updateBlock(id, body);
+  }
+
+  @Delete('blocks/:id')
+  deleteBlock(@Param('id') id: string) {
+    return this.adminService.deleteBlock(id);
   }
 
   // ─── Marketplaces ────────────────────────────────────
@@ -55,6 +77,7 @@ export class AdminController {
       name: string;
       slug: string;
       parentId?: number;
+      hasEngine?: boolean;
       sortOrder?: number;
     },
   ) {
@@ -69,6 +92,7 @@ export class AdminController {
       name?: string;
       slug?: string;
       parentId?: number;
+      hasEngine?: boolean;
       sortOrder?: number;
     },
   ) {
@@ -84,7 +108,7 @@ export class AdminController {
 
   @Post('templates')
   createTemplate(
-    @Body() body: { categoryId: number; name?: string; fields: any[] },
+    @Body() body: { categoryId: number; name?: string; blockIds?: string[], fields: any[] },
   ) {
     return this.adminService.createTemplate(body);
   }
@@ -115,7 +139,7 @@ export class AdminController {
   @Patch('templates/:id')
   updateTemplate(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { fields: any[] },
+    @Body() body: { blockIds?: string[], fields: any[] },
   ) {
     return this.adminService.updateTemplate(id, body);
   }

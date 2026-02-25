@@ -13,6 +13,7 @@ import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
 import { UpdateListingContactDto } from './dto/update-listing-contact.dto';
 import { ListingQueryDto } from './dto/listing-query.dto';
+import { evaluateRule } from '../common/rule-tree';
 
 const VALID_TRANSITIONS: Record<ListingStatus, ListingStatus[]> = {
   DRAFT: [ListingStatus.SUBMITTED],
@@ -43,7 +44,7 @@ export class ListingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
-  ) {}
+  ) { }
 
   private isPrivilegedRole(role?: string) {
     return role === UserRole.ADMIN || role === UserRole.MANAGER;
@@ -166,13 +167,13 @@ export class ListingsService {
           },
           media: media
             ? {
-                createMany: {
-                  data: media.map((m) => {
-                    const { key, ...mediaData } = m;
-                    return mediaData;
-                  }),
-                },
-              }
+              createMany: {
+                data: media.map((m) => {
+                  const { key, ...mediaData } = m;
+                  return mediaData;
+                }),
+              },
+            }
             : undefined,
           attribute: attributesData
             ? { create: { data: attributesData } }
@@ -687,19 +688,46 @@ export class ListingsService {
     for (const field of template.fields) {
       const value = attributes[field.fieldKey];
 
-      // Check required
-      if (
-        field.required &&
-        (value === undefined || value === null || value === '')
-      ) {
-        errors.push({
-          field: field.fieldKey,
-          message: 'This field is required',
-        });
+      // Evaluate visibility
+      let isVisible = true;
+      if (field.visibilityIf && Object.keys(field.visibilityIf).length > 0) {
+        isVisible = evaluateRule(field.visibilityIf as any, attributes);
+      }
+
+      // If securely determined hidden by rules, do not validate requirements
+      if (!isVisible) {
         continue;
       }
 
-      if (value !== undefined && value !== null) {
+      // Evaluate dynamic required logic
+      let isRequired = field.required;
+      if (field.requiredIf && Object.keys(field.requiredIf).length > 0) {
+        isRequired = isRequired || evaluateRule(field.requiredIf as any, attributes);
+      }
+
+      // Check required
+      if (isRequired) {
+        const isEmpty = value === undefined || value === null || value === '';
+        let isArrayEmpty = false;
+
+        if (field.fieldType === 'checkbox-group') {
+          if (Array.isArray(value)) {
+            isArrayEmpty = value.length === 0;
+          } else if (typeof value === 'string') {
+            isArrayEmpty = value.trim() === '';
+          }
+        }
+
+        if (isEmpty || isArrayEmpty) {
+          errors.push({
+            field: field.fieldKey,
+            message: 'This field is required',
+          });
+          continue;
+        }
+      }
+
+      if (value !== undefined && value !== null && value !== '') {
         // Type validation
         if (field.fieldType === 'number' && typeof value !== 'number') {
           // Allow numeric strings
@@ -708,7 +736,16 @@ export class ListingsService {
           }
         }
         if (field.fieldType === 'boolean' && typeof value !== 'boolean') {
-          errors.push({ field: field.fieldKey, message: 'Must be a boolean' });
+          // Accept "true"/"false" strings
+          if (value !== 'true' && value !== 'false' && value !== true && value !== false) {
+            errors.push({ field: field.fieldKey, message: 'Must be a boolean' });
+          }
+        }
+
+        if (field.fieldType === 'checkbox-group') {
+          if (!Array.isArray(value) && typeof value !== 'string') {
+            errors.push({ field: field.fieldKey, message: 'Must be an array or comma-separated string' });
+          }
         }
 
         // Custom validations (min/max)

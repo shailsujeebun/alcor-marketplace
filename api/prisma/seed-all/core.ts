@@ -165,7 +165,7 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
   ]);
 
   const marketplaceMap = new Map<string, bigint>(marketplaceRows.map((row) => [row.key, row.id]));
-  const categoriesBySlug = new Map<string, { id: bigint; marketplaceId: bigint }>();
+  const categoriesBySlug = new Map<string, { id: bigint; marketplaceId: bigint; hasEngine: boolean }>();
 
   async function createCategory(params: {
     marketplaceKey: string;
@@ -173,6 +173,7 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
     name: string;
     parentSlug?: string;
     sortOrder: number;
+    hasEngine?: boolean;
   }) {
     const marketplaceId = marketplaceMap.get(params.marketplaceKey);
     if (!marketplaceId) {
@@ -187,19 +188,21 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
         name: params.name,
         parentId: parent?.id,
         sortOrder: params.sortOrder,
+        hasEngine: params.hasEngine ?? false,
       },
     });
 
-    categoriesBySlug.set(params.slug, { id: row.id, marketplaceId });
+    categoriesBySlug.set(params.slug, { id: row.id, marketplaceId, hasEngine: params.hasEngine ?? false });
   }
 
-  await createCategory({ marketplaceKey: 'agriculture', slug: 'tractors', name: 'Tractors', sortOrder: 1 });
+  await createCategory({ marketplaceKey: 'agriculture', slug: 'tractors', name: 'Tractors', sortOrder: 1, hasEngine: true });
   await createCategory({
     marketplaceKey: 'agriculture',
     slug: 'wheel-tractors',
     name: 'Wheel tractors',
     parentSlug: 'tractors',
     sortOrder: 2,
+    hasEngine: true,
   });
   await createCategory({
     marketplaceKey: 'agriculture',
@@ -207,12 +210,14 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
     name: 'Tracked tractors',
     parentSlug: 'tractors',
     sortOrder: 3,
+    hasEngine: true,
   });
   await createCategory({
     marketplaceKey: 'agriculture',
     slug: 'combine-harvesters',
     name: 'Combine harvesters',
     sortOrder: 4,
+    hasEngine: true,
   });
   await createCategory({
     marketplaceKey: 'agriculture',
@@ -220,15 +225,17 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
     name: 'Grain harvesters',
     parentSlug: 'combine-harvesters',
     sortOrder: 5,
+    hasEngine: true,
   });
 
-  await createCategory({ marketplaceKey: 'industrial', slug: 'excavators', name: 'Excavators', sortOrder: 1 });
+  await createCategory({ marketplaceKey: 'industrial', slug: 'excavators', name: 'Excavators', sortOrder: 1, hasEngine: true });
   await createCategory({
     marketplaceKey: 'industrial',
     slug: 'mini-excavators',
     name: 'Mini excavators',
     parentSlug: 'excavators',
     sortOrder: 2,
+    hasEngine: true,
   });
   await createCategory({
     marketplaceKey: 'industrial',
@@ -236,23 +243,26 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
     name: 'Tracked excavators',
     parentSlug: 'excavators',
     sortOrder: 3,
+    hasEngine: true,
   });
-  await createCategory({ marketplaceKey: 'industrial', slug: 'loaders', name: 'Loaders', sortOrder: 4 });
+  await createCategory({ marketplaceKey: 'industrial', slug: 'loaders', name: 'Loaders', sortOrder: 4, hasEngine: true });
   await createCategory({
     marketplaceKey: 'industrial',
     slug: 'wheel-loaders',
     name: 'Wheel loaders',
     parentSlug: 'loaders',
     sortOrder: 5,
+    hasEngine: true,
   });
 
-  await createCategory({ marketplaceKey: 'commercial', slug: 'trucks', name: 'Trucks', sortOrder: 1 });
+  await createCategory({ marketplaceKey: 'commercial', slug: 'trucks', name: 'Trucks', sortOrder: 1, hasEngine: true });
   await createCategory({
     marketplaceKey: 'commercial',
     slug: 'truck-tractors',
     name: 'Truck tractors',
     parentSlug: 'trucks',
     sortOrder: 2,
+    hasEngine: true,
   });
   await createCategory({
     marketplaceKey: 'commercial',
@@ -260,6 +270,7 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
     name: 'Dump trucks',
     parentSlug: 'trucks',
     sortOrder: 3,
+    hasEngine: true,
   });
   await createCategory({ marketplaceKey: 'commercial', slug: 'trailers', name: 'Trailers', sortOrder: 4 });
   await createCategory({
@@ -275,6 +286,7 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
     slug: 'passenger-cars',
     name: 'Passenger cars',
     sortOrder: 1,
+    hasEngine: true,
   });
   await createCategory({
     marketplaceKey: 'cars',
@@ -282,6 +294,7 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
     name: 'Sedans',
     parentSlug: 'passenger-cars',
     sortOrder: 2,
+    hasEngine: true,
   });
   await createCategory({
     marketplaceKey: 'cars',
@@ -289,6 +302,7 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
     name: 'SUV',
     parentSlug: 'passenger-cars',
     sortOrder: 3,
+    hasEngine: true,
   });
 
   const brandRows = await Promise.all([
@@ -349,6 +363,7 @@ export async function seedCore(prisma: PrismaClient): Promise<CoreSeedData> {
         categoryId: category.id,
         version: 1,
         isActive: true,
+        blockIds: category.hasEngine ? ['engine_block'] : [],
         fields: {
           create: [
             {

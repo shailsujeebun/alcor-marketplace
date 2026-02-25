@@ -703,7 +703,7 @@ export function useCategoryTemplate(categoryId: string) {
     queryKey: ['category-template', categoryId],
     queryFn: () => api.getCategoryTemplate(categoryId),
     enabled: !!categoryId,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 0, // 0 minutes (refetch on mount)
   });
 }
 

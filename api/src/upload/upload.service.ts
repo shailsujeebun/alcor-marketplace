@@ -4,14 +4,17 @@ import {
   HttpStatus,
   Injectable,
   Logger,
+  NotFoundException,
   OnModuleInit,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import type { Response } from 'express';
 import {
   S3Client,
   PutObjectCommand,
+  GetObjectCommand,
   DeleteObjectCommand,
   CreateBucketCommand,
   HeadBucketCommand,
@@ -390,7 +393,35 @@ export class UploadService implements OnModuleInit {
       }),
     );
 
-    return `${this.publicUrl}/${key}`;
+    // Return the local proxy path instead of the raw S3 public URL
+    return `/upload/files/${key}`;
+  }
+
+  async streamFile(folder: string, filename: string, res: Response) {
+    const safeFolder = this.sanitizeFolder(folder);
+    const key = `${safeFolder}/${filename}`;
+
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      });
+
+      const response = await this.s3.send(command);
+
+      if (response.ContentType) {
+        res.setHeader('Content-Type', response.ContentType);
+      }
+      if (response.ContentLength) {
+        res.setHeader('Content-Length', response.ContentLength);
+      }
+
+      const stream = response.Body as unknown as NodeJS.ReadableStream;
+      stream.pipe(res);
+    } catch (err) {
+      this.logger.error(`Error streaming file ${key}: ${err}`);
+      throw new NotFoundException('File not found');
+    }
   }
 
   async deleteFile(url: string): Promise<void> {

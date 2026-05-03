@@ -13,7 +13,10 @@ export function Footer() {
       <div className="container-main section-padding">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10">
           <div className="sm:col-span-2 lg:col-span-1">
-            <div className="logo-link flex items-center gap-3 mb-4">
+            <a
+              href="https://landingpagealcor.netlify.app/"
+              className="logo-link flex items-center gap-3 mb-4"
+            >
               <Image
                 src="/alcor-logo.png"
                 alt={t('brand.logoAlt')}
@@ -22,7 +25,7 @@ export function Footer() {
                 className="logo-image h-10 w-auto"
               />
               <span className="logo-text font-heading font-bold text-xl">АЛЬКОР</span>
-            </div>
+            </a>
             <p className="text-[var(--text-secondary)] text-sm leading-relaxed">{t('footer.description')}</p>
           </div>
 
